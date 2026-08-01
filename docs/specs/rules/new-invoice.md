@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-26
+last_updated: 2026-08-01
 ---
 
 # Nova fatura — gatilho manual + rollover de parcelas
@@ -13,6 +13,8 @@ O bloco visual de fatura (linha azul + despesas fixas) é normalmente disparado 
 
 A opção de menu "Nova fatura" no app Flutter (aba Início, hamburger menu) chama `?action=newInvoice` (POST) que faz o mesmo trabalho do webhook **e** propaga parcelas pendentes da fatura anterior para a nova com `(X+1)/Y`.
 
+A data que será criada é a **fatura seguinte à última já registrada na planilha** (última col A + 1 mês, ver [invoice-closing-date.md](invoice-closing-date.md)) — não uma projeção a partir de hoje. Como isso depende do estado da planilha, o dialog de confirmação busca a data no backend antes de exibir, via o endpoint read-only `newInvoicePreview` (GET).
+
 ## Regras
 
 ### Trigger
@@ -22,9 +24,9 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 ### Algoritmo
 
 1. `checkToken_(token)` → 401 se inválido.
-2. `newClosing = newInvoiceClosingDate_()` — fatura **DEPOIS da acumulando** (ver [invoice-closing-date.md](invoice-closing-date.md)). Ex.: hoje 26/05/2026 → `nextInvoiceClosingDate_` retorna `06/06/2026` (acumulando, usada pelo webhook), mas `newInvoiceClosingDate_` retorna `06/07/2026` (a próxima ainda não começou — é essa que Nova fatura cria).
-3. `LockService.getScriptLock().tryLock(10000)` — serializa com webhook + addEntry. Se falhar → `lock_timeout`.
-4. Abrir aba `Despesas`. Se faltar → `sheet_not_found`.
+2. `LockService.getScriptLock().tryLock(10000)` — serializa com webhook + addEntry. Se falhar → `lock_timeout`.
+3. Abrir aba `Despesas`. Se faltar → `sheet_not_found`.
+4. `newClosing = newInvoiceClosingDate_(sheet)` — **última fatura da planilha + 1 mês** (ver [invoice-closing-date.md](invoice-closing-date.md)). Ex.: última fatura registrada = `06/07/2026` → `newClosing = 06/08/2026`, independente da data de hoje. Calculado **dentro do lock**, após abrir a aba, pra ler estado consistente.
 5. **Dedup:** se qualquer linha tem `formatBrDate_(col A) === newClosing` → `invoice_already_exists` (preserva idempotência semântica).
 6. **Rollover de parcelas:** `findCurrentInvoice_(sheet, newClosing)` retorna `{ closing, rows }` da fatura mais recente STRICTLY LESS THAN `newClosing`, ou `null`. Para cada `r` em `rows`: `rolloverParcelaRow_(r.values, newClosing)` retorna nova linha 10-col ou `null` (skip). Linhas que rolam têm col A = `newClosing`, col I = `(X+1)/Y`, col B (data referência original) preservada. Demais colunas idênticas.
 7. **Build bloco:** `buildInvoiceBlock_(newClosing, parcelaRows)` monta `[blank, ...parcelaRows, ...fixedRows, blank, blank, blank]` (parcelas **acima** das fixas — entradas dinâmicas têm prioridade visual). Chama `loadFixedExpenses_()` internamente; se essa lança (aba `despesas-fixas` malformada) → `fixed_expenses_failed` com detail.
@@ -84,10 +86,10 @@ Helper `rolloverParcelaRow_(rowValues, newClosing)`:
 
 ## Implementações
 
-- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `newInvoice_`, `buildInvoiceBlock_`, `applyInvoiceBlock_`.
-- **Helpers:** [apps-script/shared/Helpers.gs](../../../apps-script/shared/Helpers.gs) — `findCurrentInvoice_`, `rolloverParcelaRow_`.
-- **Dispatcher:** [apps-script/dashboard/Dashboard.gs](../../../apps-script/dashboard/Dashboard.gs) — `case "newInvoice"` em `doPost`.
-- **Frontend:** [app/lib/features/inicio/inicio_page.dart](../../../app/lib/features/inicio/inicio_page.dart) — menu hambúrguer + dialog de confirmação. [app/lib/core/rules/invoice_closing.dart](../../../app/lib/core/rules/invoice_closing.dart) — porta Dart de `nextInvoiceClosingDate_()` (preview da data no dialog).
+- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `newInvoice_`, `previewNewInvoice_`, `buildInvoiceBlock_`, `applyInvoiceBlock_`.
+- **Helpers:** [apps-script/shared/Helpers.gs](../../../apps-script/shared/Helpers.gs) — `newInvoiceClosingDate_(sheet)`, `latestInvoiceClosingInSheet_`, `findCurrentInvoice_`, `rolloverParcelaRow_`.
+- **Dispatcher:** [apps-script/dashboard/Dashboard.gs](../../../apps-script/dashboard/Dashboard.gs) — `case "newInvoice"` em `doPost`, `case "newInvoicePreview"` em `doGet`.
+- **Frontend:** [app/lib/features/inicio/inicio_page.dart](../../../app/lib/features/inicio/inicio_page.dart) — menu hambúrguer + dialog de confirmação (busca a data via `previewNewInvoice()`). [app/lib/api/endpoints.dart](../../../app/lib/api/endpoints.dart) — `newInvoice()` e `previewNewInvoice()`. (A antiga porta Dart `invoice_closing.dart` foi removida — o cálculo virou dependente da planilha.)
 
 ## Specs relacionadas
 

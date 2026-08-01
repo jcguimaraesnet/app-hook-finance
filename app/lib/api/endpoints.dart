@@ -48,4 +48,12 @@ class ApiEndpoints {
     final r = await _client.post('newInvoice', const {});
     return NewInvoiceResponse.fromJson(r);
   }
+
+  /// Preview read-only da data que `newInvoice()` criaria agora (última fatura
+  /// da planilha + 1 mês). Usado pelo dialog de confirmação. Só `invoiceClosing`
+  /// vem preenchido — `fixedCount`/`parcelaCount` ficam nulos.
+  Future<NewInvoiceResponse> previewNewInvoice() async {
+    final r = await _client.get('newInvoicePreview');
+    return NewInvoiceResponse.fromJson(r);
+  }
 }

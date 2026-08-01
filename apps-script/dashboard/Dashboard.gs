@@ -9,6 +9,8 @@ function doGet(e) {
       return jsonResponse_(getHistoricalSummary(e.parameter.token));
     case "lastEntries":
       return jsonResponse_(getLastEntries(e.parameter.token, parseInt(e.parameter.n, 10) || 10));
+    case "newInvoicePreview":
+      return jsonResponse_(previewNewInvoice_(e.parameter.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }

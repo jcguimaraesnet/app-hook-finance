@@ -76,14 +76,18 @@ function latestInvoiceClosingInSheet_(sheet) {
   return bestStr;
 }
 
-// Fatura "nova" para o gatilho manual (Nova fatura). É a fatura DEPOIS da que
-// está acumulando agora — i.e., um mês após `nextInvoiceClosingDate_()`.
-// Ex.: hoje 26/05/2026 → nextInvoiceClosingDate_=06/06/2026 (acumulando) →
-// newInvoiceClosingDate_=06/07/2026 (ainda não começou).
+// Fatura "nova" para o gatilho manual (Nova fatura). Ancorada na fatura mais
+// recente JÁ registrada na planilha (maior data da col A) + 1 mês — NÃO em `now`.
+// Mesma filosofia do webhook (latestInvoiceClosingInSheet_): "Nova fatura" cria
+// sempre a fatura imediatamente seguinte à última que existe na base, seja qual
+// for a data de hoje. Se a planilha só tem headers (primeiríssima fatura), cai
+// em nextInvoiceClosingDate_() (a acumulando a partir de hoje).
+// Ex.: última fatura na planilha = 06/07/2026 → newInvoiceClosingDate_=06/08/2026.
 // Spec: docs/specs/rules/invoice-closing-date.md
-function newInvoiceClosingDate_() {
-  const current = nextInvoiceClosingDate_();
-  const parts = current.split("/");
+function newInvoiceClosingDate_(sheet) {
+  const latest = latestInvoiceClosingInSheet_(sheet);
+  if (!latest) return nextInvoiceClosingDate_();
+  const parts = latest.split("/");
   let mm = parseInt(parts[1], 10) + 1;
   let yyyy = parseInt(parts[2], 10);
   if (mm > 12) {

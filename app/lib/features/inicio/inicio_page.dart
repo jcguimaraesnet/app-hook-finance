@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/bucket_deltas.dart';
-import '../../core/rules/invoice_closing.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -90,8 +89,43 @@ class _InicioPageState extends ConsumerState<InicioPage> {
 
     Future<void> onNovaFatura() async {
       if (_creatingInvoice) return;
-      final closing = newInvoiceClosingDate();
       final messenger = ScaffoldMessenger.of(context);
+
+      // A data agora depende do estado da planilha (última fatura + 1 mês), então
+      // o cliente não a computa localmente: busca no backend antes de confirmar.
+      setState(() => _creatingInvoice = true);
+      final NewInvoiceResponse preview;
+      try {
+        preview = await ref.read(apiProvider).previewNewInvoice();
+      } catch (e) {
+        if (mounted) setState(() => _creatingInvoice = false);
+        messenger.showSnackBar(SnackBar(
+          content: Text('Falha ao calcular a próxima fatura: $e'),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: BloomColors.bad,
+        ));
+        return;
+      }
+      if (!mounted) return;
+      if (!preview.ok || preview.invoiceClosing == null) {
+        setState(() => _creatingInvoice = false);
+        messenger.showSnackBar(SnackBar(
+          content: Text(preview.error == 'unauthorized'
+              ? 'Sessão expirada. Saia e entre de novo.'
+              : 'Falha ao calcular a próxima fatura: ${preview.error ?? "erro desconhecido"}'),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: BloomColors.bad,
+        ));
+        return;
+      }
+      final closing = preview.invoiceClosing!;
+
+      if (!context.mounted) {
+        setState(() => _creatingInvoice = false);
+        return;
+      }
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -121,10 +155,13 @@ class _InicioPageState extends ConsumerState<InicioPage> {
           ],
         ),
       );
-      if (confirmed != true) return;
+      if (confirmed != true) {
+        if (mounted) setState(() => _creatingInvoice = false);
+        return;
+      }
       if (!mounted) return;
+      // _creatingInvoice já está true desde a chamada de preview.
 
-      setState(() => _creatingInvoice = true);
       String? successMsg;
       String? errorMsg;
       try {

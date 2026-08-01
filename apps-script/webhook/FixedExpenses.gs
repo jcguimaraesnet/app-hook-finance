@@ -99,8 +99,6 @@ function newInvoice_(token) {
   const auth = checkToken_(token);
   if (auth) return auth;
 
-  const newClosing = newInvoiceClosingDate_();
-
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) {
     return { ok: false, error: "lock_timeout" };
@@ -108,6 +106,11 @@ function newInvoice_(token) {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     if (!sheet) return { ok: false, error: "sheet_not_found" };
+
+    // Data de fechamento ancorada na última fatura da planilha + 1 mês. Lida
+    // DENTRO do lock pra ver o estado consistente (nenhum webhook/insert em voo).
+    // Spec: docs/specs/rules/invoice-closing-date.md
+    const newClosing = newInvoiceClosingDate_(sheet);
 
     // Dedup: já existe alguma linha com essa data de fechamento?
     const last = sheet.getLastRow();
@@ -150,6 +153,19 @@ function newInvoice_(token) {
   } finally {
     try { lock.releaseLock(); } catch (_) {}
   }
+}
+
+// Endpoint read-only (GET): devolve a data de fechamento que "Nova fatura"
+// criaria agora (última fatura da planilha + 1 mês), sem inserir nada. Usado
+// pelo dialog de confirmação do app pra exibir a data antes do POST — já que
+// o cálculo depende do estado da planilha e o cliente não consegue prevê-lo.
+// Spec: docs/specs/rules/new-invoice.md
+function previewNewInvoice_(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: "sheet_not_found" };
+  return { ok: true, invoiceClosing: newInvoiceClosingDate_(sheet) };
 }
 
 // One-shot — rodar manualmente no editor do Apps Script para popular a aba

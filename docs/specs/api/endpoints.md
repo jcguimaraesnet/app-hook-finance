@@ -28,6 +28,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `monthData` | `token`, `month?` (`"DD/MM/YYYY"`) | `{ ok, month, rows[] }` | Linhas do mês especificado, ou do mais recente se omitido. |
 | `historicalSummary` | `token` | `{ ok, months[], history: { months[], totals[], julioPessoal[], daniPessoal[] } }` | Agregado pré-computado dos últimos 12 meses. |
 | `lastEntries` | `token`, `n` (default 10) | `{ ok, entries[] }` | Últimas N linhas inseridas (com `row` 1-indexed para edit/delete). |
+| `newInvoicePreview` | `token` | `{ ok, invoiceClosing }` | Read-only: data que `newInvoice` criaria agora (última fatura da planilha + 1 mês), sem inserir nada. Usado pelo dialog de confirmação. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `(none)` ou desconhecido | — | `{ ok: false, error: "unknown_action" }` | Não há landing page; backend é JSON-only. |
 
 ### POST endpoints (body JSON, `Content-Type: text/plain` para evitar preflight CORS)
