@@ -11,8 +11,17 @@ function loadFixedExpenses_() {
   if (last < 2) throw new Error(`aba "${FIXED_SHEET_NAME}" está vazia`);
 
   const rows = sheet.getRange(2, 1, last - 1, 7).getValues();
-  return rows.map((r, i) => {
+  const result = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     const line = i + 2;
+
+    // Linha totalmente em branco (todas as 7 colunas vazias) é ignorada:
+    // getLastRow() pode incluir linhas vazias no fim/meio quando sobra
+    // conteúdo ou formatação numa célula qualquer. Uma linha PARCIALMENTE
+    // preenchida continua sendo validada — é erro real, não branco intencional.
+    if (r.every((c) => String(c).trim() === "")) continue;
+
     const [dia, descricao, valor, origem, categoria, rateio, acerto] = r;
 
     if (!Number.isInteger(dia) || dia < 1 || dia > 31)
@@ -29,7 +38,7 @@ function loadFixedExpenses_() {
     if (acertoStr !== "" && acertoStr !== "Sim")
       throw new Error(`despesas-fixas L${line}: acerto inválido (${acertoStr})`);
 
-    return {
+    result.push({
       refDay: dia,
       description: descricao,
       value: valor,
@@ -37,8 +46,9 @@ function loadFixedExpenses_() {
       categoria,
       rateio: String(rateio),
       acerto: acertoStr,
-    };
-  });
+    });
+  }
+  return result;
 }
 
 // Monta o bloco "início de fatura". Chamado pelo gatilho manual `newInvoice_`.

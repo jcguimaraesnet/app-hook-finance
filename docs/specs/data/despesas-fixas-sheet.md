@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-26
+last_updated: 2026-08-01
 ---
 
 # Despesas-fixas — schema da aba
@@ -28,7 +28,8 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 ### Leitura
 
 - Linha 1 = headers. Backend lê de `A2:G{last}`.
-- Toda linha é validada — qualquer violação lança erro com prefixo `despesas-fixas L{N}:` e webhook retorna 500.
+- **Linhas 100% vazias (todas as 7 colunas em branco/whitespace) são ignoradas** — tolera linha em branco no meio ou no fim, e o comum `getLastRow()` inflado por conteúdo/formatação residual numa célula qualquer. Uma linha **parcialmente** preenchida NÃO é ignorada: continua validada (é erro real, não branco intencional).
+- As demais linhas são validadas — qualquer violação lança erro com prefixo `despesas-fixas L{N}:` e o gatilho retorna `fixed_expenses_failed`.
 - A ordem das linhas na aba determina a ordem visual do bloco inserido na aba `Despesas`.
 
 ### Escrita
@@ -41,8 +42,9 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 - **Aba ausente:** `loadFixedExpenses_()` lança `aba "despesas-fixas" não existe`.
 - **Aba só com headers:** lança `aba "despesas-fixas" está vazia`.
 - **Linha malformada (qualquer campo):** lança erro identificando o número da linha e o campo. Webhook 500 — primeira compra da fatura não entra até a aba ser corrigida.
-- **`Valor = 0`:** legítimo (linha placeholder, ex.: `"Condomínio 1/2"` da Dani). Inserida igual; não polui totais.
-- **Linhas em branco no meio:** quebram a leitura (cair em validação de `dia`). Manter sem linhas em branco entre dados.
+- **`Valor = 0`:** legítimo (linha placeholder, ex.: `"Condomínio 1/2"` da Dani). Inserida igual; não polui totais. Não é confundida com linha em branco (o `0` conta como conteúdo).
+- **Linhas 100% em branco (meio ou fim):** ignoradas silenciosamente — não quebram mais a leitura.
+- **Linha parcialmente preenchida** (ex.: só `Descrição`, faltando `Rateio`): ainda lança `despesas-fixas L{N}: …`. Preencher a linha ou apagá-la inteira.
 
 ## Implementações
 
