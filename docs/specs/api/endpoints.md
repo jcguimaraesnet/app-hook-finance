@@ -39,6 +39,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela, data, dataRef, origem, banco? }` | `{ ok, row }` | Edita colunas A(1), B(2), C(3), D(4), E(5), F(6), G(7), I(9); H(8) só se `banco` vier no body. **Não** edita J. |
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
+| `ensureHeader` | — | `{ ok, inserted }` | Garante que a linha 1 é o cabeçalho (`SHEET_HEADERS`). Se a linha 1 não começa com `Data`, insere uma linha acima e grava os headers (`inserted: true`); senão só reescreve (`inserted: false`). Idempotente, com `LockService`. Manutenção. |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
 #### `addEntry` — detalhes
@@ -63,6 +64,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - `unauthorized` — token inválido.
 - `missing_descricao` / `missing_valor` / `missing_origem` — campo obrigatório vazio/ausente.
 - `invalid_valor` — `valor` não é número.
+- `invalid_data` — `data` não casa `^\d{2}/\d{2}/\d{4}$` (pós-2026-09-12).
 - `invalid_origem` / `invalid_rateio` / `invalid_banco` / `invalid_acerto` — fora do enum.
 - `invalid_parcela` — string não vazia que não casa `^\d+\/\d+$`.
 - `lock_timeout` — `LockService` não conseguiu lock em 10s.
@@ -70,6 +72,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 
 **Comportamento**:
 - Insere no **topo** via `insertRowsBefore(2, 1)` + `setValues`, mantendo a convenção do webhook (linha 2 = mais recente). Sem reorder por data — o cliente que decide se faz sentido inserir no topo um lançamento antigo.
+- Col A recebe `parseBrDate_(data)` (Date object) + `setNumberFormat("dd/MM/yyyy")`, igual ao webhook. Até 2026-09-12 gravava a string crua — causa das datas em texto na planilha.
 - Força `setNumberFormat("@")` na coluna I (Parcela) antes do `setValue` (mesmo cuidado que `updateEntry`).
 - Usa `LockService.getScriptLock()` com timeout 10s (mesmo padrão do webhook) pra serializar inserções concorrentes.
 
@@ -93,10 +96,12 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 
 **Erros adicionais** (além de `unauthorized`/`invalid_row`/`row_out_of_range`/`sheet_not_found`):
 - `missing_data` / `missing_dataRef` / `missing_origem` — campo vazio ou ausente.
+- `invalid_data` — `data` fora de `DD/MM/YYYY` (pós-2026-09-12).
 - `invalid_origem` / `invalid_banco` — fora do enum.
 
 **Comportamento**:
-- Força `setNumberFormat("@")` nas colunas A (data, evita auto-parse "DD/MM/YYYY" como datetime) e B (dataRef) e I (parcela).
+- Col A: grava `parseBrDate_(data)` (Date) + `setNumberFormat("dd/MM/yyyy")`. **Até 2026-09-12** forçava `@` e gravava a string — toda linha editada pelo app ficava com a data da fatura em texto. Editar a linha de novo agora converte para Date.
+- Força `setNumberFormat("@")` nas colunas B (dataRef) e I (parcela).
 - Sem `LockService` — assume baixa concorrência em edição manual (diferente do `addEntry`/webhook).
 
 #### `newInvoice` — detalhes

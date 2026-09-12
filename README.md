@@ -88,7 +88,7 @@ A linha 1 da planilha deve ter os seguintes cabeçalhos, na ordem:
 | 5 | Origem | Sempre `Cartão` (constante). |
 | 6 | Categoria | Inferida via [Classifier](apps-script/webhook/Classifier.gs) a partir do histórico. Vazia se não houver match suficiente. |
 | 7 | Rateio | Inferido via [Classifier](apps-script/webhook/Classifier.gs) a partir do histórico. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. Vazio se não houver match suficiente. |
-| 8 | Banco | `Santander` ou `Revolut`, decidido pelo padrão da notificação que casou (ver "Formato esperado do `text`"). Vazio se nenhum padrão casou. Até 2026-09-12 guardava os 4 dígitos finais do cartão; migração via `migrateCardToBanco()` em [apps-script/shared/Maintenance.gs](apps-script/shared/Maintenance.gs). |
+| 8 | Banco | `Santander` ou `Revolut`, decidido pelo padrão da notificação que casou (ver "Formato esperado do `text`"). Vazio se nenhum padrão casou. Até 2026-09-12 guardava os 4 dígitos finais do cartão; faturas fechadas mantêm o valor antigo de propósito (só a fatura 06/10/2026 foi migrada). |
 | 9 | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª de 3). Vazio quando à vista. Editável pelo modal da aba Lançamento via [updateEntry](apps-script/dashboard/Dashboard.gs) — o stepper edita só o total; parcela_atual é sempre gravada como `1`. |
 | 10 | Acerto | `Sim` quando a linha deve entrar no rateio do "Acerto Final". Vazio caso contrário. |
 

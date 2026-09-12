@@ -37,6 +37,8 @@ function doPost(e) {
       return jsonResponse_(deleteEntry(body.token, body.row));
     case "newInvoice":
       return jsonResponse_(newInvoice_(body.token));
+    case "ensureHeader":
+      return jsonResponse_(ensureHeader(body.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }
@@ -293,6 +295,21 @@ function getLastEntries(token, n) {
 const ADD_ENTRY_ORIGEMS = ["Cartão", "Pix (contas)", "Pessoal", "Empregados", "Contas"];
 const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
 const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
+const BR_DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/;
+
+// Headers da linha 1. Espelha docs/specs/data/despesas-sheet.md.
+const SHEET_HEADERS = [
+  "Data",
+  "Data Referência",
+  "Descrição",
+  "Valor",
+  "Origem",
+  "Categoria",
+  "Rateio",
+  "Banco",
+  "Parcela",
+  "Acerto",
+];
 
 // Função, não const global: o Apps Script avalia dashboard/Dashboard.gs antes
 // de shared/Constants.gs, e um `const` no topo referenciando BANCOS quebraria
@@ -337,6 +354,7 @@ function addEntry(token, fields) {
   const tz = Session.getScriptTimeZone();
   const now = new Date();
   const data = String(fields.data || Utilities.formatDate(now, tz, "dd/MM/yyyy")).trim();
+  if (!BR_DATE_RE.test(data)) return { ok: false, error: "invalid_data" };
   const dataRef = String(
     fields.dataRef || Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm"),
   ).trim();
@@ -351,7 +369,7 @@ function addEntry(token, fields) {
     if (!sheet) return { ok: false, error: "sheet_not_found" };
 
     insertRowsAtTop_(sheet, [[
-      data,
+      parseBrDate_(data), // col A é Date, como no webhook — nunca string.
       dataRef,
       descricao,
       valor,
@@ -362,6 +380,7 @@ function addEntry(token, fields) {
       "", // Parcela — preenchida abaixo com setNumberFormat("@") protegido.
       acerto,
     ]]);
+    sheet.getRange(2, 1).setNumberFormat("dd/MM/yyyy");
     if (parcela) {
       const parcelaCell = sheet.getRange(2, 9);
       parcelaCell.setNumberFormat("@");
@@ -391,6 +410,7 @@ function updateEntry(token, row, fields) {
 
   const data = String(fields.data || "").trim();
   if (!data) return { ok: false, error: "missing_data" };
+  if (!BR_DATE_RE.test(data)) return { ok: false, error: "invalid_data" };
 
   const dataRef = String(fields.dataRef || "").trim();
   if (!dataRef) return { ok: false, error: "missing_dataRef" };
@@ -409,10 +429,12 @@ function updateEntry(token, row, fields) {
 
   // Colunas: A=data(1), B=dataRef(2), C=descricao(3), D=valor(4), E=origem(5),
   // F=categoria(6), G=rateio(7), H=banco(8, opcional), I=parcela(9)
-  // Força TEXT na col A pra evitar auto-parse de "DD/MM/YYYY" como datetime.
+  // Col A é Date (mesma convenção do webhook e do Nova fatura). Até 2026-09-12
+  // este endpoint forçava "@" e gravava string — era a origem das datas de
+  // fatura em texto na planilha. Grava Date e força o formato de exibição.
   const dataCell = sheet.getRange(row, 1);
-  dataCell.setNumberFormat("@");
-  dataCell.setValue(data);
+  dataCell.setNumberFormat("dd/MM/yyyy");
+  dataCell.setValue(parseBrDate_(data));
 
   // Força TEXT na col B pra evitar auto-parse pra datetime do Sheets.
   const dataRefCell = sheet.getRange(row, 2);
@@ -432,6 +454,40 @@ function updateEntry(token, row, fields) {
   parcelaCell.setValue(String(fields.parcela || ""));
 
   return { ok: true, row: row };
+}
+
+// Garante que a linha 1 é o cabeçalho. Se a linha 1 já começa com "Data",
+// só reescreve os headers (idempotente). Se a linha 1 for um lançamento (caso
+// real em 2026-09-12: header apagado e uma compra ficou invisível pro app,
+// que lê a partir da linha 2), insere uma linha acima e grava os headers nela.
+// Spec: docs/specs/data/despesas-sheet.md
+function ensureHeader(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(10000)) {
+      return { ok: false, error: "lock_timeout" };
+    }
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) return { ok: false, error: "sheet_not_found" };
+    const first = String(sheet.getRange(1, 1).getValue() || "").trim();
+    const hadHeader = first === SHEET_HEADERS[0];
+    if (!hadHeader) sheet.insertRowsBefore(1, 1);
+    const range = sheet.getRange(1, 1, 1, SHEET_HEADERS.length);
+    range.setNumberFormat("@");
+    range.setValues([SHEET_HEADERS]);
+    range.setFontWeight("bold");
+    return { ok: true, inserted: !hadHeader };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (_) {
+      // ignora
+    }
+  }
 }
 
 function deleteEntry(token, row) {

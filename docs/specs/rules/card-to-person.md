@@ -16,7 +16,7 @@ Cada troca de cartão (vencimento, fraude, upgrade) exigia atualizar a constante
 - Col H (`Banco`): enum `Santander` | `Revolut` | `""`.
 - Webhook: o padrão da notificação define o banco (`PURCHASE_RE` → Santander; `NEW_APP_VALUE_RE` → Revolut). O final do cartão presente no texto do Santander é ignorado.
 - `addEntry` / `updateEntry`: campo `banco` (opcional, validado contra o enum).
-- Migração dos valores legados: `migrateCardToBanco()` em `apps-script/shared/Maintenance.gs` (`2236` → `Revolut`; qualquer outro numérico → `Santander`).
+- Valores legados: **não** foram migrados em massa. Só a fatura em aberto em 2026-09-12 (06/10/2026) teve col H convertida (`2236` → `Revolut`; qualquer outro numérico → `Santander`), via `updateEntry` com `banco`. Faturas fechadas continuam com os dígitos, por decisão do usuário — o modal de edição exibe como `(?) 784`.
 
 ## Histórico (para referência)
 
