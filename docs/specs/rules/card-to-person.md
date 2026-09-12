@@ -1,50 +1,30 @@
 ---
-status: stable
-last_updated: 2026-05-26
+status: removed
+last_updated: 2026-09-12
 ---
 
-# Card to person — mapping de finais de cartão
+# Card to person — mapping de finais de cartão (REMOVIDO)
 
-Os 4 dígitos finais do cartão (col H) identificam o titular. Constante única.
+> **Removido em 2026-09-12.** A coluna H deixou de guardar os 4 dígitos finais do cartão e passou a guardar o **banco emissor** (`Santander` | `Revolut`). Ver [../data/despesas-sheet.md](../data/despesas-sheet.md) e [webhook-parser.md](webhook-parser.md).
 
-## Contexto
+## Por que foi removido
 
-A notificação do banco vem com final do cartão; o titular não. Mapeamento estático em `apps-script/shared/Constants.gs`. Hoje **não é usado para nenhuma regra de UI** — é só metadata informativa. Mas existe potencial uso futuro (Flutter pode mostrar avatar do titular ao lado da despesa, ou agrupar por titular).
+Cada troca de cartão (vencimento, fraude, upgrade) exigia atualizar a constante `CARDS` no backend e redeployar. O mapping nunca foi usado por nenhuma regra de UI ou de cálculo — era só metadata. O que interessa na prática é a **origem** do lançamento (qual banco), que é estável e não muda quando o plástico muda.
 
-## Regras
+## O que substituiu
 
-```js
-const CARDS = {
-  "1018": "Julio",
-  "9727": "Julio",
-  "2236": "Julio",
-  "4750": "Dani",
-  "0784": "Dani",
-};
+- Col H (`Banco`): enum `Santander` | `Revolut` | `""`.
+- Webhook: o padrão da notificação define o banco (`PURCHASE_RE` → Santander; `NEW_APP_VALUE_RE` → Revolut). O final do cartão presente no texto do Santander é ignorado.
+- `addEntry` / `updateEntry`: campo `banco` (opcional, validado contra o enum).
+- Migração dos valores legados: `migrateCardToBanco()` em `apps-script/shared/Maintenance.gs` (`2236` → `Revolut`; qualquer outro numérico → `Santander`).
+
+## Histórico (para referência)
+
+Mapping que existia até a remoção:
+
+```
+1018, 9727, 2236 → Julio
+4750, 0784       → Dani
 ```
 
-> `2236` é hardcodado pelo webhook quando a notificação vem do app novo (padrão `Pagou R$ …`). Ver [../rules/webhook-parser.md](webhook-parser.md).
-
-`cardToPerson(last4) → "Julio" | "Dani" | null`:
-
-- Lookup direto na constante. Sem fallback heurístico.
-- `last4` desconhecido → `null` (ou `undefined`/`""` em JS — implementação escolhe).
-
-A constante é **fonte da verdade** desse mapping. Adicionar/remover cartão = editar essa constante (e propagar para PWA/Flutter quando essas codebases consumirem).
-
-## Edge cases
-
-- **`last4` com tamanho diferente de 4:** ainda funciona se a chave bater literalmente. Notificações estranhas (`"final 1018A"`) não casam.
-- **Cartão extra do mesmo titular:** acrescentar nova chave apontando pro nome.
-- **Cartão de terceiro** (ex.: pais visitando): hoje seria mapeado como "(desconhecido)". Pode-se acrescentar um terceiro nome (ex.: `"Alzira"`) — `Person` em código tipa apenas Julio/Dani, então essa expansão pediria revisar tipos.
-
-## Implementações
-
-- **Backend (autoritativo):** [apps-script/shared/Constants.gs](../../../apps-script/shared/Constants.gs) — constante `CARDS`.
-- **PWA atual:** N/A (não usado). Quando usar: `web/src/core/rules/cardToPerson.ts` (Onda 2/futuro).
-- **Flutter:** se usado, `app/lib/core/rules/card_to_person.dart`.
-
-## Specs relacionadas
-
-- [../data/despesas-sheet.md](../data/despesas-sheet.md) — col H (`Cartão`)
-- [../api/webhook.md](../api/webhook.md)
+Este arquivo fica como tombstone para que links antigos não quebrem. Não reintroduzir sem revisar a decisão acima.

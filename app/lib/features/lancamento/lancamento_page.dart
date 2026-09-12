@@ -334,10 +334,11 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
   final _valorCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _categoriaCtrl = TextEditingController();
-  final _cardCtrl = TextEditingController();
 
   String _origem = 'Cartão'; // 'Cartão' | 'Pix (contas)'
   String _rateio = 'Metade';
+  // Sem default de propósito: escolher errado é pior que não escolher.
+  String _banco = ''; // '' | 'Santander' | 'Revolut'
   int _parcela = 1;
   bool _acerto = false;
   bool _busy = false;
@@ -363,7 +364,6 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
     _valorCtrl.dispose();
     _descCtrl.dispose();
     _categoriaCtrl.dispose();
-    _cardCtrl.dispose();
     super.dispose();
   }
 
@@ -385,6 +385,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
         'missing_origem' => 'Selecione a forma.',
         'invalid_origem' => 'Forma inválida.',
         'invalid_rateio' => 'Divisão inválida.',
+        'invalid_banco' => 'Banco inválido.',
         'invalid_parcela' => 'Parcela inválida.',
         'invalid_acerto' => 'Acerto inválido.',
         'lock_timeout' => 'Backend ocupado. Tente de novo.',
@@ -403,13 +404,17 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
       setState(() => _error = 'Informe um valor maior que zero.');
       return;
     }
+    final isCartao = _origem == 'Cartão';
+    if (isCartao && _banco.isEmpty) {
+      setState(() => _error = 'Selecione o banco.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final api = ref.read(apiProvider);
-      final isCartao = _origem == 'Cartão';
       final fields = AddEntryFields(
         descricao: desc,
         valor: valor,
@@ -417,7 +422,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
         data: formatBrDate(_data),
         categoria: _categoriaCtrl.text.trim(),
         rateio: _rateio,
-        cardLast4: isCartao ? _cardCtrl.text.trim() : '',
+        banco: isCartao ? _banco : '',
         parcela: isCartao && _parcela > 1 ? '1/$_parcela' : '',
         acerto: !isCartao && _acerto ? 'Sim' : '',
       );
@@ -623,17 +628,13 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel(label: 'CARTÃO (4 dígitos)'),
+                      _FieldLabel(label: 'BANCO'),
                       const SizedBox(height: 6),
-                      TextField(
-                        controller: _cardCtrl,
-                        keyboardType: TextInputType.number,
-                        maxLength: 4,
-                        decoration: const InputDecoration(
-                          hintText: '0000',
-                          isDense: true,
-                          counterText: '',
-                        ),
+                      _Segmented(
+                        options: const ['Santander', 'Revolut'],
+                        selected: _banco,
+                        onChange: (v) => setState(() => _banco = v),
+                        compact: true,
                       ),
                     ],
                   ),

@@ -35,8 +35,8 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 
 | `body.action` | Body extra | Resposta | Descrição |
 |---|---|---|---|
-| `addEntry` | `fields: { data?, dataRef?, descricao, valor, origem, categoria?, rateio?, cardLast4?, parcela?, acerto? }` | `{ ok, row }` | Insere uma nova linha no **topo** (row 2) da planilha. `row` na resposta é sempre `2` (1-indexed). Não há dedup. |
-| `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela, data, dataRef, origem }` | `{ ok, row }` | Edita colunas A(1), B(2), C(3), D(4), E(5), F(6), G(7), I(9). **Não** edita H, J. |
+| `addEntry` | `fields: { data?, dataRef?, descricao, valor, origem, categoria?, rateio?, banco?, parcela?, acerto? }` | `{ ok, row }` | Insere uma nova linha no **topo** (row 2) da planilha. `row` na resposta é sempre `2` (1-indexed). Não há dedup. |
+| `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela, data, dataRef, origem, banco? }` | `{ ok, row }` | Edita colunas A(1), B(2), C(3), D(4), E(5), F(6), G(7), I(9); H(8) só se `banco` vier no body. **Não** edita J. |
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
@@ -55,7 +55,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - `dataRef` (string `DD/MM/YYYY` ou `DD/MM/YYYY HH:MM`) — default: agora no TZ do script.
 - `categoria` (string livre)
 - `rateio` (string ∈ `""` \| `Julio` \| `Dani` \| `Metade` \| `Alzira`)
-- `cardLast4` (string, 4 dígitos esperados mas não validado)
+- `banco` (string ∈ `""` \| `Santander` \| `Revolut`) — banco emissor do cartão; só faz sentido com `origem = Cartão`. **Pré-2026-09-12** o campo era `cardLast4` (4 dígitos); `cardLast4` no body agora é ignorado.
 - `parcela` (string vazia OU `"X/Y"` onde X,Y são dígitos)
 - `acerto` (string vazia OU `"Sim"`)
 
@@ -63,7 +63,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - `unauthorized` — token inválido.
 - `missing_descricao` / `missing_valor` / `missing_origem` — campo obrigatório vazio/ausente.
 - `invalid_valor` — `valor` não é número.
-- `invalid_origem` / `invalid_rateio` / `invalid_acerto` — fora do enum.
+- `invalid_origem` / `invalid_rateio` / `invalid_banco` / `invalid_acerto` — fora do enum.
 - `invalid_parcela` — string não vazia que não casa `^\d+\/\d+$`.
 - `lock_timeout` — `LockService` não conseguiu lock em 10s.
 - `sheet_not_found` — `SHEET_NAME` não existe na planilha.
@@ -88,9 +88,12 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 - `fields.dataRef` (string `DD/MM/YYYY HH:MM`, não-vazia)
 - `fields.origem` (string; mesmo enum de `addEntry`)
 
+**Campo opcional** (pós-2026-09-12):
+- `fields.banco` (string ∈ `""` \| `Santander` \| `Revolut`). Se **ausente** do body (`undefined`), col H não é tocada — mantém compatibilidade com clientes antigos (APK anterior) que não conhecem o campo. Se presente, é validado e gravado (inclusive `""`, que limpa a célula).
+
 **Erros adicionais** (além de `unauthorized`/`invalid_row`/`row_out_of_range`/`sheet_not_found`):
 - `missing_data` / `missing_dataRef` / `missing_origem` — campo vazio ou ausente.
-- `invalid_origem` — `origem` fora do enum.
+- `invalid_origem` / `invalid_banco` — fora do enum.
 
 **Comportamento**:
 - Força `setNumberFormat("@")` nas colunas A (data, evita auto-parse "DD/MM/YYYY" como datetime) e B (dataRef) e I (parcela).
@@ -132,11 +135,13 @@ Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
   "origem": "Cartão",
   "categoria": "Alimentação",
   "rateio": "Metade",
-  "cardLast4": "1018",
+  "banco": "Santander",
   "parcela": "",
   "acerto": ""
 }
 ```
+
+> `banco` substituiu `cardLast4` em 2026-09-12. Linhas ainda não migradas podem devolver o valor legado numérico (ex.: `"784"`) nesse campo — clientes devem exibir como está, sem quebrar.
 
 ### Estrutura de `Entry` (resposta de `lastEntries`)
 

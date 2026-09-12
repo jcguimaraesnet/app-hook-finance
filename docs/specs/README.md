@@ -34,9 +34,9 @@ docs/specs/
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
 │   ├── personal-summary.md         4 tiles (total/cartão/parcelado atual+próx) por pessoa
 │   ├── classifier.md               Jaccard sobre histórico (categoria/rateio)
-│   ├── webhook-parser.md           PURCHASE_RE
+│   ├── webhook-parser.md           PURCHASE_RE (Santander) + NEW_APP_VALUE_RE (Revolut)
 │   ├── invoice-closing-date.md     próximo fechamento + INVOICE_CLOSING_DAY
-│   ├── card-to-person.md           1018,9727→Julio; 4750,0784→Dani
+│   ├── card-to-person.md           REMOVIDO (col H virou Banco: Santander|Revolut)
 │   ├── fixed-expenses.md           insercao automática de despesas mensais fixas
 │   └── webhook-dedup.md            janela de 5min via SHA-256
 ├── cards/

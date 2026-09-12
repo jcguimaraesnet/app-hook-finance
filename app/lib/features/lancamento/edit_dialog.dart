@@ -17,6 +17,9 @@ const List<String> _origemOptions = [
   'Contas',
 ];
 
+// Spec: docs/specs/data/despesas-sheet.md (col H, Banco)
+const List<String> _bancoOptions = ['', 'Santander', 'Revolut'];
+
 class EditDialog extends StatefulWidget {
   final Entry entry;
   final List<ExpenseRow> rowsForCategoriaSuggestions;
@@ -43,6 +46,7 @@ class _EditDialogState extends State<EditDialog> {
   late DateTime _data;
   late DateTime _dataRef;
   late String _origem;
+  late String _banco;
   bool _busy = false;
   String? _error;
 
@@ -62,6 +66,7 @@ class _EditDialogState extends State<EditDialog> {
     _data = parseBrDate(e.data);
     _dataRef = parseBrDateTime(e.dataRef);
     _origem = e.origem;
+    _banco = e.banco.trim();
   }
 
   @override
@@ -164,6 +169,7 @@ class _EditDialogState extends State<EditDialog> {
         data: formatBrDate(_data),
         dataRef: formatBrDateTime(_dataRef),
         origem: _origem,
+        banco: _origem == 'Cartão' ? _banco : '',
       );
       final r = await widget.api.updateEntry(widget.entry.row, fields);
       if (!mounted) return;
@@ -231,6 +237,13 @@ class _EditDialogState extends State<EditDialog> {
     final origemItems = <String>[..._origemOptions];
     if (_origem.isNotEmpty && !origemItems.contains(_origem)) {
       origemItems.add(_origem);
+    }
+
+    // Idem para banco: linhas pré-migração trazem os 4 dígitos do cartão
+    // (ex. "784"); mostramos como "(?) 784" até o usuário escolher o banco.
+    final bancoItems = <String>[..._bancoOptions];
+    if (_banco.isNotEmpty && !bancoItems.contains(_banco)) {
+      bancoItems.add(_banco);
     }
 
     return Dialog(
@@ -323,6 +336,29 @@ class _EditDialogState extends State<EditDialog> {
                 ],
                 onChanged: (v) => setState(() => _rateio = v ?? ''),
               ),
+              if (_origem == 'Cartão') ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: bancoItems.contains(_banco) ? _banco : '',
+                  decoration: const InputDecoration(labelText: 'Banco'),
+                  items: [
+                    for (final b in bancoItems)
+                      DropdownMenuItem(
+                        value: b,
+                        child: Text(
+                          b.isEmpty
+                              ? '(vazio)'
+                              : _bancoOptions.contains(b)
+                                  ? b
+                                  : '(?) $b',
+                        ),
+                      ),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() => _banco = v ?? ''),
+                ),
+              ],
               const SizedBox(height: 12),
               _ParcelaField(
                 parcela: _parcela,

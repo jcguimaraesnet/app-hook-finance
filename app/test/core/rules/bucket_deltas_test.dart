@@ -15,7 +15,7 @@ ExpenseRow _row({
       origem: origem,
       categoria: '',
       rateio: rateio,
-      cardLast4: '',
+      banco: '',
       parcela: '',
       acerto: '',
     );

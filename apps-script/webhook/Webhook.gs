@@ -1,12 +1,14 @@
+// Padrão Santander. "final \d+" é exigido para o match mas não capturado: o
+// número do cartão muda quando o plástico é trocado e não interessa ao modelo.
+// Spec: docs/specs/rules/webhook-parser.md
 const PURCHASE_RE =
-  /Compra.+?final\s+(\d+),.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
+  /Compra.+?final\s+\d+,.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
 // Padrão Revolut (app novo): title = descrição, text só tem o valor. Duas copies
 // já vistas: "😎 Pagou R$ <valor> em <desc> Crédito Disponível: R$ <limite>" e
 // "Valor gasto: R$ <valor>.\nCrédito disponível: R$ <limite>." (set/2026).
 // Spec: docs/specs/rules/webhook-parser.md
 const NEW_APP_VALUE_RE = /(?:Pagou|Valor\s+gasto:?)\s+R\$\s*(-?[\d.,]+)/i;
-const NEW_APP_CARD_LAST4 = "2236";
 
 // Janela de dedup (segundos). O app de notificação às vezes redispara o mesmo
 // payload 2-3 vezes em poucos segundos; descartamos repetições nesse intervalo.
@@ -69,7 +71,7 @@ function handleWebhookBody_(body) {
         ORIGEM,
         classification.categoria,
         classification.rateio,
-        parsed.cardLast4,
+        parsed.banco,
         "", // Parcela (vazio = à vista; se parcelado, usuário marca via modal "1/N")
         "", // Acerto (não aplicável a compras de Cartão)
       ],
@@ -107,7 +109,7 @@ function parsePurchase_(title, text) {
     refTime: "",
     description: "",
     value: "",
-    cardLast4: "",
+    banco: "",
   };
 
   const newAppMatch = text.match(NEW_APP_VALUE_RE);
@@ -119,17 +121,17 @@ function parsePurchase_(title, text) {
       refTime: Utilities.formatDate(now, tz, "HH:mm"),
       description: String(title || "").trim(),
       value: parseBrazilNumber_(newAppMatch[1]),
-      cardLast4: NEW_APP_CARD_LAST4,
+      banco: BANCO_REVOLUT,
     };
   }
 
   const m = text.match(PURCHASE_RE);
   if (!m) return empty;
   return {
-    refDate: normalizeDate_(m[3]),
-    refTime: m[4],
-    description: m[5].trim(),
-    value: parseBrazilNumber_(m[2]),
-    cardLast4: m[1],
+    refDate: normalizeDate_(m[2]),
+    refTime: m[3],
+    description: m[4].trim(),
+    value: parseBrazilNumber_(m[1]),
+    banco: BANCO_SANTANDER,
   };
 }

@@ -51,7 +51,7 @@ Recebe `sheet` (a aba `Despesas`) porque o cálculo depende do estado da planilh
 
 - **Compra exatamente no dia de fechamento:** segundo essa regra, ainda entra na fatura do mês seguinte. Se na prática o banco trata diferente, o usuário pode editar a col A manualmente; mas o webhook não sabe distinguir.
 - **Mudança de timezone do script:** afeta `now`. O timezone é configurado no Apps Script (Project Settings); padrão `America/Sao_Paulo`.
-- **Cartão com data de fechamento diferente por bandeira:** não suportado. Mudar a regra para multi-cartão exigiria lookup por `cardLast4` no [card-to-person.md](card-to-person.md). Não está em escopo.
+- **Banco com data de fechamento diferente:** não suportado. Mudar a regra para fechamento por banco exigiria lookup por `banco` (col H — ver [../data/despesas-sheet.md](../data/despesas-sheet.md)). Não está em escopo.
 
 ## Implementações
 

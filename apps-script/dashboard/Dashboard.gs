@@ -126,7 +126,7 @@ function getMonthData(token, month) {
       origem: String(r[4] || ""),
       categoria: String(r[5] || ""),
       rateio: String(r[6] || ""),
-      cardLast4: String(r[7] || ""),
+      banco: String(r[7] || ""),
       parcela: String(r[8] || "").trim(),
       acerto: String(r[9] || ""),
     }));
@@ -280,7 +280,7 @@ function getLastEntries(token, n) {
       origem: String(r[4] || ""),
       categoria: String(r[5] || ""),
       rateio: String(r[6] || ""),
-      cardLast4: String(r[7] || ""),
+      banco: String(r[7] || ""),
       parcela: String(r[8] || "").trim(),
       acerto: String(r[9] || ""),
     });
@@ -292,6 +292,7 @@ function getLastEntries(token, n) {
 // Enums aceitos por addEntry. Espelha o spec em docs/specs/data/despesas-sheet.md.
 const ADD_ENTRY_ORIGEMS = ["Cartão", "Pix (contas)", "Pessoal", "Empregados", "Contas"];
 const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
+const ADD_ENTRY_BANCOS = [""].concat(BANCOS);
 const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
 
 function addEntry(token, fields) {
@@ -316,6 +317,9 @@ function addEntry(token, fields) {
   const rateio = String(fields.rateio || "").trim();
   if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
 
+  const banco = String(fields.banco || "").trim();
+  if (ADD_ENTRY_BANCOS.indexOf(banco) < 0) return { ok: false, error: "invalid_banco" };
+
   const parcela = String(fields.parcela || "").trim();
   if (parcela && !ADD_ENTRY_PARCELA_RE.test(parcela)) {
     return { ok: false, error: "invalid_parcela" };
@@ -331,7 +335,6 @@ function addEntry(token, fields) {
     fields.dataRef || Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm"),
   ).trim();
   const categoria = String(fields.categoria || "").trim();
-  const cardLast4 = String(fields.cardLast4 || "").trim();
 
   const lock = LockService.getScriptLock();
   try {
@@ -349,7 +352,7 @@ function addEntry(token, fields) {
       origem,
       categoria,
       rateio,
-      cardLast4,
+      banco,
       "", // Parcela — preenchida abaixo com setNumberFormat("@") protegido.
       acerto,
     ]]);
@@ -390,8 +393,16 @@ function updateEntry(token, row, fields) {
   if (!origem) return { ok: false, error: "missing_origem" };
   if (ADD_ENTRY_ORIGEMS.indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
 
+  // `banco` é opcional: clientes antigos (APK pré-2026-09-12) não mandam o campo
+  // e não podem apagar a col H sem querer. Só validamos/gravamos se veio no body.
+  const hasBanco = fields.banco !== undefined && fields.banco !== null;
+  const banco = hasBanco ? String(fields.banco).trim() : "";
+  if (hasBanco && ADD_ENTRY_BANCOS.indexOf(banco) < 0) {
+    return { ok: false, error: "invalid_banco" };
+  }
+
   // Colunas: A=data(1), B=dataRef(2), C=descricao(3), D=valor(4), E=origem(5),
-  // F=categoria(6), G=rateio(7), I=parcela(9)
+  // F=categoria(6), G=rateio(7), H=banco(8, opcional), I=parcela(9)
   // Força TEXT na col A pra evitar auto-parse de "DD/MM/YYYY" como datetime.
   const dataCell = sheet.getRange(row, 1);
   dataCell.setNumberFormat("@");
@@ -407,6 +418,7 @@ function updateEntry(token, row, fields) {
   sheet.getRange(row, 5).setValue(origem);
   sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
   sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
+  if (hasBanco) sheet.getRange(row, 8).setValue(banco);
 
   // Força TEXT na col I (Parcela) pra evitar auto-parse de "1/3" como data.
   const parcelaCell = sheet.getRange(row, 9);
@@ -446,7 +458,7 @@ function mapRow_(r) {
     origem: String(r[4] || ""),
     categoria: String(r[5] || ""),
     rateio: String(r[6] || ""),
-    cardLast4: String(r[7] || ""),
+    banco: String(r[7] || ""),
     parcela: String(r[8] || "").trim(),
     acerto: String(r[9] || ""),
   };

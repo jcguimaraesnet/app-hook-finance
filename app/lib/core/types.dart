@@ -9,7 +9,7 @@ class ExpenseRow {
   final String origem;
   final String categoria;
   final String rateio;
-  final String cardLast4;
+  final String banco; // "Santander" | "Revolut" | "" (legado pode trazer dígitos)
   final String parcela;
   final String acerto;
 
@@ -21,7 +21,7 @@ class ExpenseRow {
     required this.origem,
     required this.categoria,
     required this.rateio,
-    required this.cardLast4,
+    required this.banco,
     required this.parcela,
     required this.acerto,
   });
@@ -34,7 +34,7 @@ class ExpenseRow {
         origem: (j['origem'] ?? '') as String,
         categoria: (j['categoria'] ?? '') as String,
         rateio: (j['rateio'] ?? '') as String,
-        cardLast4: (j['cardLast4'] ?? '') as String,
+        banco: (j['banco'] ?? '') as String,
         parcela: (j['parcela'] ?? '') as String,
         acerto: (j['acerto'] ?? '') as String,
       );
@@ -52,7 +52,7 @@ class Entry extends ExpenseRow {
     required super.origem,
     required super.categoria,
     required super.rateio,
-    required super.cardLast4,
+    required super.banco,
     required super.parcela,
     required super.acerto,
   });
@@ -66,7 +66,7 @@ class Entry extends ExpenseRow {
         origem: (j['origem'] ?? '') as String,
         categoria: (j['categoria'] ?? '') as String,
         rateio: (j['rateio'] ?? '') as String,
-        cardLast4: (j['cardLast4'] ?? '') as String,
+        banco: (j['banco'] ?? '') as String,
         parcela: (j['parcela'] ?? '') as String,
         acerto: (j['acerto'] ?? '') as String,
       );
@@ -182,6 +182,7 @@ class UpdateEntryFields {
   final String data;       // "DD/MM/YYYY"
   final String dataRef;    // "DD/MM/YYYY HH:MM"
   final String origem;     // enum
+  final String banco;      // "" | "Santander" | "Revolut"
 
   const UpdateEntryFields({
     required this.descricao,
@@ -192,6 +193,7 @@ class UpdateEntryFields {
     required this.data,
     required this.dataRef,
     required this.origem,
+    required this.banco,
   });
 
   Map<String, dynamic> toJson() => {
@@ -203,6 +205,7 @@ class UpdateEntryFields {
         'data': data,
         'dataRef': dataRef,
         'origem': origem,
+        'banco': banco,
       };
 }
 
@@ -214,7 +217,7 @@ class AddEntryFields {
   final String? dataRef;
   final String categoria;
   final String rateio;
-  final String cardLast4;
+  final String banco; // "Santander" | "Revolut" | "" (legado pode trazer dígitos)
   final String parcela;
   final String acerto;
 
@@ -226,7 +229,7 @@ class AddEntryFields {
     this.dataRef,
     this.categoria = '',
     this.rateio = '',
-    this.cardLast4 = '',
+    this.banco = '',
     this.parcela = '',
     this.acerto = '',
   });
@@ -238,7 +241,7 @@ class AddEntryFields {
       'origem': origem,
       'categoria': categoria,
       'rateio': rateio,
-      'cardLast4': cardLast4,
+      'banco': banco,
       'parcela': parcela,
       'acerto': acerto,
     };

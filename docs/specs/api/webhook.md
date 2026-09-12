@@ -9,7 +9,7 @@ Recebe notificações de compra do app de notificação Android e insere uma lin
 
 ## Contexto
 
-Santander e Revolut enviam push notification ao Android. Um job no celular (Tasker ou similar) captura título/texto e dispara `POST` para o Apps Script. O Apps Script extrai descrição, valor, data, e final do cartão da string e insere no topo da planilha **na última fatura já registrada na planilha**.
+Santander e Revolut enviam push notification ao Android. Um job no celular (Tasker ou similar) captura título/texto e dispara `POST` para o Apps Script. O Apps Script extrai descrição, valor e data da string, identifica o banco pelo padrão do texto, e insere no topo da planilha **na última fatura já registrada na planilha**.
 
 > Webhook NÃO cria mais o bloco de "início de fatura" (despesas fixas + linha azul). Esse bloco é criado **apenas** pelo gatilho manual Nova fatura — ver [../rules/new-invoice.md](../rules/new-invoice.md). Fluxo esperado: usuário clica Nova fatura no início do mês → bloco criado → webhook empilha as compras nessa fatura ao longo do mês.
 
@@ -25,7 +25,7 @@ Santander e Revolut enviam push notification ao Android. Um job no celular (Task
     "token": "<WEBHOOK_TOKEN>"
   }
   ```
-- **Body esperado (Revolut — "app novo", cartão 2236):**
+- **Body esperado (Revolut — "app novo"):**
   ```json
   {
     "title": "Cacau Jpa Comeri",
@@ -33,7 +33,7 @@ Santander e Revolut enviam push notification ao Android. Um job no celular (Task
     "token": "<WEBHOOK_TOKEN>"
   }
   ```
-  Padrão diferente: `title` carrega a descrição da despesa direto; `text` só tem o valor (sem data/hora/cartão). Parser detecta pelo match de `Valor gasto: R$` (ou `Pagou R$`, copy antiga) no `text` e hardcoda `cardLast4 = "2236"`. Data/hora viram o instante do POST. Ver [../rules/webhook-parser.md](../rules/webhook-parser.md).
+  Padrão diferente: `title` carrega a descrição da despesa direto; `text` só tem o valor (sem data/hora). Parser detecta pelo match de `Valor gasto: R$` (ou `Pagou R$`, copy antiga) no `text` e grava `banco = "Revolut"`. Data/hora viram o instante do POST. Ver [../rules/webhook-parser.md](../rules/webhook-parser.md).
 - **Token:** mesmo `WEBHOOK_TOKEN` dos endpoints REST. Verificado por igualdade exata.
 - **Sem token / token inválido:** `{ ok: false, error: "unauthorized" }`.
 - **`title` ou `text` vazio:** `{ ok: false, error: "missing_fields" }`.
@@ -47,7 +47,7 @@ Santander e Revolut enviam push notification ao Android. Um job no celular (Task
   - col D (Valor): número extraído.
   - col E (Origem): `"Cartão"` (constante `ORIGEM`).
   - col F/G (Categoria/Rateio): inferidos por `classifyFromHistory_` — ver [../rules/classifier.md](../rules/classifier.md). Vazios se score < `CLASSIFY_THRESHOLD`.
-  - col H (Cartão): `cardLast4` extraído (Santander) ou `"2236"` (Revolut).
+  - col H (Banco): `"Santander"` ou `"Revolut"` conforme o regex que casou; `""` se nenhum.
   - col I/J (Parcela/Acerto): vazios.
 - **Despesas fixas:** webhook não cria mais bloco. Use Nova fatura ([../rules/new-invoice.md](../rules/new-invoice.md)) para criar o bloco antes de receber compras de uma nova fatura.
 
@@ -58,7 +58,7 @@ Santander e Revolut enviam push notification ao Android. Um job no celular (Task
 - **Texto que não casa com nenhum regex:** linha entra com campos vazios (só col A e Origem). Útil pra detectar regex stale. Caso real: set/2026, Revolut trocou `Pagou R$` por `Valor gasto: R$` e gerou dezenas de linhas em branco até o regex ser atualizado. Ao ver linhas assim, comparar a notificação atual com [../rules/webhook-parser.md](../rules/webhook-parser.md).
 - **Planilha vazia (degenerado):** fallback para `nextInvoiceClosingDate_()`. Compra entra na fatura computada de hoje, mas sem despesas fixas (webhook não cria bloco). Usuário deve rodar Nova fatura assim que possível.
 - **Última fatura registrada é antiga (ex.: 06/05 e hoje é 26/05):** compra entra em 06/05 (fatura já fechada). Usuário deve rodar Nova fatura para criar 06/06 — depois disso webhook escreve em 06/06.
-- **Cartão final desconhecido:** insere mesmo assim com `cardLast4` literal. PWA/Flutter devem tratar `cardLast4` ausente do mapping.
+- **Cartão novo / final desconhecido:** irrelevante desde 2026-09-12. O banco vem do padrão do texto, não do número do cartão; trocar de plástico não exige mudança no app.
 
 ## Implementações
 
@@ -72,4 +72,5 @@ Santander e Revolut enviam push notification ao Android. Um job no celular (Task
 - [../rules/classifier.md](../rules/classifier.md)
 - [../rules/invoice-closing-date.md](../rules/invoice-closing-date.md)
 - [../rules/fixed-expenses.md](../rules/fixed-expenses.md)
+- [../data/despesas-sheet.md](../data/despesas-sheet.md) — col H (`Banco`)
 - [endpoints.md](endpoints.md)

@@ -10,7 +10,7 @@ ExpenseRow _row({String origem = 'Cartão', String rateio = ''}) => ExpenseRow(
       origem: origem,
       categoria: '',
       rateio: rateio,
-      cardLast4: '',
+      banco: '',
       parcela: '',
       acerto: '',
     );

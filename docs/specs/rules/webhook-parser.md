@@ -5,7 +5,7 @@ last_updated: 2026-09-12
 
 # Webhook parser — dois padrões de notificação
 
-Extrai descrição, valor, data, hora e final do cartão da notificação que o Tasker/IFTTT manda. Suporta dois padrões: Santander (texto rico, "banco antigo") e Revolut (cartão final 2236, "app novo").
+Extrai descrição, valor, data, hora e **banco** da notificação que o Tasker/IFTTT manda. Suporta dois padrões: Santander (texto rico, "banco antigo") e Revolut ("app novo"). O padrão que casou define o `banco` (col H); o final do cartão que aparece no texto do Santander é ignorado desde 2026-09-12 (ver [card-to-person.md](card-to-person.md), removido).
 
 ## Contexto
 
@@ -22,23 +22,25 @@ A Revolut já mudou a copy da notificação uma vez (set/2026): de `😎 Pagou R
 
 ```js
 const PURCHASE_RE =
-  /Compra.+?final\s+(\d+),.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
+  /Compra.+?final\s+\d+,.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
 const NEW_APP_VALUE_RE = /(?:Pagou|Valor\s+gasto:?)\s+R\$\s*(-?[\d.,]+)/i;
-const NEW_APP_CARD_LAST4 = "2236";
 ```
 
-### Caminho "banco antigo" — `PURCHASE_RE`
+`banco` resultante: `BANCO_SANTANDER` (`"Santander"`) se casou `PURCHASE_RE`; `BANCO_REVOLUT` (`"Revolut"`) se casou `NEW_APP_VALUE_RE`; `""` se nenhum. Constantes em `apps-script/shared/Constants.gs`.
+
+### Caminho "banco antigo" — `PURCHASE_RE` (Santander)
 
 Grupos:
 
 | # | Conteúdo | Exemplo |
 |---|----------|---------|
-| 1 | `cardLast4` | `1018` |
-| 2 | `value` (BR string, antes de parse) | `89,50` |
-| 3 | `refDate` | `03/04/26` ou `03/04/2026` |
-| 4 | `refTime` | `14:32` |
-| 5 | `description` (até `, aprovada`) | `MERCADO ABC` |
+| 1 | `value` (BR string, antes de parse) | `89,50` |
+| 2 | `refDate` | `03/04/26` ou `03/04/2026` |
+| 3 | `refTime` | `14:32` |
+| 4 | `description` (até `, aprovada`) | `MERCADO ABC` |
+
+O trecho `final \d+` (últimos dígitos do cartão) continua obrigatório para o match, mas **não é capturado**: o número do cartão muda quando o plástico é trocado e não interessa ao modelo.
 
 Pós-processamento:
 
@@ -46,9 +48,9 @@ Pós-processamento:
 - `value`: passa por `parseBrazilNumber_` → remove `.` (milhares), troca `,` por `.`, faz `parseFloat`. `NaN` → `""`.
 - `description`: `.trim()`.
 - `refTime`: usado verbatim (`"HH:MM"`).
-- `cardLast4`: usado verbatim (string com dígitos; pode ter mais de 4 se a notificação variar).
+- `banco`: `"Santander"`.
 
-### Caminho "app novo" — `NEW_APP_VALUE_RE`
+### Caminho "app novo" — `NEW_APP_VALUE_RE` (Revolut)
 
 Exemplos de notificação (as duas variantes casam):
 
@@ -65,7 +67,7 @@ Extração:
 |---|---|
 | `description` | `title.trim()` |
 | `value` | grupo 1 do `NEW_APP_VALUE_RE` → `parseBrazilNumber_` |
-| `cardLast4` | constante `NEW_APP_CARD_LAST4` (`"2236"`) |
+| `banco` | `"Revolut"` |
 | `refDate` | `Utilities.formatDate(new Date(), tz, "dd/MM/yyyy")` |
 | `refTime` | `Utilities.formatDate(new Date(), tz, "HH:mm")` |
 
@@ -100,4 +102,4 @@ Se `text` não casa com nenhum dos dois regex, o parser retorna todos os campos 
 
 - [../api/webhook.md](../api/webhook.md)
 - [../rules/invoice-closing-date.md](invoice-closing-date.md)
-- [../rules/card-to-person.md](card-to-person.md)
+- [../data/despesas-sheet.md](../data/despesas-sheet.md) — col H (`Banco`)

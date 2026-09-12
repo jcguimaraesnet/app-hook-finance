@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-29
+last_updated: 2026-09-12
 ---
 
 # Lançamento — lista das últimas entradas + edit modal + novo
@@ -40,10 +40,10 @@ Apenas no Flutter:
   - **Forma** (segmented `Cartão`/`Pix` → mapeia `Pix` → `"Pix (contas)"` no envio).
   - **Divisão** (segmented `Metade`/`Júlio`/`Dani`/`Alzira` → envia como `rateio`).
   - **Parcela** (stepper 1..99 — só renderiza se Forma=`Cartão`). Default 1 (à vista).
-  - **Cartão (4 dígitos)** (TextField, só se Forma=`Cartão`).
+  - **Banco** (segmented `Santander`/`Revolut`, só se Forma=`Cartão`). **Sem default** — obrigatório escolher; validação local "Selecione o banco." se vazio ao salvar. Envia `banco`. Substituiu o TextField "Cartão (4 dígitos)" em 2026-09-12.
   - **Marcar para Acerto Final** (Switch, só se Forma=`Pix`; envia `acerto: "Sim"`).
   - **Salvar lançamento** → `api.addEntry(...)`. Loading state desabilita botão. Erro (server ou validação local) aparece em pílula vermelha.
-- **Defaults enviados ao backend**: `data` sempre enviada (pós-2026-05-12) — `dataRef` omitido → o Apps Script usa agora no TZ. `categoria` vazia OK. `cardLast4` vazio OK. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
+- **Defaults enviados ao backend**: `data` sempre enviada (pós-2026-05-12) — `dataRef` omitido → o Apps Script usa agora no TZ. `categoria` vazia OK. `banco` vazio quando Forma=`Pix`. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
 - **On success**: SnackBar verde "Lançamento criado.", `ref.invalidate(lastEntriesProvider)` + `ref.invalidate(monthDataProvider)`, e `widget.onCancel()` volta pra aba `Lançamentos`.
 
 ### Lista de entries (PWA legada)
@@ -106,7 +106,8 @@ Ordem dos campos no modal, de cima pra baixo:
 5. Valor (R$, decimal).
 6. Categoria (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
 7. Rateio (Dropdown: `""`, `"Julio"`, `"Dani"`, `"Metade"`, `"Alzira"`).
-8. Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md)).
+8. **Banco** (col H) — `DropdownButtonFormField<String>` com `""` (vazio), `Santander`, `Revolut`. Só renderiza quando `_origem == "Cartão"`. Se `entry.banco` vier fora do enum (legado numérico, ex. `"784"`), é adicionado como item extra prefixado `(?) 784` para correção sem perda — mesmo padrão do campo Origem. Send: `banco` (`""` quando Origem ≠ Cartão). Pós-2026-09-12.
+9. Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md)).
 
 **Read-only fields:** nenhum (era `Data de referência` + `Origem`; ambos viraram editáveis em 2026-05-11).
 
@@ -128,7 +129,7 @@ Display: `{parcela}x` no centro do stepper. Abaixo: `Total da compra: R$ {format
 
 ### Save
 
-- Body Flutter (pós-2026-05-11): `{ row: entry.row, fields: { descricao, valor, categoria, rateio, parcela, data: "DD/MM/YYYY", dataRef: "DD/MM/YYYY HH:MM", origem } }` — todos obrigatórios. Validados no backend; erros `missing_data`/`missing_dataRef`/`missing_origem`/`invalid_origem`.
+- Body Flutter (pós-2026-09-12): `{ row: entry.row, fields: { descricao, valor, categoria, rateio, parcela, data: "DD/MM/YYYY", dataRef: "DD/MM/YYYY HH:MM", origem, banco } }` — todos enviados sempre (`banco` pode ser `""`). Validados no backend; erros `missing_data`/`missing_dataRef`/`missing_origem`/`invalid_origem`/`invalid_banco`.
 - Body PWA legada: contrato antigo (5 campos), inalterado.
 - Mutation: `useUpdateEntry`. `onSuccess` invalida `["lastEntries"]` e `["monthData"]`.
 - Após sucesso: `onClose()` → fecha modal.
