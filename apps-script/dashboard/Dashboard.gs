@@ -292,8 +292,14 @@ function getLastEntries(token, n) {
 // Enums aceitos por addEntry. Espelha o spec em docs/specs/data/despesas-sheet.md.
 const ADD_ENTRY_ORIGEMS = ["Cartão", "Pix (contas)", "Pessoal", "Empregados", "Contas"];
 const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
-const ADD_ENTRY_BANCOS = [""].concat(BANCOS);
 const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
+
+// Função, não const global: o Apps Script avalia dashboard/Dashboard.gs antes
+// de shared/Constants.gs, e um `const` no topo referenciando BANCOS quebraria
+// a carga do script inteiro (TDZ). Dentro de função, resolve em runtime.
+function addEntryBancos_() {
+  return [""].concat(BANCOS);
+}
 
 function addEntry(token, fields) {
   const auth = checkToken_(token);
@@ -318,7 +324,7 @@ function addEntry(token, fields) {
   if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
 
   const banco = String(fields.banco || "").trim();
-  if (ADD_ENTRY_BANCOS.indexOf(banco) < 0) return { ok: false, error: "invalid_banco" };
+  if (addEntryBancos_().indexOf(banco) < 0) return { ok: false, error: "invalid_banco" };
 
   const parcela = String(fields.parcela || "").trim();
   if (parcela && !ADD_ENTRY_PARCELA_RE.test(parcela)) {
@@ -397,7 +403,7 @@ function updateEntry(token, row, fields) {
   // e não podem apagar a col H sem querer. Só validamos/gravamos se veio no body.
   const hasBanco = fields.banco !== undefined && fields.banco !== null;
   const banco = hasBanco ? String(fields.banco).trim() : "";
-  if (hasBanco && ADD_ENTRY_BANCOS.indexOf(banco) < 0) {
+  if (hasBanco && addEntryBancos_().indexOf(banco) < 0) {
     return { ok: false, error: "invalid_banco" };
   }
 
