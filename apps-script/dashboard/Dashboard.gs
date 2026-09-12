@@ -17,10 +17,8 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  let body;
-  try {
-    body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
-  } catch (_) {
+  const body = parsePostBody_((e && e.postData && e.postData.contents) || "{}");
+  if (!body) {
     return jsonResponse_({ ok: false, error: "invalid_json" });
   }
 
@@ -41,6 +39,28 @@ function doPost(e) {
       return jsonResponse_(newInvoice_(body.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
+  }
+}
+
+// JSON.parse rejeita control chars crus dentro de string. O job do celular monta
+// o body por concatenação, e a notificação da Revolut tem "\n" entre as frases;
+// se ele chegar sem escape, o parse estrito falha. Fallback: escapa CR/LF/TAB
+// e tenta de novo. Retorna null se nem assim for JSON válido.
+// Spec: docs/specs/api/webhook.md
+function parsePostBody_(contents) {
+  try {
+    return JSON.parse(contents);
+  } catch (_) {
+    // segue pro fallback
+  }
+  const escaped = contents
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .replace(/\t/g, "\\t");
+  try {
+    return JSON.parse(escaped);
+  } catch (_) {
+    return null;
   }
 }
 

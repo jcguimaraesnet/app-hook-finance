@@ -44,7 +44,7 @@ src/
    npx clasp create --type standalone --title hook-finance --rootDir src
    ```
    Isso preenche o `scriptId` em `.clasp.json`. Se já tem um projeto, edite manualmente.
-4. Criar a planilha Google Sheets que vai receber os dados. Pegue o `SHEET_ID` da URL (`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`) e cole em [src/shared/Constants.gs](src/shared/Constants.gs). Ajuste `SHEET_NAME` se a aba não for `Sheet1`.
+4. Criar a planilha Google Sheets que vai receber os dados. Pegue o `SHEET_ID` da URL (`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`) e cole em [apps-script/shared/Constants.gs](apps-script/shared/Constants.gs). Ajuste `SHEET_NAME` se a aba não for `Sheet1`.
 5. Adicione o cabeçalho na linha 1 da planilha (ver [Esquema da planilha](#esquema-da-planilha) abaixo).
 
 ## Configurar o token do webhook
@@ -52,7 +52,7 @@ src/
 No editor do Apps Script (após o primeiro `clasp push`):
 
 1. Abra o projeto: `npx clasp open`.
-2. Edite a função `setupToken` em [src/shared/Setup.gs](src/shared/Setup.gs) colocando um token forte e rode-a uma vez (botão Run). Isso grava em **Project Settings → Script Properties** a chave `WEBHOOK_TOKEN`.
+2. Edite a função `setupToken` em [apps-script/shared/Setup.gs](apps-script/shared/Setup.gs) colocando um token forte e rode-a uma vez (botão Run). Isso grava em **Project Settings → Script Properties** a chave `WEBHOOK_TOKEN`.
 3. Alternativa: vá direto em **Project Settings → Script Properties → Add script property** e crie `WEBHOOK_TOKEN` manualmente.
 
 ## Primeiro deploy (manual, para autorizar scopes)
@@ -86,17 +86,18 @@ A linha 1 da planilha deve ter os seguintes cabeçalhos, na ordem:
 | 3 | Descrição | Estabelecimento extraído do texto (ex.: `SUPERMERCADOS V`). |
 | 4 | Valor | Valor numérico da compra (ex.: `32,78`). |
 | 5 | Origem | Sempre `Cartão` (constante). |
-| 6 | Categoria | Inferida via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Vazia se não houver match suficiente. |
-| 7 | Rateio | Inferido via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. Vazio se não houver match suficiente. |
-| 8 | Cartão | Últimos 4 dígitos do cartão extraídos do texto. Mapeamento titular em [src/shared/Constants.gs](src/shared/Constants.gs) (`CARDS`): `1018`, `9727` → Julio; `4750`, `0784` → Dani. |
-| 9 | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª de 3). Vazio quando à vista. Editável pelo modal da aba Lançamento via [updateEntry](src/dashboard/Dashboard.gs) — o stepper edita só o total; parcela_atual é sempre gravada como `1`. |
+| 6 | Categoria | Inferida via [Classifier](apps-script/webhook/Classifier.gs) a partir do histórico. Vazia se não houver match suficiente. |
+| 7 | Rateio | Inferido via [Classifier](apps-script/webhook/Classifier.gs) a partir do histórico. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. Vazio se não houver match suficiente. |
+| 8 | Cartão | Últimos 4 dígitos do cartão extraídos do texto. Mapeamento titular em [apps-script/shared/Constants.gs](apps-script/shared/Constants.gs) (`CARDS`): `1018`, `9727` → Julio; `4750`, `0784` → Dani. |
+| 9 | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª de 3). Vazio quando à vista. Editável pelo modal da aba Lançamento via [updateEntry](apps-script/dashboard/Dashboard.gs) — o stepper edita só o total; parcela_atual é sempre gravada como `1`. |
 | 10 | Acerto | `Sim` quando a linha deve entrar no rateio do "Acerto Final". Vazio caso contrário. |
 
 Constantes que controlam o comportamento:
 
-- `INVOICE_CLOSING_DAY` em [src/shared/Constants.gs](src/shared/Constants.gs) — dia do fechamento da fatura (default `6`).
-- `ORIGEM` em [src/shared/Constants.gs](src/shared/Constants.gs) — texto fixo da coluna Origem para webhook (default `Cartão`).
-- `PURCHASE_RE` em [src/webhook/Webhook.gs](src/webhook/Webhook.gs) — regex que extrai cartão, valor, data, hora e descrição do texto.
+- `INVOICE_CLOSING_DAY` em [apps-script/shared/Constants.gs](apps-script/shared/Constants.gs) — dia do fechamento da fatura (default `6`).
+- `ORIGEM` em [apps-script/shared/Constants.gs](apps-script/shared/Constants.gs) — texto fixo da coluna Origem para webhook (default `Cartão`).
+- `PURCHASE_RE` em [apps-script/webhook/Webhook.gs](apps-script/webhook/Webhook.gs) — regex do Santander: extrai cartão, valor, data, hora e descrição do texto.
+- `NEW_APP_VALUE_RE` em [apps-script/webhook/Webhook.gs](apps-script/webhook/Webhook.gs) — regex da Revolut: extrai só o valor do texto; descrição vem do `title`, cartão é fixo `2236`, data/hora é o instante do POST.
 
 ### Classificação automática (Categoria/Rateio)
 
@@ -109,19 +110,30 @@ Quando uma compra de cartão chega, o webhook tenta inferir `Categoria` e `Ratei
 
 Exemplo: se você classificou uma vez `"AMAZON BR"` como `Categoria = Compras / Rateio = Metade`, da próxima vez que vier `"AMAZON.COM.BR LJ 09"` o sistema completa sozinho.
 
-Lógica em [src/webhook/Classifier.gs](src/webhook/Classifier.gs). Para tunar: ajustar `CLASSIFY_THRESHOLD` ou `CLASSIFY_STOP_WORDS`.
+Lógica em [apps-script/webhook/Classifier.gs](apps-script/webhook/Classifier.gs). Para tunar: ajustar `CLASSIFY_THRESHOLD` ou `CLASSIFY_STOP_WORDS`.
 
 ### Despesas fixas mensais
 
-Quando chega a **primeira compra de cartão** de uma nova fatura (i.e., não existe nenhuma linha com `Data` = data de fechamento atual e `Origem` = `Cartão`), o webhook insere automaticamente uma lista de despesas fixas (diarista, plano de saúde, contas, condomínio, etc.) antes de gravar a compra. A lista está em [src/webhook/FixedExpenses.gs](src/webhook/FixedExpenses.gs) — edite ali para adicionar/remover/alterar valores.
+O webhook **não** cria o bloco de início de fatura. Ele sempre grava a compra na última fatura já registrada na planilha (maior data da coluna A). O bloco de despesas fixas + linha azul + rollover de parcelas é criado apenas pelo gatilho manual "Nova fatura" no app, no início de cada mês. A lista de despesas fixas vive na aba `despesas-fixas` da planilha e é lida por [apps-script/webhook/FixedExpenses.gs](apps-script/webhook/FixedExpenses.gs). Regras em [docs/specs/rules/new-invoice.md](docs/specs/rules/new-invoice.md).
 
 ### Formato esperado do `text`
 
+Dois padrões, detectados pelo conteúdo do `text` (spec: [docs/specs/rules/webhook-parser.md](docs/specs/rules/webhook-parser.md)):
+
+**Santander** (`title` ignorado; tudo vem do `text`):
 ```
-Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada.
+Compra no cartão final 0784, de R$ 13,99, em 10/09/26, às 12:29, em VM.MERCADOS, aprovada.
 ```
 
-Se o texto não casar com `PURCHASE_RE`, a linha ainda é gravada, mas as colunas 2-4 ficam vazias.
+**Revolut** (`title` é a descrição; `text` só tem o valor):
+```
+title: Cacau Jpa Comeri
+text:  Valor gasto: R$ 59,98.
+       Crédito disponível: R$ 4.022,76.
+```
+A copy antiga da Revolut (`😎 Pagou R$ 99,90 em …`) também é aceita.
+
+Se o texto não casar com nenhum dos dois regex, a linha ainda é gravada, mas só com a coluna 1 (fatura) e a coluna 5 (`Cartão`) preenchidas. Uma sequência de linhas assim na planilha é o sinal de que o banco mudou a copy da notificação.
 
 ## Testar o webhook
 
@@ -162,13 +174,23 @@ POST direto em `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec` retorna
 
 ### Formato do `text` (regra do regex)
 
-O `PURCHASE_RE` em [Webhook.gs](apps-script/webhook/Webhook.gs) exige **vírgulas** como separador entre os campos da notificação:
+**Santander.** O `PURCHASE_RE` em [Webhook.gs](apps-script/webhook/Webhook.gs) exige **vírgulas** como separador entre os campos da notificação:
 
 ```
 Compra no cartão final <CARD>, de R$ <VALOR>, em <DD/MM/YY[YY]>, às <HH:MM>, em <DESCRICAO>, aprovada.
 ```
 
 Se você usar pontos no lugar das vírgulas (ex.: `final 4750.de R$ 19.90.`), o regex não casa, `parsePurchase_` devolve campos vazios e a linha é gravada na planilha **com tudo em branco** — backend ainda responde `{"ok":true}`. Esse é o sintoma mais comum de "deu certo mas não preencheu nada".
+
+**Revolut.** O `NEW_APP_VALUE_RE` só precisa achar `Valor gasto: R$ <VALOR>` (ou `Pagou R$ <VALOR>`) em qualquer lugar do `text`. A quebra de linha antes de `Crédito disponível` não atrapalha. Teste:
+
+```bash
+curl -X POST "https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/api/proxy" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"title":"Cacau Jpa Comeri","text":"Valor gasto: R$ 59,98.\nCrédito disponível: R$ 4.022,76.","token":"<WEBHOOK_TOKEN>"}'
+```
+
+Se o job do celular mandar a quebra de linha **crua** (sem escapar como `\n`), o `doPost` escapa e tenta o parse de novo antes de rejeitar como `invalid_json`.
 
 ### Dedup automática (5 minutos)
 
@@ -181,7 +203,7 @@ O webhook calcula `SHA-256(title + "\n" + text)` e guarda em `CacheService` por 
 | `{"ok":true,"deduped":true}` | Mesmo `title+text` já recebido nos últimos 5 min. |
 | `{"ok":false,"error":"unauthorized"}` | `token` ausente ou diferente do `WEBHOOK_TOKEN` em Script Properties. |
 | `{"ok":false,"error":"missing_fields"}` | `title` ou `text` vazio/ausente. |
-| `{"ok":false,"error":"invalid_json"}` | Body não é JSON válido. |
+| `{"ok":false,"error":"invalid_json"}` | Body não é JSON válido, nem depois de escapar `\r`/`\n`/`\t` crus. |
 | `{"ok":false,"error":"lock_timeout"}` | `LockService` não conseguiu adquirir o lock em 10s (concorrência alta). |
 | `{"ok":false,"error":"sheet_not_found"}` | `SHEET_NAME` não existe na planilha. |
 

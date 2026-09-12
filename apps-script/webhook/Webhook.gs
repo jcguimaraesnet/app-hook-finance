@@ -1,9 +1,11 @@
 const PURCHASE_RE =
   /Compra.+?final\s+(\d+),.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
-// Padrão do app novo: title = descrição, text = "... Pagou R$ <valor> em <desc> Crédito Disponível: R$ <limite>".
+// Padrão Revolut (app novo): title = descrição, text só tem o valor. Duas copies
+// já vistas: "😎 Pagou R$ <valor> em <desc> Crédito Disponível: R$ <limite>" e
+// "Valor gasto: R$ <valor>.\nCrédito disponível: R$ <limite>." (set/2026).
 // Spec: docs/specs/rules/webhook-parser.md
-const NEW_APP_VALUE_RE = /Pagou\s+R\$\s*(-?[\d.,]+)/i;
+const NEW_APP_VALUE_RE = /(?:Pagou|Valor\s+gasto:?)\s+R\$\s*(-?[\d.,]+)/i;
 const NEW_APP_CARD_LAST4 = "2236";
 
 // Janela de dedup (segundos). O app de notificação às vezes redispara o mesmo
