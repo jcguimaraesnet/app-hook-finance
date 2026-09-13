@@ -15,6 +15,28 @@ function normalizeDate_(d) {
   return parts.join("/");
 }
 
+// Faixas de emoji em code units UTF-16. Não usamos \p{Extended_Pictographic}
+// (ES2018): se o runtime não suportasse, o SyntaxError no literal derrubaria a
+// carga de todos os .gs, que compartilham escopo global.
+const EMOJI_RE =
+  /[\u00A9\u00AE\u200D\u203C\u2049\u20E3\u2122\u2139\u2194-\u21AA\u231A-\u231B\u2328\u23CF\u23E9-\u23FA\u24C2\u25AA-\u25FE\u2600-\u27BF\u2934\u2935\u2B00-\u2BFF\u3030\u303D\u3297\u3299\uFE00-\uFE0F\u{1F000}-\u{1FAFF}\u{E0020}-\u{E007F}]/gu;
+
+// Espaços Unicode que a notificação traz junto do emoji (a Revolut usa NBSP
+// entre o nome do estabelecimento e o ícone).
+const UNICODE_SPACE_RE = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000\uFEFF]/g;
+
+// Limpa a descrição que vai pra col C: remove emoji e normaliza espaços.
+// Emoji vira espaço (não vazio) pra não colar palavras. Pontuação é preservada
+// de propósito — nomes legítimos usam ".", "*", "-" ("SHOPEE .Jatobra").
+// Spec: docs/specs/rules/webhook-parser.md
+function sanitizeDescription_(s) {
+  return String(s === null || s === undefined ? "" : s)
+    .replace(EMOJI_RE, " ")
+    .replace(UNICODE_SPACE_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function formatBrDate_(v) {
   if (v instanceof Date) {
     return Utilities.formatDate(v, Session.getScriptTimeZone(), "dd/MM/yyyy");

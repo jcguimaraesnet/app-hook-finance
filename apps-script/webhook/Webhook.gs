@@ -119,7 +119,7 @@ function parsePurchase_(title, text) {
     return {
       refDate: Utilities.formatDate(now, tz, "dd/MM/yyyy"),
       refTime: Utilities.formatDate(now, tz, "HH:mm"),
-      description: String(title || "").trim(),
+      description: sanitizeDescription_(title),
       value: parseBrazilNumber_(newAppMatch[1]),
       banco: BANCO_REVOLUT,
     };
@@ -130,7 +130,7 @@ function parsePurchase_(title, text) {
   return {
     refDate: normalizeDate_(m[2]),
     refTime: m[3],
-    description: m[4].trim(),
+    description: sanitizeDescription_(m[4]),
     value: parseBrazilNumber_(m[1]),
     banco: BANCO_SANTANDER,
   };
