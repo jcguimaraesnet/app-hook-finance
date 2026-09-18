@@ -20,6 +20,8 @@ const List<String> _origemOptions = [
 // Spec: docs/specs/data/despesas-sheet.md (col H, Banco)
 const List<String> _bancoOptions = ['', 'Santander', 'Revolut'];
 
+const double _fieldGap = 10;
+
 class EditDialog extends StatefulWidget {
   final Entry entry;
   final List<ExpenseRow> rowsForCategoriaSuggestions;
@@ -247,15 +249,16 @@ class _EditDialogState extends State<EditDialog> {
     }
 
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+              child: Row(
                 children: [
                   Expanded(
                     child: Text(
@@ -271,110 +274,129 @@ class _EditDialogState extends State<EditDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _PickerField(
-                label: 'Mês Fatura',
-                value: _data.year < 2000
-                    ? '— (toque para escolher)'
-                    : monthYearShort(formatBrDate(_data)),
-                onTap: _busy ? null : _pickData,
-              ),
-              const SizedBox(height: 12),
-              _DataRefField(
-                value: _dataRef,
-                onPickDate: _busy ? null : _pickDataRefDate,
-                onPickTime: _busy ? null : _pickDataRefTime,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue:
-                    origemItems.contains(_origem) ? _origem : null,
-                decoration: const InputDecoration(labelText: 'Origem'),
-                items: [
-                  for (final o in origemItems)
-                    DropdownMenuItem(
-                      value: o,
-                      child: Text(
-                        _origemOptions.contains(o) ? o : '(?) $o',
-                      ),
+            ),
+            // Só o corpo rola; header e ações ficam fixos para o Salvar nunca
+            // sair da viewport em telas baixas.
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _PickerField(
+                      label: 'Mês Fatura',
+                      value: _data.year < 2000
+                          ? '— (toque para escolher)'
+                          : monthYearShort(formatBrDate(_data)),
+                      onTap: _busy ? null : _pickData,
                     ),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (v) => setState(() => _origem = v ?? ''),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descricaoCtrl,
-                decoration: const InputDecoration(labelText: 'Descrição'),
-                autocorrect: false,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _valorCtrl,
-                decoration: const InputDecoration(labelText: 'Valor (R\$)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: _onValorChanged,
-              ),
-              const SizedBox(height: 12),
-              _CategoriaField(
-                controller: _categoriaCtrl,
-                options: categorias,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _rateio,
-                decoration: const InputDecoration(labelText: 'Rateio'),
-                items: const [
-                  DropdownMenuItem(value: '', child: Text('(vazio)')),
-                  DropdownMenuItem(value: 'Julio', child: Text('Julio')),
-                  DropdownMenuItem(value: 'Dani', child: Text('Dani')),
-                  DropdownMenuItem(
-                      value: 'Metade', child: Text('Metade (compartilhado)')),
-                  DropdownMenuItem(value: 'Alzira', child: Text('Alzira')),
-                ],
-                onChanged: (v) => setState(() => _rateio = v ?? ''),
-              ),
-              if (_origem == 'Cartão') ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: bancoItems.contains(_banco) ? _banco : '',
-                  decoration: const InputDecoration(labelText: 'Banco'),
-                  items: [
-                    for (final b in bancoItems)
-                      DropdownMenuItem(
-                        value: b,
-                        child: Text(
-                          b.isEmpty
-                              ? '(vazio)'
-                              : _bancoOptions.contains(b)
-                                  ? b
-                                  : '(?) $b',
-                        ),
+                    const SizedBox(height: _fieldGap),
+                    _DataRefField(
+                      value: _dataRef,
+                      onPickDate: _busy ? null : _pickDataRefDate,
+                      onPickTime: _busy ? null : _pickDataRefTime,
+                    ),
+                    const SizedBox(height: _fieldGap),
+                    DropdownButtonFormField<String>(
+                      initialValue:
+                          origemItems.contains(_origem) ? _origem : null,
+                      decoration: const InputDecoration(labelText: 'Origem'),
+                      items: [
+                        for (final o in origemItems)
+                          DropdownMenuItem(
+                            value: o,
+                            child: Text(
+                              _origemOptions.contains(o) ? o : '(?) $o',
+                            ),
+                          ),
+                      ],
+                      onChanged: _busy
+                          ? null
+                          : (v) => setState(() => _origem = v ?? ''),
+                    ),
+                    const SizedBox(height: _fieldGap),
+                    TextField(
+                      controller: _descricaoCtrl,
+                      decoration:
+                          const InputDecoration(labelText: 'Descrição'),
+                      autocorrect: false,
+                    ),
+                    const SizedBox(height: _fieldGap),
+                    TextField(
+                      controller: _valorCtrl,
+                      decoration:
+                          const InputDecoration(labelText: 'Valor (R\$)'),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: _onValorChanged,
+                    ),
+                    const SizedBox(height: _fieldGap),
+                    _CategoriaField(
+                      controller: _categoriaCtrl,
+                      options: categorias,
+                    ),
+                    const SizedBox(height: _fieldGap),
+                    DropdownButtonFormField<String>(
+                      initialValue: _rateio,
+                      decoration: const InputDecoration(labelText: 'Rateio'),
+                      items: const [
+                        DropdownMenuItem(value: '', child: Text('(vazio)')),
+                        DropdownMenuItem(value: 'Julio', child: Text('Julio')),
+                        DropdownMenuItem(value: 'Dani', child: Text('Dani')),
+                        DropdownMenuItem(
+                            value: 'Metade',
+                            child: Text('Metade (compartilhado)')),
+                        DropdownMenuItem(
+                            value: 'Alzira', child: Text('Alzira')),
+                      ],
+                      onChanged: (v) => setState(() => _rateio = v ?? ''),
+                    ),
+                    if (_origem == 'Cartão') ...[
+                      const SizedBox(height: _fieldGap),
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            bancoItems.contains(_banco) ? _banco : '',
+                        decoration: const InputDecoration(labelText: 'Banco'),
+                        items: [
+                          for (final b in bancoItems)
+                            DropdownMenuItem(
+                              value: b,
+                              child: Text(
+                                b.isEmpty
+                                    ? '(vazio)'
+                                    : _bancoOptions.contains(b)
+                                        ? b
+                                        : '(?) $b',
+                              ),
+                            ),
+                        ],
+                        onChanged: _busy
+                            ? null
+                            : (v) => setState(() => _banco = v ?? ''),
                       ),
+                    ],
+                    const SizedBox(height: _fieldGap),
+                    _ParcelaField(
+                      parcela: _parcela,
+                      originalTotal: _originalTotal,
+                      onMinus: () => _adjustParcela(-1),
+                      onPlus: () => _adjustParcela(1),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: _fieldGap),
+                      Text(
+                        'Erro: $_error',
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
                   ],
-                  onChanged: _busy
-                      ? null
-                      : (v) => setState(() => _banco = v ?? ''),
                 ),
-              ],
-              const SizedBox(height: 12),
-              _ParcelaField(
-                parcela: _parcela,
-                originalTotal: _originalTotal,
-                onMinus: () => _adjustParcela(-1),
-                onPlus: () => _adjustParcela(1),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Erro: $_error',
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Row(
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
                 children: [
                   OutlinedButton(
                     onPressed: _busy
@@ -389,8 +411,8 @@ class _EditDialogState extends State<EditDialog> {
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -458,57 +480,65 @@ class _ParcelaField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
+        // Total na mesma linha do stepper: economiza uma linha de altura no
+        // modal, que precisa caber sem rolagem em telas de celular.
         Row(
           children: [
             FilledButton(
               onPressed: onMinus,
               style: FilledButton.styleFrom(
                 shape: const CircleBorder(),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
+                minimumSize: Size.zero,
               ),
               child: const Text('−', style: TextStyle(fontSize: 18)),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             SizedBox(
-              width: 56,
+              width: 44,
               child: Text(
                 '${parcela}x',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontFeatures: const [FontFeature.tabularFigures()],
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             FilledButton(
               onPressed: onPlus,
               style: FilledButton.styleFrom(
                 shape: const CircleBorder(),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
+                minimumSize: Size.zero,
               ),
               child: const Text('+', style: TextStyle(fontSize: 18)),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Total da compra: ',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'R\$ ${formatMoney(originalTotal)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.end,
+                maxLines: 2,
+              ),
+            ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: 'Total da compra: ',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              TextSpan(
-                text: 'R\$ ${formatMoney(originalTotal)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -545,7 +575,7 @@ class _PickerField extends StatelessWidget {
           child: Container(
             width: double.infinity,
             padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFFF0ECE2),
               borderRadius: BorderRadius.circular(8),
@@ -595,7 +625,7 @@ class _DataRefField extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFFF0ECE2),
             borderRadius: BorderRadius.circular(8),
@@ -640,11 +670,11 @@ class _DataRefField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        // Em telas estreitas (ex.: tela de capa do Galaxy Fold) a data completa
-        // não cabe lado a lado com a hora e quebraria em duas linhas — empilha.
+        // "DD/MM/YYYY" precisa de mais espaço que "HH:MM", daí o 3:2. Só em
+        // telas muito estreitas (tela de capa do Galaxy Fold) os chips empilham.
         LayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth < 280) {
+            if (constraints.maxWidth < 200) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -656,9 +686,9 @@ class _DataRefField extends StatelessWidget {
             }
             return Row(
               children: [
-                Expanded(child: dateChip),
+                Expanded(flex: 3, child: dateChip),
                 const SizedBox(width: 8),
-                Expanded(child: timeChip),
+                Expanded(flex: 2, child: timeChip),
               ],
             );
           },
