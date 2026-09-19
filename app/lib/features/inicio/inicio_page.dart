@@ -1067,6 +1067,10 @@ class _ComparativeCard extends ConsumerWidget {
         color: BloomColors.sky,
         value: cur.contas,
         delta: deltas.contas,
+        // Compart já tem aba própria e Pessoal tem o "Ver pessoal →" do hero;
+        // Contas era o único bucket sem drill-down. Spec: pages/contas.md.
+        onTap: () => context.push(
+            '/contas?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
       ),
     ];
 
@@ -1166,17 +1170,19 @@ class _Col extends StatelessWidget {
   final Color color;
   final double value;
   final double? delta;
+  final VoidCallback? onTap;
 
   const _Col({
     required this.label,
     required this.color,
     required this.value,
     required this.delta,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1189,7 +1195,7 @@ class _Col extends StatelessWidget {
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 5),
-              Expanded(
+              Flexible(
                 child: Text(
                   label.toUpperCase(),
                   maxLines: 1,
@@ -1197,6 +1203,14 @@ class _Col extends StatelessWidget {
                   style: BloomTypography.kicker(),
                 ),
               ),
+              if (onTap != null) ...[
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 13,
+                  color: BloomColors.violet,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 3),
@@ -1220,6 +1234,16 @@ class _Col extends StatelessWidget {
                   fontSize: 9.5, color: BloomColors.muted),
             ),
         ],
+      ),
+    );
+
+    if (onTap == null) return content;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: content,
       ),
     );
   }

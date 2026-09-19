@@ -1,11 +1,12 @@
-// Spec: docs/specs/pages/detalhe.md
-// Drill-down de Início (Bloom IA) — single-person view com ?person=julio|dani.
+// Spec: docs/specs/pages/contas.md
+// Drill-down da coluna Contas do Comparativo (Início) — ?person=julio|dani.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
-import '../../core/rules/personal_summary.dart';
+import '../../core/rules/contas_rows.dart';
+import '../../core/rules/split_for_person.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -19,15 +20,15 @@ import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
 import '../lancamento/edit_dialog.dart';
 
-class DetalhePage extends ConsumerStatefulWidget {
+class ContasPage extends ConsumerStatefulWidget {
   final Person? initialPerson;
-  const DetalhePage({super.key, this.initialPerson});
+  const ContasPage({super.key, this.initialPerson});
 
   @override
-  ConsumerState<DetalhePage> createState() => _DetalhePageState();
+  ConsumerState<ContasPage> createState() => _ContasPageState();
 }
 
-class _DetalhePageState extends ConsumerState<DetalhePage> {
+class _ContasPageState extends ConsumerState<ContasPage> {
   late Person _person;
 
   @override
@@ -43,13 +44,19 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
     final rows = monthAsync.value?.rows ?? const <Entry>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final pessoalRows = rows
-        .where((r) => r.origem == 'Cartão' && r.rateio == _person.name)
-        .toList()
+    final contasRows = contasRowsForPerson(rows, _person)
       ..sort((a, b) =>
           parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
 
-    final summary = personalSummaryForPerson(rows, _person);
+    // "Sua parte" tem que bater com a coluna Contas do Comparativo, que é de
+    // onde se chega aqui — mesma regra, ver docs/specs/rules/contas-rows.md.
+    double suaParte = 0;
+    double totalCheio = 0;
+    for (final r in contasRows) {
+      suaParte += splitForPerson(r, _person);
+      totalCheio += r.valor;
+    }
+    final mostrarCheio = (totalCheio - suaParte).abs() >= 0.005;
 
     Future<void> openEdit(Entry e) async {
       final saved = await showDialog<bool>(
@@ -61,7 +68,6 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
         ),
       );
       if (saved == true) {
-        // A linha editada também aparece em Lançamentos e nos agregados.
         ref.invalidate(monthDataProvider);
         ref.invalidate(lastEntriesProvider);
       }
@@ -75,7 +81,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
           children: [
             ScreenHeader(
               showBack: true,
-              kicker: 'Despesas pessoais',
+              kicker: 'Contas',
               title: _person.displayName,
               trailing: const MonthSelector(),
             ),
@@ -101,43 +107,26 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                         ),
                       ),
                     )
-                  : Column(
+                  : Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _Tile(
-                                label: 'TOTAL PESSOAL',
-                                value: summary.totalPessoal,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _Tile(
-                                label: 'CARTÃO PESSOAL',
-                                value: summary.cartaoPessoal,
-                              ),
-                            ),
-                          ],
+                        Expanded(
+                          child: _Tile(
+                            label: mostrarCheio ? 'SUA PARTE' : 'TOTAL',
+                            value: suaParte,
+                            accent: BloomColors.sky,
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _Tile(
-                                label: 'PARCELADO ATUAL',
-                                value: summary.parceladoAtual,
-                              ),
+                        // Sem linha "Metade" nas contas do mês os dois tiles
+                        // mostrariam o mesmo número — parece bug, então some.
+                        if (mostrarCheio) ...[
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _Tile(
+                              label: 'TOTAL CHEIO',
+                              value: totalCheio,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _Tile(
-                                label: 'PARCELADO PRÓX',
-                                value: summary.parceladoProx,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
                     ),
             ),
@@ -145,7 +134,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Text(
-                'Lançamentos pessoais (${pessoalRows.length})',
+                'Lançamentos de contas (${contasRows.length})',
                 style: BloomTypography.display(fontSize: 14),
               ),
             ),
@@ -153,14 +142,14 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: BloomCard(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 4),
-                child: pessoalRows.isEmpty && !loading
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: contasRows.isEmpty && !loading
                     ? Padding(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
-                            'Sem lançamentos pessoais este mês.',
+                            'Sem contas neste mês.',
                             style: BloomTypography.geist(
                               fontSize: 12,
                               color: BloomColors.muted,
@@ -170,15 +159,12 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                       )
                     : Column(
                         children: [
-                          for (var i = 0; i < pessoalRows.length; i++)
+                          for (var i = 0; i < contasRows.length; i++)
                             RecentEntryRow(
-                              entry: pessoalRows[i],
+                              entry: contasRows[i],
                               showDivider: i > 0,
-                              hideCategory: true,
-                              // Sem row válido (backend antigo) não há o que
-                              // editar: o save falharia com invalid_row.
-                              onTap: pessoalRows[i].row >= 2
-                                  ? () => openEdit(pessoalRows[i])
+                              onTap: contasRows[i].row >= 2
+                                  ? () => openEdit(contasRows[i])
                                   : null,
                             ),
                         ],
@@ -195,7 +181,9 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
 class _Tile extends StatelessWidget {
   final String label;
   final double value;
-  const _Tile({required this.label, required this.value});
+  final Color? accent;
+
+  const _Tile({required this.label, required this.value, this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -206,11 +194,26 @@ class _Tile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: BloomTypography.kicker(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              if (accent != null) ...[
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration:
+                      BoxDecoration(color: accent, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 5),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  style: BloomTypography.kicker(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 2),
           FittedBox(

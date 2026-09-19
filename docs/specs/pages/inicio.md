@@ -37,6 +37,7 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 4. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`.
 5. **Tiles 2-col**: `Cartão geral` + `Parcelado` (totais brutos do mês).
 6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Compart/Pessoal/Contas), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
+   - **Coluna Contas é clicável** (pós-2026-09-19): navega para `/contas?person=<atual>` — ver [contas.md](contas.md). As outras duas não são: Compartilhado já tem a aba Compart e Pessoal já tem o "Ver pessoal →" do hero.
 7. **Seção "Últimos lançamentos"**: 2 itens via `lastEntries(2)` + link "Ver mais →" para `/lancamento`.
 
 ### Donut interativo
