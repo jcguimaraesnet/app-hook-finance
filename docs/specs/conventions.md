@@ -25,9 +25,13 @@ Convenções globais que valem em todas as codebases (Apps Script, PWA, Flutter)
 ## Datas
 
 - **Coluna A da planilha (Data, fechamento da fatura):** string `"DD/MM/YYYY"`.
-- **Coluna B (Data Referência, compra):** string `"DD/MM/YYYY HH:MM"`.
+- **Coluna B (Data Referência, compra):** string `"DD/MM/YYYY HH:MM"` — mas **pode vir sem a hora**: o webhook grava só a data quando não consegue extraí-la da notificação. Quem lê col B precisa aguentar as duas formas.
 - O backend converte `Date` → string usando o timezone do script (Apps Script `Session.getScriptTimeZone()`).
-- Frontend trata datas sempre como **string** — não converte para `Date` exceto para ordenação. Use [parseBrDate](rules/../specs/conventions.md) só quando precisa comparar.
+- Frontend trata datas sempre como **string** — não converte para `Date` exceto para ordenação. Use `parseBrDate` só quando precisa comparar.
+- **Qual parser usar** (Dart, `core/format/dates.dart`):
+  - `parseBrDate` — col A, `"DD/MM/YYYY"` estrito. Se receber a col B com hora, lê `"YYYY HH:MM"` como ano, falha e cai no fallback **1970**: ordena certo por mês/dia e errado na fatura que cruza o ano. Não use em col B.
+  - `parseBrRefDate` — col B para ordenar. Aceita com e sem hora.
+  - `parseBrDateTime` — col B para **editar**. Exige a hora; o retorno epoch é sentinel de "não escolhido" no `EditDialog` (ver [pages/lancamento.md](pages/lancamento.md)).
 - Display "humanizado" (Consulta header): `"06/05/2026"` → `"maio de 2026"` via `monthYearLabel`.
 - Display compacto (eixo X de gráfico): `"06/05/2026"` → `"05/2026"` via `brDateToMMYYYY`.
 

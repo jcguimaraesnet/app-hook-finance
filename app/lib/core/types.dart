@@ -76,7 +76,11 @@ class MonthDataResponse {
   final bool ok;
   final String? error;
   final String? month;
-  final List<ExpenseRow> rows;
+
+  /// `Entry` (e não `ExpenseRow`) porque monthData passou a devolver `row` —
+  /// é o que permite editar direto da tela de despesas pessoais. Backend antigo
+  /// não manda o campo e cai em `row: 0`, que o cliente trata como não-editável.
+  final List<Entry> rows;
 
   const MonthDataResponse({
     required this.ok,
@@ -91,7 +95,7 @@ class MonthDataResponse {
         error: j['error'] as String?,
         month: j['month'] as String?,
         rows: (j['rows'] as List?)
-                ?.map((e) => ExpenseRow.fromJson(e as Map<String, dynamic>))
+                ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
                 .where((e) => e.data.isNotEmpty || e.descricao.trim().isNotEmpty)
                 .toList() ??
             const [],

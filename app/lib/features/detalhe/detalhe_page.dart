@@ -7,6 +7,7 @@ import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/personal_summary.dart';
 import '../../core/types.dart';
+import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
@@ -15,6 +16,7 @@ import '../../widgets/bloom/bloom_screen.dart';
 import '../../widgets/bloom/month_selector.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
+import '../lancamento/edit_dialog.dart';
 
 class DetalhePage extends ConsumerStatefulWidget {
   final Person? initialPerson;
@@ -37,16 +39,32 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
   Widget build(BuildContext context) {
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
-    final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
+    final rows = monthAsync.value?.rows ?? const <Entry>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
     final pessoalRows = rows
         .where((r) => r.origem == 'Cartão' && r.rateio == _person.name)
         .toList()
       ..sort((a, b) =>
-          parseBrDate(b.dataRef).compareTo(parseBrDate(a.dataRef)));
+          parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
 
     final summary = personalSummaryForPerson(rows, _person);
+
+    Future<void> openEdit(Entry e) async {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (_) => EditDialog(
+          entry: e,
+          rowsForCategoriaSuggestions: rows,
+          api: ref.read(apiProvider),
+        ),
+      );
+      if (saved == true) {
+        // A linha editada também aparece em Lançamentos e nos agregados.
+        ref.invalidate(monthDataProvider);
+        ref.invalidate(lastEntriesProvider);
+      }
+    }
 
     return BloomScreen(
       child: SingleChildScrollView(
@@ -156,6 +174,11 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                               entry: pessoalRows[i],
                               showDivider: i > 0,
                               hideCategory: true,
+                              // Sem row válido (backend antigo) não há o que
+                              // editar: o save falharia com invalid_row.
+                              onTap: pessoalRows[i].row >= 2
+                                  ? () => openEdit(pessoalRows[i])
+                                  : null,
                             ),
                         ],
                       ),

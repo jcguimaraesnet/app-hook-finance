@@ -103,6 +103,26 @@ String mmYYYY(String? raw) {
   return raw;
 }
 
+/// Col B (Data Referência) para **ordenação**: aceita "DD/MM/YYYY" e
+/// "DD/MM/YYYY HH:MM". A hora entra na comparação quando existe.
+///
+/// Existe porque nenhum dos dois parsers acima serve para a col B: `parseBrDate`
+/// lê "2026 18:17" como ano, falha e cai no fallback 1970 (ordenava certo por
+/// mês/dia e errado na fatura que cruza o ano); `parseBrDateTime` exige a hora,
+/// que o webhook não grava quando não consegue extrair da notificação — e seu
+/// retorno epoch é sentinel de "não escolhido" no EditDialog.
+DateTime parseBrRefDate(String s) {
+  final parts = s.trim().split(' ');
+  final date = parseBrDate(parts[0]);
+  if (parts.length < 2) return date;
+  final time = parts[1].split(':');
+  if (time.length != 2) return date;
+  final hh = int.tryParse(time[0]);
+  final mm = int.tryParse(time[1]);
+  if (hh == null || mm == null) return date;
+  return DateTime(date.year, date.month, date.day, hh, mm);
+}
+
 /// "DD/MM/YYYY HH:MM" -> DateTime. Inválido -> DateTime(1970).
 DateTime parseBrDateTime(String s) {
   final parts = s.split(' ');

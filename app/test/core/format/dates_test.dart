@@ -16,6 +16,42 @@ void main() {
     });
   });
 
+  group('parseBrRefDate', () {
+    test('col B com hora mantém ano, dia e horário', () {
+      final d = parseBrRefDate('18/09/2026 18:17');
+      expect(d, DateTime(2026, 9, 18, 18, 17));
+    });
+
+    test('col B sem hora (webhook) vira meia-noite do dia certo', () {
+      expect(parseBrRefDate('18/09/2026'), DateTime(2026, 9, 18));
+    });
+
+    test('ordena a fatura que cruza o ano', () {
+      final refs = ['20/12/2025 10:00', '05/01/2026 09:00', '02/01/2026 08:00']
+        ..sort((a, b) => parseBrRefDate(b).compareTo(parseBrRefDate(a)));
+      expect(refs, [
+        '05/01/2026 09:00',
+        '02/01/2026 08:00',
+        '20/12/2025 10:00',
+      ]);
+    });
+
+    test('desempata pelo horário no mesmo dia', () {
+      final refs = ['18/09/2026 08:00', '18/09/2026 21:30']
+        ..sort((a, b) => parseBrRefDate(b).compareTo(parseBrRefDate(a)));
+      expect(refs.first, '18/09/2026 21:30');
+    });
+
+    test('hora malformada não descarta a data', () {
+      expect(parseBrRefDate('18/09/2026 xx:yy'), DateTime(2026, 9, 18));
+      expect(parseBrRefDate('18/09/2026 1817'), DateTime(2026, 9, 18));
+    });
+
+    test('vazio continua epoch zero (ordena por último)', () {
+      expect(parseBrRefDate(''), DateTime.fromMillisecondsSinceEpoch(0));
+    });
+  });
+
   group('monthYearLabel', () {
     test('converte para nome do mês em pt-BR', () {
       expect(monthYearLabel('06/05/2026'), 'maio de 2026');

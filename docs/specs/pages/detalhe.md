@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-29
+last_updated: 2026-09-18
 ---
 
 # Detalhe — despesas pessoais por pessoa
@@ -62,6 +62,8 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
   - **Parcelado atual** — `summary.parceladoAtual`.
   - **Parcelado Próx** — `summary.parceladoProx` (projeção do próximo mês).
 - Lista de lançamentos `RecentEntryRow` filtrada (mais recente primeiro) ou mensagem "Sem lançamentos pessoais este mês". Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
+- **Tap edita o lançamento** (pós-2026-09-18): abre o mesmo `EditDialog` da [lancamento.md](lancamento.md), incluindo o excluir do header. Ao salvar ou excluir, invalida `monthDataProvider` **e** `lastEntriesProvider` (a linha editada também aparece em Lançamentos). Requer o `row` que `monthData` passou a devolver — ver [../api/endpoints.md](../api/endpoints.md).
+  - Linha sem `row` válido (`< 2`, backend antigo) fica sem `onTap`: `RecentEntryRow` esconde o chevron e a linha não responde ao toque, em vez de abrir um modal que falharia com `invalid_row` no save.
 
 ### Loading / vazio
 
@@ -73,7 +75,9 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 - **Mês sem nenhuma despesa Cartão pessoal:** mostra mensagem de vazio.
 - **Pessoa só com despesas compartilhadas no mês:** não aparece (filtra `rateio === "Metade"`).
 - **Rateio com valor diferente de Julio/Dani/Alzira:** entra na seção `others`, ordem alfabética.
-- **`dataRef` sem horário:** `localeCompare` ainda funciona (ordena por string).
+- **`dataRef` sem horário:** PWA legada usa `localeCompare` (ordena por string). Flutter ordena com `parseBrRefDate`, que aceita col B com e sem hora — ver [../conventions.md](../conventions.md). Até 2026-09-18 usava `parseBrDate`, que descartava o ano e invertia dezembro/janeiro na fatura que cruza o ano.
+- **Editar muda o mês ou o rateio:** a linha some da lista ao recarregar (o filtro é `origem === "Cartão"` + rateio da pessoa). Comportamento esperado, não erro — o lançamento foi para outro mês/pessoa.
+- **Excluir pelo modal:** permitido aqui como em Lançamentos. A lista recarrega sem a linha.
 
 ## Implementações
 
