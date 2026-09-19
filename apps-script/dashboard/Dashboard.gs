@@ -118,9 +118,16 @@ function getMonthData(token, month) {
   const minRow = matchIndexes[0];
   const maxRow = matchIndexes[matchIndexes.length - 1];
   const slab = sheet.getRange(minRow, 1, maxRow - minRow + 1, 10).getValues();
-  const rows = slab
-    .filter((r) => fmt(r[0]) === targetMonth)
-    .map((r) => ({
+  // Loop em vez de filter+map: `row` é a linha real da planilha (minRow + i),
+  // que o cliente usa em updateEntry/deleteEntry. Um filter antes do map perderia
+  // o índice, e a posição no array não serve — o slab tem linhas de outros meses
+  // no meio (bloco de início de fatura).
+  const rows = [];
+  for (let i = 0; i < slab.length; i++) {
+    const r = slab[i];
+    if (fmt(r[0]) !== targetMonth) continue;
+    rows.push({
+      row: minRow + i,
       data: fmt(r[0]),
       dataRef: typeof r[1] === "string" ? r[1] : fmt(r[1]),
       descricao: String(r[2] || ""),
@@ -131,7 +138,8 @@ function getMonthData(token, month) {
       banco: String(r[7] || ""),
       parcela: String(r[8] || "").trim(),
       acerto: String(r[9] || ""),
-    }));
+    });
+  }
 
   return { ok: true, month: targetMonth, rows: rows };
 }

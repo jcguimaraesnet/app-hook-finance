@@ -25,7 +25,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 
 | `action` | Params | Resposta | Descrição |
 |---|---|---|---|
-| `monthData` | `token`, `month?` (`"DD/MM/YYYY"`) | `{ ok, month, rows[] }` | Linhas do mês especificado, ou do mais recente se omitido. |
+| `monthData` | `token`, `month?` (`"DD/MM/YYYY"`) | `{ ok, month, rows[] }` | Linhas do mês especificado, ou do mais recente se omitido. Cada linha traz `row` (1-indexed) para edit/delete. |
 | `historicalSummary` | `token` | `{ ok, months[], history: { months[], totals[], julioPessoal[], daniPessoal[] } }` | Agregado pré-computado dos últimos 12 meses. |
 | `lastEntries` | `token`, `n` (default 10) | `{ ok, entries[] }` | Últimas N linhas inseridas (com `row` 1-indexed para edit/delete). |
 | `newInvoicePreview` | `token` | `{ ok, invoiceClosing }` | Read-only: data que `newInvoice` criaria agora (última fatura da planilha + 1 mês), sem inserir nada. Usado pelo dialog de confirmação. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
@@ -133,6 +133,7 @@ Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
 
 ```json
 {
+  "row": 137,
   "data": "06/05/2026",
   "dataRef": "03/04/2026 14:32",
   "descricao": "MERCADO ABC",
@@ -148,9 +149,11 @@ Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
 
 > `banco` substituiu `cardLast4` em 2026-09-12. Linhas ainda não migradas podem devolver o valor legado numérico (ex.: `"784"`) nesse campo — clientes devem exibir como está, sem quebrar.
 
+> `row` passou a vir em `monthData` em 2026-09-18 (antes só `lastEntries` tinha). É o índice real da planilha, não a posição no array: `rows[]` já sai filtrado pelo mês e o bloco de "início de fatura" cria buracos. Cliente que não recebe `row` (backend antigo) deve tratar como não-editável, nunca como `0`.
+
 ### Estrutura de `Entry` (resposta de `lastEntries`)
 
-`Row` + campo `row: number` (1-indexed da planilha; necessário para `updateEntry`/`deleteEntry`).
+Mesma estrutura de `Row`. O campo `row` (1-indexed da planilha) é o que `updateEntry`/`deleteEntry` exigem.
 
 ### Estrutura de `historicalSummary.history`
 
@@ -167,6 +170,7 @@ Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
 - **`monthData` sem `month` E sheet vazia:** retorna `{ ok: true, month: null, rows: [] }`.
 - **`updateEntry`/`deleteEntry` com `row < 2`:** `{ ok: false, error: "invalid_row" }`.
 - **`updateEntry`/`deleteEntry` com `row > lastRow`:** `{ ok: false, error: "row_out_of_range" }`.
+- **`row` obsoleto:** `addEntry`, o webhook e Nova fatura inserem no **topo** e empurram todas as linhas para baixo, então um `row` lido antes da inserção passa a apontar para a linha de cima. Vale igual para `monthData` e `lastEntries`; o backend não tem como detectar. Cliente deve reler a lista depois de qualquer inserção (invalidar os providers) e não guardar `row` entre sessões.
 - **`historicalSummary` quando há menos que 12 meses:** retorna o que houver, do mais antigo ao mais recente.
 - **Parcela:** `updateEntry` e `addEntry` forçam `setNumberFormat("@")` na célula antes de gravar para impedir Sheets auto-parsear `"1/3"` como data.
 - **`addEntry` em sheet vazia (só headers):** insere na linha 2 normalmente; retorna `{ ok: true, row: 2 }`.
