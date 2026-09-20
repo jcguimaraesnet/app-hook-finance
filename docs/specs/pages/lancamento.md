@@ -105,7 +105,7 @@ Ordem dos campos no modal, de cima pra baixo:
 4. Descrição (TextField).
 5. Valor (R$, decimal).
 6. Categoria (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
-7. Rateio (Dropdown: `""`, `"Julio"`, `"Dani"`, `"Metade"`, `"Alzira"`).
+7. **Rateio** (col G) — Dropdown com `""` (exibido `(vazio)`), `Julio`, `Dani`, `Metade` (exibido `Metade (compartilhado)`), `Alzira`. Valor fora do enum (legado digitado direto na planilha) entra como item extra prefixado `(?) <valor>` — mesmo padrão de Origem e Banco. Sem isso o `DropdownButtonFormField` falha o assert de "exatamente um item com esse valor" e o modal **não abre**, deixando a linha ineditável justamente no app que serviria para corrigi-la (pós-2026-09-20).
 8. **Banco** (col H) — `DropdownButtonFormField<String>` com `""` (vazio), `Santander`, `Revolut`. Só renderiza quando `_origem == "Cartão"`. Se `entry.banco` vier fora do enum (legado numérico, ex. `"784"`), é adicionado como item extra prefixado `(?) 784` para correção sem perda — mesmo padrão do campo Origem. Send: `banco` (`""` quando Origem ≠ Cartão). Pós-2026-09-12.
 9. Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md)).
 

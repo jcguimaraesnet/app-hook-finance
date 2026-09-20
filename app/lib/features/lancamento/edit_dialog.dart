@@ -16,6 +16,15 @@ const List<String> _origemOptions = kOrigens;
 // Spec: docs/specs/data/despesas-sheet.md (col H, Banco)
 const List<String> _bancoOptions = ['', 'Santander', 'Revolut'];
 
+// Spec: docs/specs/data/despesas-sheet.md (col G, Rateio)
+const List<String> _rateioOptions = ['', 'Julio', 'Dani', 'Metade', 'Alzira'];
+
+String _rateioLabel(String v) => switch (v) {
+      '' => '(vazio)',
+      'Metade' => 'Metade (compartilhado)',
+      _ => v,
+    };
+
 const double _fieldGap = 10;
 
 class EditDialog extends StatefulWidget {
@@ -244,6 +253,15 @@ class _EditDialogState extends State<EditDialog> {
       bancoItems.add(_banco);
     }
 
+    // Idem para rateio. Sem isso o DropdownButtonFormField falha o assert de
+    // "exatamente um item com esse valor" e o modal nem abre — era o caso de
+    // "Júlio" acentuado, digitado direto na planilha: a linha ficava ineditável
+    // justamente no app que serviria para corrigi-la.
+    final rateioItems = <String>[..._rateioOptions];
+    if (_rateio.isNotEmpty && !rateioItems.contains(_rateio)) {
+      rateioItems.add(_rateio);
+    }
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
@@ -336,15 +354,16 @@ class _EditDialogState extends State<EditDialog> {
                     DropdownButtonFormField<String>(
                       initialValue: _rateio,
                       decoration: const InputDecoration(labelText: 'Rateio'),
-                      items: const [
-                        DropdownMenuItem(value: '', child: Text('(vazio)')),
-                        DropdownMenuItem(value: 'Julio', child: Text('Julio')),
-                        DropdownMenuItem(value: 'Dani', child: Text('Dani')),
-                        DropdownMenuItem(
-                            value: 'Metade',
-                            child: Text('Metade (compartilhado)')),
-                        DropdownMenuItem(
-                            value: 'Alzira', child: Text('Alzira')),
+                      items: [
+                        for (final r in rateioItems)
+                          DropdownMenuItem(
+                            value: r,
+                            child: Text(
+                              _rateioOptions.contains(r)
+                                  ? _rateioLabel(r)
+                                  : '(?) $r',
+                            ),
+                          ),
                       ],
                       onChanged: (v) => setState(() => _rateio = v ?? ''),
                     ),

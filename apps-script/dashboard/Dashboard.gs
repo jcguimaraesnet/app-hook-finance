@@ -451,6 +451,25 @@ function updateEntry(token, row, fields) {
   if (!origem) return { ok: false, error: "missing_origem" };
   if (addEntryOrigens_().indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
 
+  // Validações espelhadas de addEntry. Até 2026-09-20 este endpoint gravava
+  // rateio, parcela e valor sem checar: rateio aceitava string livre (foi assim
+  // que "Júlio" acentuado entrou na col G e ficou invisível para splitForPerson),
+  // parcela aceitava qualquer texto, e valor não-numérico virava 0 silenciosamente.
+  const rateio = String(fields.rateio || "").trim();
+  if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
+
+  const parcela = String(fields.parcela || "").trim();
+  if (parcela && !ADD_ENTRY_PARCELA_RE.test(parcela)) {
+    return { ok: false, error: "invalid_parcela" };
+  }
+
+  const valorRaw = fields.valor;
+  if (valorRaw === undefined || valorRaw === null || valorRaw === "") {
+    return { ok: false, error: "missing_valor" };
+  }
+  const valor = Number(valorRaw);
+  if (isNaN(valor)) return { ok: false, error: "invalid_valor" };
+
   // `banco` é opcional: clientes antigos (APK pré-2026-09-12) não mandam o campo
   // e não podem apagar a col H sem querer. Só validamos/gravamos se veio no body.
   const hasBanco = fields.banco !== undefined && fields.banco !== null;
@@ -474,16 +493,16 @@ function updateEntry(token, row, fields) {
   dataRefCell.setValue(dataRef);
 
   sheet.getRange(row, 3).setValue(String(fields.descricao || ""));
-  sheet.getRange(row, 4).setValue(Number(fields.valor) || 0);
+  sheet.getRange(row, 4).setValue(valor);
   sheet.getRange(row, 5).setValue(origem);
   sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
-  sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
+  sheet.getRange(row, 7).setValue(rateio);
   if (hasBanco) sheet.getRange(row, 8).setValue(banco);
 
   // Força TEXT na col I (Parcela) pra evitar auto-parse de "1/3" como data.
   const parcelaCell = sheet.getRange(row, 9);
   parcelaCell.setNumberFormat("@");
-  parcelaCell.setValue(String(fields.parcela || ""));
+  parcelaCell.setValue(parcela);
 
   return { ok: true, row: row };
 }

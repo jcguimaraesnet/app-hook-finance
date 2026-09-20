@@ -96,9 +96,13 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 - `fields.banco` (string ∈ `""` \| `Santander` \| `Revolut`). Se **ausente** do body (`undefined`), col H não é tocada — mantém compatibilidade com clientes antigos (APK anterior) que não conhecem o campo. Se presente, é validado e gravado (inclusive `""`, que limpa a célula).
 
 **Erros adicionais** (além de `unauthorized`/`invalid_row`/`row_out_of_range`/`sheet_not_found`):
-- `missing_data` / `missing_dataRef` / `missing_origem` — campo vazio ou ausente.
+- `missing_data` / `missing_dataRef` / `missing_origem` / `missing_valor` — campo vazio ou ausente.
 - `invalid_data` — `data` fora de `DD/MM/YYYY` (pós-2026-09-12).
-- `invalid_origem` / `invalid_banco` — fora do enum.
+- `invalid_origem` / `invalid_banco` / `invalid_rateio` — fora do enum.
+- `invalid_valor` — `valor` não é número.
+- `invalid_parcela` — string não vazia que não casa `^\d+\/\d+$`.
+
+> `rateio`, `parcela` e `valor` só passaram a ser validados aqui em **2026-09-20**. Antes o endpoint gravava o que viesse: `rateio` aceitava string livre — foi assim que um `"Júlio"` acentuado entrou na col G e ficou invisível para [split-for-person.md](../rules/split-for-person.md), sem aparecer em nenhum total —, `parcela` aceitava qualquer texto e `valor` não-numérico virava `0` silenciosamente. `addEntry` já validava os três desde sempre; a assimetria era um descuido, não uma decisão.
 
 **Comportamento**:
 - Col A: grava `parseBrDate_(data)` (Date) + `setNumberFormat("dd/MM/yyyy")`. **Até 2026-09-12** forçava `@` e gravava a string — toda linha editada pelo app ficava com a data da fatura em texto. Editar a linha de novo agora converte para Date.
