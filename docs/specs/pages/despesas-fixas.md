@@ -46,7 +46,19 @@ Uma linha por registro, **na ordem da aba** — que é a ordem em que entram na 
 
 Tap abre o modal; o botão **Nova despesa fixa** abre o mesmo modal vazio.
 
-Campos: Dia (1–31), Valor, Descrição, Categoria, Origem (`Crédito`|`Débito`), Rateio, e um switch **Entra no acerto** (grava `"Sim"` na col G).
+**Ordem dos campos**, espelhada do modal de [lancamento.md](lancamento.md) para as duas telas lerem igual:
+
+| # | Despesa fixa | Equivalente em Lançamento |
+|---|---|---|
+| 1 | **Dia** (1–31) | Mês Fatura / Data Referência |
+| 2 | **Origem** (`Crédito`\|`Débito`) | Origem |
+| 3 | **Descrição** | Descrição |
+| 4 | **Valor** | Valor |
+| 5 | **Categoria** | Categoria |
+| 6 | **Rateio** | Rateio |
+| 7 | **Entra no acerto** (switch; grava `"Sim"` na col G) | Banco / Parcela (extras) |
+
+Origem fica **antes** da descrição, não no meio dos campos — é a posição que ela ocupa no outro modal. Há teste comparando a posição vertical dos rótulos nos dois.
 
 - **Rateio não aceita vazio** aqui, diferente da col G da aba Despesas: a linha vira lançamento de verdade na fatura e ficaria sem dono. O dropdown só oferece `Julio`, `Dani`, `Metade`, `Alzira`.
 - Defaults do modal de criação: Categoria `Contas`, Origem `Débito`, Rateio `Metade` — o perfil das 20 linhas existentes.

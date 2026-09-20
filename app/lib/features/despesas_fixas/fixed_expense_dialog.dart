@@ -223,44 +223,17 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextField(
-                            controller: _diaCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Dia',
-                              helperText: '1 a 31',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 3,
-                          child: TextField(
-                            controller: _valorCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration:
-                                const InputDecoration(labelText: 'Valor (R\$)'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
+                    // Ordem espelhada do modal de lançamento (lancamento.md):
+                    // data → origem → descrição → valor → categoria → rateio →
+                    // extras. Aqui "Dia" faz o papel das datas e "acerto" o dos
+                    // campos extras (Banco/Parcela).
                     TextField(
-                      controller: _descricaoCtrl,
-                      decoration: const InputDecoration(labelText: 'Descrição'),
-                      autocorrect: false,
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _categoriaCtrl,
-                      decoration: const InputDecoration(labelText: 'Categoria'),
-                      autocorrect: false,
+                      controller: _diaCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Dia',
+                        helperText: 'Dia do mês em que entra na fatura (1 a 31)',
+                      ),
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
@@ -275,6 +248,26 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                           : (v) => setState(() => _origem = v ?? kOrigemDebito),
                     ),
                     const SizedBox(height: 10),
+                    TextField(
+                      controller: _descricaoCtrl,
+                      decoration: const InputDecoration(labelText: 'Descrição'),
+                      autocorrect: false,
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _valorCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration:
+                          const InputDecoration(labelText: 'Valor (R\$)'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _categoriaCtrl,
+                      decoration: const InputDecoration(labelText: 'Categoria'),
+                      autocorrect: false,
+                    ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       initialValue: _rateio,
                       decoration: const InputDecoration(labelText: 'Rateio'),
@@ -286,8 +279,9 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                                 r == 'Metade' ? 'Metade (compartilhado)' : r),
                           ),
                       ],
-                      onChanged:
-                          _busy ? null : (v) => setState(() => _rateio = v ?? 'Metade'),
+                      onChanged: _busy
+                          ? null
+                          : (v) => setState(() => _rateio = v ?? 'Metade'),
                     ),
                     const SizedBox(height: 4),
                     SwitchListTile(
