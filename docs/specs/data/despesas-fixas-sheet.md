@@ -13,7 +13,7 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 
 ## Regras
 
-### Colunas (7 total)
+### Colunas (8 total)
 
 | # | Letra | Header | Tipo | Validação |
 |---|-------|--------|------|-----------|
@@ -24,10 +24,11 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 | 5 | E | `Categoria` | string | não-vazia (atualmente todas `Contas`) |
 | 6 | F | `Rateio` | string enum | `Julio` \| `Dani` \| `Metade` \| `Alzira` |
 | 7 | G | `Acerto` | string | `""` \| `"Sim"` |
+| 8 | H | `Parcelas restantes` | number \| `""` | Vazio = **recorrente, sem fim** (o caso de quase toda linha). Número inteiro ≥ 1 = quantas faturas ainda recebem a linha; a Nova fatura decrementa e **remove a linha ao zerar**. Pós-2026-09-20 — ver [../rules/fixed-expenses.md](../rules/fixed-expenses.md). |
 
 ### Leitura
 
-- Linha 1 = headers. Backend lê de `A2:G{last}`.
+- Linha 1 = headers. Backend lê de `A2:H{last}`. A aba nasceu com 7 colunas; `ensureFixedParcelasHeader_` escreve o header da col H se estiver faltando (idempotente).
 - **Linhas 100% vazias (todas as 7 colunas em branco/whitespace) são ignoradas** — tolera linha em branco no meio ou no fim, e o comum `getLastRow()` inflado por conteúdo/formatação residual numa célula qualquer. Uma linha **parcialmente** preenchida NÃO é ignorada: continua validada (é erro real, não branco intencional).
 - As demais linhas são validadas — qualquer violação lança erro com prefixo `despesas-fixas L{N}:` e o gatilho retorna `fixed_expenses_failed`.
 - A ordem das linhas na aba determina a ordem visual do bloco inserido na aba `Despesas`.

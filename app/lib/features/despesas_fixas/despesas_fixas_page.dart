@@ -233,7 +233,13 @@ class _LinhaFixa extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         entry.isValid
-                            ? '${entry.rateio} · ${entry.origem}${entry.acerto == 'Sim' ? ' · acerto' : ''}'
+                            ? [
+                                entry.rateio,
+                                entry.origem,
+                                if (entry.acerto == 'Sim') 'acerto',
+                                if (entry.isParcelada)
+                                  'faltam ${entry.parcelasRestantes}',
+                              ].join(' · ')
                             : entry.invalid,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

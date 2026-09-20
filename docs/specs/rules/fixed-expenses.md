@@ -78,6 +78,22 @@ Lista vive na aba `despesas-fixas` da planilha — schema em [../data/despesas-f
 
 Mudanças refletem na próxima fatura inserida. Não retroativo.
 
+## Parcelas restantes (pós-2026-09-20)
+
+Col H da aba. Vazio = recorrente, o comportamento de sempre. Número ≥ 1 = a linha ainda entra em N faturas.
+
+`decrementFixedParcelas_(fixed)` roda **depois** do `applyInvoiceBlock_`, no `newInvoice_`:
+
+1. Considera só as linhas com `parcelasRestantes` numérico > 0. Recorrentes não são tocadas.
+2. Para cada uma: `restantes - 1`. Se o resultado for ≤ 0, a linha é **removida** da aba; senão o novo valor é gravado na col H.
+3. As remoções acontecem em **ordem decrescente de linha**. `deleteRow` desloca tudo abaixo; apagar de cima para baixo invalidaria os índices das linhas seguintes já calculados.
+
+**Por que depois do insert e não antes:** se o `applyInvoiceBlock_` falhar, o contador não pode ter andado — a fatura não foi criada, a parcela não foi cobrada.
+
+**Por que o contador e não a coluna Parcela da aba Despesas:** gravar `X/Y` na col I faria o rollover do [new-invoice.md](new-invoice.md) reinserir a linha na fatura seguinte **além** da inserção feita pelo template — parcela duplicada. O contador vive só na aba de config, e a linha inserida em `Despesas` continua sem parcela, como sempre foi.
+
+**O que a linha inserida NÃO carrega:** nada indica na aba `Despesas` que aquela é a parcela 3 de 6. A informação vive no template. Decisão do usuário (2026-09-20): controlar um único número é mais simples do que manter total + atual, e parcela embutida na descrição é frágil.
+
 ## Edge cases
 
 - **Nova fatura disparada 2x:** segundo call cai no dedup de `newInvoice_` (`invoice_already_exists`). Bloco não duplica.

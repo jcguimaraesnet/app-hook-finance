@@ -7,6 +7,9 @@
 // Spec: docs/specs/data/despesas-fixas-sheet.md
 const FIXED_RATEIOS = ["Julio", "Dani", "Metade", "Alzira"];
 
+// A..H. Col H (Parcelas restantes) entrou em 2026-09-20.
+const FIXED_COLS = 8;
+
 function validateFixedExpense_(f) {
   const dia = Number(f.dia);
   if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
@@ -44,10 +47,24 @@ function validateFixedExpense_(f) {
     return { ok: false, error: `acerto inválido (${acerto})` };
   }
 
+  // Col H, opcional. Vazio = recorrente sem fim (o caso de quase toda despesa
+  // fixa). Número = quantas faturas ainda recebem a linha; decrementa a cada
+  // Nova fatura e a linha é removida ao zerar.
+  const pr = f.parcelasRestantes;
+  let parcelasRestantes = "";
+  if (pr !== undefined && pr !== null && String(pr).trim() !== "") {
+    const n = Number(pr);
+    if (!Number.isInteger(n) || n < 1) {
+      return { ok: false, error: `parcelas restantes inválidas (${pr})` };
+    }
+    parcelasRestantes = n;
+  }
+
   return {
     ok: true,
     value: { dia: dia, descricao: descricao, valor: valor, origem: origem,
-             categoria: categoria, rateio: rateio, acerto: acerto },
+             categoria: categoria, rateio: rateio, acerto: acerto,
+             parcelasRestantes: parcelasRestantes },
   };
 }
 
@@ -66,7 +83,7 @@ function loadFixedExpenses_() {
   const last = sheet.getLastRow();
   if (last < 2) throw new Error(`aba "${FIXED_SHEET_NAME}" está vazia`);
 
-  const rows = sheet.getRange(2, 1, last - 1, 7).getValues();
+  const rows = sheet.getRange(2, 1, last - 1, FIXED_COLS).getValues();
   const result = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -75,7 +92,7 @@ function loadFixedExpenses_() {
 
     const v = validateFixedExpense_({
       dia: r[0], descricao: r[1], valor: r[2], origem: r[3],
-      categoria: r[4], rateio: r[5], acerto: r[6],
+      categoria: r[4], rateio: r[5], acerto: r[6], parcelasRestantes: r[7],
     });
     // Lança, como sempre: uma linha ruim aqui trava a Nova fatura de propósito,
     // porque ela viraria lançamento errado na planilha. O endpoint de leitura da
@@ -84,6 +101,7 @@ function loadFixedExpenses_() {
     if (!v.ok) throw new Error(`despesas-fixas L${line}: ${v.error}`);
 
     result.push({
+      row: line, // necessário para decrementar/remover depois do insert
       refDay: v.value.dia,
       description: v.value.descricao,
       value: v.value.valor,
@@ -91,6 +109,7 @@ function loadFixedExpenses_() {
       categoria: v.value.categoria,
       rateio: v.value.rateio,
       acerto: v.value.acerto,
+      parcelasRestantes: v.value.parcelasRestantes,
     });
   }
   return result;
@@ -129,7 +148,7 @@ function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
     .concat(separator)
     .concat(fixedRows)
     .concat([blank, blank, blank]);
-  return { block: block, fixedCount: fixedRows.length };
+  return { block: block, fixedCount: fixedRows.length, fixed: fixed };
 }
 
 // Aplica o bloco em sheet: insertRowsBefore(2, N) + formatos + setValues + linha azul.
@@ -138,6 +157,41 @@ function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
 // - col I (Parcela): força @ pra impedir Sheets auto-parsear "1/3" como data
 //   (ver docs/specs/data/despesas-sheet.md).
 // Spec: docs/specs/rules/fixed-expenses.md
+// Depois que o bloco entra na planilha, baixa em 1 o contador das despesas
+// fixas finitas e remove as que zeraram. Só col H é tocada; quem some, some
+// inteira.
+//
+// Ordem decrescente na remoção: deleteRow desloca tudo abaixo, então apagar de
+// cima para baixo invalidaria as linhas seguintes já calculadas.
+//
+// Spec: docs/specs/rules/fixed-expenses.md
+function decrementFixedParcelas_(fixed) {
+  const finitas = (fixed || []).filter(
+    (e) => typeof e.parcelasRestantes === "number" && e.parcelasRestantes > 0,
+  );
+  if (finitas.length === 0) return { decremented: 0, removed: 0 };
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  if (!sheet) return { decremented: 0, removed: 0 };
+
+  const aRemover = [];
+  let decremented = 0;
+  for (const e of finitas) {
+    const restantes = e.parcelasRestantes - 1;
+    if (restantes <= 0) {
+      aRemover.push(e.row);
+    } else {
+      sheet.getRange(e.row, 8).setValue(restantes);
+    }
+    decremented++;
+  }
+
+  aRemover.sort((a, b) => b - a);
+  for (const row of aRemover) sheet.deleteRow(row);
+
+  return { decremented: decremented, removed: aRemover.length };
+}
+
 function applyInvoiceBlock_(sheet, block) {
   sheet.insertRowsBefore(2, block.length);
   sheet.getRange(2, 1, block.length, 1).setNumberFormat("dd/MM/yyyy");
@@ -188,22 +242,30 @@ function newInvoice_(token) {
       }
     }
 
-    let block, fixedCount;
+    let block, fixedCount, fixedList;
     try {
       const built = buildInvoiceBlock_(newClosing, parcelaRows);
       block = built.block;
       fixedCount = built.fixedCount;
+      fixedList = built.fixed;
     } catch (e) {
       return { ok: false, error: "fixed_expenses_failed", detail: String(e && e.message ? e.message : e) };
     }
 
     applyInvoiceBlock_(sheet, block);
 
+    // Depois do insert, nunca antes: se o apply falhar, o contador não pode ter
+    // andado. A aba de config é outra sheet, fora do lock da Despesas — aceitável
+    // porque só a Nova fatura escreve nela nesse fluxo.
+    const parcelas = decrementFixedParcelas_(fixedList);
+
     return {
       ok: true,
       invoiceClosing: newClosing,
       fixedCount: fixedCount,
       parcelaCount: parcelaRows.length,
+      fixedDecremented: parcelas.decremented,
+      fixedRemoved: parcelas.removed,
     };
   } finally {
     try { lock.releaseLock(); } catch (_) {}
@@ -232,27 +294,30 @@ function seedFixedExpenses() {
   if (sheet.getLastRow() > 1)
     throw new Error("aba já tem dados — abortando para não duplicar");
 
-  const headers = ["Dia", "Descrição", "Valor", "Origem", "Categoria", "Rateio", "Acerto"];
+  const headers = ["Dia", "Descrição", "Valor", "Origem", "Categoria", "Rateio", "Acerto", "Parcelas restantes"];
   const data = [
-    [6,  "Diarista",                                                       1500,    "Pix (contas)", "Contas", "Dani",  ""   ],
-    [6,  "Plano de Saúde (Dani)",                                          761.81,  "Pix (contas)", "Contas", "Dani",  ""   ],
-    [6,  "Plano de Saúde (Julio)",                                         761.81,  "Pix (contas)", "Contas", "Julio", "Sim"],
-    [7,  "Mensalidade creche 1/2",                                         1741.40, "Pix (contas)", "Contas", "Dani",  "Sim"],
-    [7,  "Mensalidade creche 2/2",                                         1741.40, "Pix (contas)", "Contas", "Julio", "Sim"],
-    [5,  "Ajuda de custo (Creche)",                                        -620,    "Pix (contas)", "Contas", "Dani",  ""   ],
-    [6,  "Claro Internet - https://minhaclaroresidencial.claro.com.br",    0.01,    "Pix (contas)", "Contas", "Dani",  ""   ],
-    [5,  "Gás",                                                            120.42,  "Pix (contas)", "Contas", "Dani",  "Sim"],
-    [10, "Condomínio 1/2",                                                 1550,    "Pix (contas)", "Contas", "Julio", "Sim"],
-    [10, "Condomínio 1/2",                                                 0,       "Pix (contas)", "Contas", "Dani",  ""   ],
-    [7,  "Energia (débito automático)",                                    500,     "Pix (contas)", "Contas", "Dani",  ""   ],
-    [15, "Guia de Previdência Social",                                     1300,    "Pix (contas)", "Contas", "Julio", ""   ],
-    [15, "Guia de Previdência Social (coloquei pra Dani pra equilibrar)",  1300,    "Pix (contas)", "Contas", "Dani",  ""   ],
-    [5,  "Dízimo",                                                         500,     "Pix (contas)", "Contas", "Julio", ""   ],
-    [5,  "Dízimo",                                                         500,     "Pix (contas)", "Contas", "Dani",  ""   ],
+    [6,  "Diarista",                                                       1500,    ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [6,  "Plano de Saúde (Dani)",                                          761.81,  ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [6,  "Plano de Saúde (Julio)",                                         761.81,  ORIGEM_DEBITO, "Contas", "Julio", "Sim"],
+    [7,  "Mensalidade creche 1/2",                                         1741.40, ORIGEM_DEBITO, "Contas", "Dani",  "Sim"],
+    [7,  "Mensalidade creche 2/2",                                         1741.40, ORIGEM_DEBITO, "Contas", "Julio", "Sim"],
+    [5,  "Ajuda de custo (Creche)",                                        -620,    ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [6,  "Claro Internet - https://minhaclaroresidencial.claro.com.br",    0.01,    ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [5,  "Gás",                                                            120.42,  ORIGEM_DEBITO, "Contas", "Dani",  "Sim"],
+    [10, "Condomínio 1/2",                                                 1550,    ORIGEM_DEBITO, "Contas", "Julio", "Sim"],
+    [10, "Condomínio 1/2",                                                 0,       ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [7,  "Energia (débito automático)",                                    500,     ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [15, "Guia de Previdência Social",                                     1300,    ORIGEM_DEBITO, "Contas", "Julio", ""   ],
+    [15, "Guia de Previdência Social (coloquei pra Dani pra equilibrar)",  1300,    ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
+    [5,  "Dízimo",                                                         500,     ORIGEM_DEBITO, "Contas", "Julio", ""   ],
+    [5,  "Dízimo",                                                         500,     ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
   ];
 
+  // `data` tem 7 colunas (col H nasce vazia = recorrente); o range precisa
+  // casar com a largura das linhas, não com a dos headers.
+  const largura = data[0].length;
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold");
-  sheet.getRange(2, 1, data.length, headers.length).setValues(data);
+  sheet.getRange(2, 1, data.length, largura).setValues(data);
 }
 
 // ---------------------------------------------------------------------------
@@ -269,11 +334,12 @@ function getFixedExpenses(token) {
   if (auth) return auth;
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
   if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+  ensureFixedParcelasHeader_(sheet);
 
   const last = sheet.getLastRow();
   if (last < 2) return { ok: true, rows: [] };
 
-  const values = sheet.getRange(2, 1, last - 1, 7).getValues();
+  const values = sheet.getRange(2, 1, last - 1, FIXED_COLS).getValues();
   const rows = [];
   for (let i = 0; i < values.length; i++) {
     const r = values[i];
@@ -282,6 +348,7 @@ function getFixedExpenses(token) {
       dia: r[0], descricao: String(r[1] || ""), valor: r[2],
       origem: String(r[3] || ""), categoria: String(r[4] || ""),
       rateio: String(r[5] || ""), acerto: String(r[6] || ""),
+      parcelasRestantes: r[7],
     };
     const v = validateFixedExpense_(raw);
     rows.push({
@@ -293,6 +360,10 @@ function getFixedExpenses(token) {
       categoria: raw.categoria,
       rateio: raw.rateio,
       acerto: raw.acerto,
+      // 0 = recorrente (sem fim). O cliente não precisa distinguir "" de 0.
+      parcelasRestantes: v.ok
+        ? (v.value.parcelasRestantes === "" ? 0 : v.value.parcelasRestantes)
+        : (Number(raw.parcelasRestantes) || 0),
       invalid: v.ok ? "" : v.error,
     });
   }
@@ -309,6 +380,7 @@ function addFixedExpense(token, fields) {
 
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
   if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+  ensureFixedParcelasHeader_(sheet);
 
   const row = Math.max(sheet.getLastRow(), 1) + 1;
   writeFixedExpenseRow_(sheet, row, v.value);
@@ -325,6 +397,7 @@ function updateFixedExpense(token, row, fields) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
   if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
   if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
+  ensureFixedParcelasHeader_(sheet);
 
   writeFixedExpenseRow_(sheet, row, v.value);
   return { ok: true, row: row };
@@ -342,8 +415,18 @@ function deleteFixedExpense(token, row) {
   return { ok: true };
 }
 
+// A aba nasceu com 7 colunas; a col H entrou em 2026-09-20. Escreve o header
+// se estiver faltando — idempotente, uma leitura de célula.
+function ensureFixedParcelasHeader_(sheet) {
+  const cell = sheet.getRange(1, 8);
+  if (String(cell.getValue() || "").trim() === "") {
+    cell.setValue("Parcelas restantes");
+  }
+}
+
 function writeFixedExpenseRow_(sheet, row, v) {
-  sheet.getRange(row, 1, 1, 7).setValues([[
+  sheet.getRange(row, 1, 1, FIXED_COLS).setValues([[
     v.dia, v.descricao, v.valor, v.origem, v.categoria, v.rateio, v.acerto,
+    v.parcelasRestantes,
   ]]);
 }

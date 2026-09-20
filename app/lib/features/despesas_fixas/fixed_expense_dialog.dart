@@ -43,6 +43,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
   late String _origem;
   late String _rateio;
   late bool _acerto;
+  late final TextEditingController _parcelasCtrl;
 
   /// Valor exato como veio da planilha, e o texto inicial do campo. A aba tem
   /// dízimas (parcela 6x = 379.1666666666667) e o campo mostra 2 casas; sem
@@ -67,6 +68,9 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
         e == null ? '' : e.valor.toStringAsFixed(2).replaceAll('.', ',');
     _valorCtrl = TextEditingController(text: _valorTextoInicial);
     _categoriaCtrl = TextEditingController(text: e?.categoria ?? 'Contas');
+    _parcelasCtrl = TextEditingController(
+      text: (e?.parcelasRestantes ?? 0) > 0 ? '${e!.parcelasRestantes}' : '',
+    );
     _origem = kOrigens.contains(e?.origem) ? e!.origem : kOrigemDebito;
     _rateio = _rateioOptions.contains(e?.rateio) ? e!.rateio : 'Metade';
     _acerto = e?.acerto == 'Sim';
@@ -78,6 +82,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
     _descricaoCtrl.dispose();
     _valorCtrl.dispose();
     _categoriaCtrl.dispose();
+    _parcelasCtrl.dispose();
     super.dispose();
   }
 
@@ -108,6 +113,17 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
       setState(() => _error = 'Categoria não pode ficar vazia.');
       return null;
     }
+    final parcelasTexto = _parcelasCtrl.text.trim();
+    Object parcelas = '';
+    if (parcelasTexto.isNotEmpty) {
+      final n = int.tryParse(parcelasTexto);
+      if (n == null || n < 1) {
+        setState(() => _error =
+            'Parcelas restantes: deixe vazio para recorrente, ou um número a partir de 1.');
+        return null;
+      }
+      parcelas = n;
+    }
     return {
       'dia': dia,
       'descricao': descricao,
@@ -116,6 +132,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
       'categoria': categoria,
       'rateio': _rateio,
       'acerto': _acerto ? 'Sim' : '',
+      'parcelasRestantes': parcelas,
     };
   }
 
@@ -282,6 +299,17 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                       onChanged: _busy
                           ? null
                           : (v) => setState(() => _rateio = v ?? 'Metade'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _parcelasCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Parcelas restantes',
+                        helperText:
+                            'Vazio = recorrente. Com número, cai 1 a cada fatura e some ao zerar.',
+                        helperMaxLines: 2,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     SwitchListTile(

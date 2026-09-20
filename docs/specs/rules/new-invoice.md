@@ -9,7 +9,7 @@ Endpoint manual que cria o bloco "início de fatura" sem depender do webhook. In
 
 ## Contexto
 
-O bloco visual de fatura (linha azul + despesas fixas) é normalmente disparado pelo webhook na primeira compra de Cartão de uma fatura nova (ver [fixed-expenses.md](fixed-expenses.md)). Se nenhuma compra chega via webhook (notificação push falha, ou o mês foi atípico), a fatura nova fica sem marco visual e sem despesas fixas. A regra antiga não tem fallback.
+O bloco visual de fatura (linha azul + despesas fixas) é criado **apenas** por este gatilho manual. O webhook já não o cria: ele usa sempre a última fatura registrada na planilha (ver comentário em `Webhook.gs` e [fixed-expenses.md](fixed-expenses.md)). Este spec afirmava o contrário até 2026-09-20 — drift corrigido ao implementar o decremento de parcelas, que depende de existir um caminho único.
 
 A opção de menu "Nova fatura" no app Flutter (aba Início, hamburger menu) chama `?action=newInvoice` (POST) que faz o mesmo trabalho do webhook **e** propaga parcelas pendentes da fatura anterior para a nova com `(X+1)/Y`.
 
@@ -31,6 +31,7 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 6. **Rollover de parcelas:** `findCurrentInvoice_(sheet, newClosing)` retorna `{ closing, rows }` da fatura mais recente STRICTLY LESS THAN `newClosing`, ou `null`. Para cada `r` em `rows`: `rolloverParcelaRow_(r.values, newClosing)` retorna nova linha 10-col ou `null` (skip). Linhas que rolam têm col A = `newClosing`, col I = `(X+1)/Y`, col B (data referência original) preservada. Demais colunas idênticas.
 7. **Build bloco:** `buildInvoiceBlock_(newClosing, parcelaRows)` monta `[blank, ...parcelaRows, ...fixedRows, blank, blank, blank]` (parcelas **acima** das fixas — entradas dinâmicas têm prioridade visual). Chama `loadFixedExpenses_()` internamente; se essa lança (aba `despesas-fixas` malformada) → `fixed_expenses_failed` com detail.
 8. **Apply:** `applyInvoiceBlock_(sheet, block)` faz `insertRowsBefore(2, N)`, força `setNumberFormat("@")` na col I do bloco inteiro, escreve valores, pinta linha azul (`#cfe2f3`) na penúltima.
+8b. **Decremento das despesas fixas finitas:** `decrementFixedParcelas_` baixa em 1 a col H da aba `despesas-fixas` e remove as que zeraram. Roda **depois** do apply — ver [fixed-expenses.md](fixed-expenses.md). Reflete em `fixedDecremented` / `fixedRemoved` na resposta.
 9. Lock release no `finally`.
 10. Retorna `{ ok: true, invoiceClosing, fixedCount, parcelaCount }`.
 

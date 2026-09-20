@@ -342,6 +342,11 @@ class FixedExpense {
   final String categoria;
   final String rateio;
   final String acerto;
+
+  /// Quantas faturas ainda recebem esta linha. `0` = recorrente, sem fim (o
+  /// caso de quase toda despesa fixa). A cada Nova fatura o backend decrementa
+  /// e remove a linha ao zerar.
+  final int parcelasRestantes;
   final String invalid;
 
   const FixedExpense({
@@ -353,10 +358,12 @@ class FixedExpense {
     required this.categoria,
     required this.rateio,
     required this.acerto,
+    this.parcelasRestantes = 0,
     this.invalid = '',
   });
 
   bool get isValid => invalid.isEmpty;
+  bool get isParcelada => parcelasRestantes > 0;
 
   factory FixedExpense.fromJson(Map<String, dynamic> j) => FixedExpense(
         row: (j['row'] as num?)?.toInt() ?? 0,
@@ -367,6 +374,7 @@ class FixedExpense {
         categoria: (j['categoria'] ?? '') as String,
         rateio: (j['rateio'] ?? '') as String,
         acerto: (j['acerto'] ?? '') as String,
+        parcelasRestantes: (j['parcelasRestantes'] as num?)?.toInt() ?? 0,
         invalid: (j['invalid'] ?? '') as String,
       );
 
@@ -378,6 +386,7 @@ class FixedExpense {
         'categoria': categoria,
         'rateio': rateio,
         'acerto': acerto,
+        'parcelasRestantes': parcelasRestantes > 0 ? parcelasRestantes : '',
       };
 
   FixedExpense copyWith({
@@ -388,6 +397,7 @@ class FixedExpense {
     String? categoria,
     String? rateio,
     String? acerto,
+    int? parcelasRestantes,
   }) =>
       FixedExpense(
         row: row,
@@ -398,6 +408,7 @@ class FixedExpense {
         categoria: categoria ?? this.categoria,
         rateio: rateio ?? this.rateio,
         acerto: acerto ?? this.acerto,
+        parcelasRestantes: parcelasRestantes ?? this.parcelasRestantes,
         invalid: invalid,
       );
 }

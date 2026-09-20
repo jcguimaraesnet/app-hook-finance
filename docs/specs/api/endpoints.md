@@ -41,7 +41,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `ensureHeader` | — | `{ ok, inserted }` | Garante que a linha 1 é o cabeçalho (`SHEET_HEADERS`). Se a linha 1 não começa com `Data`, insere uma linha acima e grava os headers (`inserted: true`); senão só reescreve (`inserted: false`). Idempotente, com `LockService`. Manutenção. |
-| `addFixedExpense` | `fields: { dia, descricao, valor, origem, categoria, rateio, acerto? }` | `{ ok, row }` | Insere **no fim** da aba `despesas-fixas`. |
+| `addFixedExpense` | `fields: { dia, descricao, valor, origem, categoria, rateio, acerto?, parcelasRestantes? }` | `{ ok, row }` | Insere **no fim** da aba `despesas-fixas`. |
 | `updateFixedExpense` | `row`, `fields` (mesmos de add) | `{ ok, row }` | Sobrescreve A..G da linha. |
 | `deleteFixedExpense` | `row` | `{ ok }` | Remove a linha da aba. |
 | `migrateOrigem` | — | `{ ok, despesas, fixas }` | **One-off de manutenção** (2026-09-20). Converte a col E da aba Despesas e a col D de `despesas-fixas` para `Crédito`/`Débito`. Idempotente; valor desconhecido é reportado e não é tocado. Cada resultado traz `{ changed, kept, blank, unknown[] }`. Remover junto com a ponte de normalização. Ver [../data/despesas-sheet.md](../data/despesas-sheet.md). |
@@ -116,6 +116,8 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 #### Despesas fixas (`fixedExpenses` / `addFixedExpense` / `updateFixedExpense` / `deleteFixedExpense`) — detalhes
 
 CRUD da aba `despesas-fixas` ([../data/despesas-fixas-sheet.md](../data/despesas-fixas-sheet.md)), criado em 2026-09-20 para a tela de Despesas fixas ([../pages/despesas-fixas.md](../pages/despesas-fixas.md)). Antes a aba só era editável à mão no Google Sheets.
+
+**`parcelasRestantes`:** opcional. Vazio/ausente = recorrente; inteiro ≥ 1 = quantas faturas ainda recebem a linha. Na leitura vem como número, com `0` para recorrente. Ver [../rules/fixed-expenses.md](../rules/fixed-expenses.md).
 
 **Validação:** `validateFixedExpense_` em `apps-script/webhook/FixedExpenses.gs` é a fonte única — `loadFixedExpenses_` (webhook) e os três endpoints de escrita usam a mesma função, para não divergirem. Regras: `dia` inteiro 1–31; `descricao` e `categoria` não-vazias; `valor` numérico (negativo é legítimo); `origem` ∈ `Crédito`|`Débito` (enum legado é normalizado); `rateio` ∈ `Julio`|`Dani`|`Metade`|`Alzira` (**não** aceita vazio, diferente da aba Despesas); `acerto` ∈ `""`|`Sim`.
 

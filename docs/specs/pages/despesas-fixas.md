@@ -37,7 +37,7 @@ O risco que a tela reduz: uma linha malformada faz `loadFixedExpenses_` lançar,
 Uma linha por registro, **na ordem da aba** — que é a ordem em que entram na fatura. Cada linha mostra:
 
 - Quadrado com o **dia** (col A).
-- Descrição; abaixo, `rateio · origem` e `· acerto` quando `acerto = "Sim"`.
+- Descrição; abaixo, `rateio · origem`, mais `· acerto` quando `acerto = "Sim"` e `· faltam N` quando a linha é finita.
 - Valor à direita, com chevron.
 
 **Linha inválida** (campo `invalid` preenchido pelo backend) renderiza em vermelho e troca a meta-linha pelo motivo (ex.: `dia inválido (32)`). Um aviso no topo conta quantas são e diz que elas **travam a criação da próxima fatura** — é a informação que o usuário precisa para agir, não um detalhe técnico.
@@ -56,7 +56,8 @@ Tap abre o modal; o botão **Nova despesa fixa** abre o mesmo modal vazio.
 | 4 | **Valor** | Valor |
 | 5 | **Categoria** | Categoria |
 | 6 | **Rateio** | Rateio |
-| 7 | **Entra no acerto** (switch; grava `"Sim"` na col G) | Banco / Parcela (extras) |
+| 7 | **Parcelas restantes** (vazio = recorrente) | Parcela (extras) |
+| 8 | **Entra no acerto** (switch; grava `"Sim"` na col G) | Banco (extras) |
 
 Origem fica **antes** da descrição, não no meio dos campos — é a posição que ela ocupa no outro modal. Há teste comparando a posição vertical dos rótulos nos dois.
 
