@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/types.dart';
-import 'package:hook_finance/features/contas/contas_page.dart';
+import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/features/debito/debito_page.dart';
 import 'package:hook_finance/state/data_providers.dart';
 import 'package:hook_finance/theme/theme.dart';
 
@@ -42,7 +43,7 @@ Future<void> _pump(WidgetTester tester, List<Entry> rows) async {
       ],
       child: MaterialApp(
         theme: buildAppTheme(),
-        home: const ContasPage(initialPerson: Person.julio),
+        home: const DebitoPage(initialPerson: Person.julio),
       ),
     ),
   );
@@ -50,15 +51,15 @@ Future<void> _pump(WidgetTester tester, List<Entry> rows) async {
 }
 
 void main() {
-  testWidgets('lista só contas da pessoa e reconcilia com o total', (
+  testWidgets('lista só débito da pessoa e reconcilia com o total', (
     tester,
   ) async {
     await _pump(tester, [
-      _e(row: 2, origem: 'Cartão', rateio: 'Julio', valor: 500, descricao: 'CARTAO JULIO'),
-      _e(row: 3, origem: 'Pix (contas)', rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
-      _e(row: 4, origem: 'Contas', rateio: 'Metade', valor: 200, descricao: 'LUZ METADE'),
-      _e(row: 5, origem: 'Contas', rateio: 'Dani', valor: 70, descricao: 'CONTA DANI'),
-      _e(row: 6, origem: 'Contas', rateio: '', valor: 999, descricao: 'SEM RATEIO'),
+      _e(row: 2, origem: kOrigemCredito, rateio: 'Julio', valor: 500, descricao: 'CARTAO JULIO'),
+      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
+      _e(row: 4, origem: kOrigemDebito, rateio: 'Metade', valor: 200, descricao: 'LUZ METADE'),
+      _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'CONTA DANI'),
+      _e(row: 6, origem: kOrigemDebito, rateio: '', valor: 999, descricao: 'SEM RATEIO'),
     ]);
 
     expect(tester.takeException(), isNull);
@@ -69,7 +70,7 @@ void main() {
     expect(find.text('CARTAO JULIO'), findsNothing);
     expect(find.text('CONTA DANI'), findsNothing);
     expect(find.text('SEM RATEIO'), findsNothing);
-    expect(find.text('Lançamentos de contas (2)'), findsOneWidget);
+    expect(find.text('Lançamentos de débito (2)'), findsOneWidget);
 
     // Sua parte = 120 + 200/2 = 220. Total cheio = 320.
     expect(find.text('SUA PARTE'), findsOneWidget);
@@ -82,8 +83,8 @@ void main() {
     tester,
   ) async {
     await _pump(tester, [
-      _e(row: 2, origem: 'Pix (contas)', rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
-      _e(row: 3, origem: 'Contas', rateio: 'Julio', valor: 80, descricao: 'LUZ JULIO'),
+      _e(row: 2, origem: kOrigemDebito, rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
+      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 80, descricao: 'LUZ JULIO'),
     ]);
 
     expect(tester.takeException(), isNull);
@@ -97,8 +98,8 @@ void main() {
     tester,
   ) async {
     await _pump(tester, [
-      _e(row: 2, origem: 'Contas', rateio: 'Julio', valor: 10, descricao: 'DEZEMBRO', dataRef: '20/12/2025 10:00'),
-      _e(row: 3, origem: 'Contas', rateio: 'Julio', valor: 10, descricao: 'JANEIRO', dataRef: '05/01/2026 09:00'),
+      _e(row: 2, origem: kOrigemDebito, rateio: 'Julio', valor: 10, descricao: 'DEZEMBRO', dataRef: '20/12/2025 10:00'),
+      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 10, descricao: 'JANEIRO', dataRef: '05/01/2026 09:00'),
     ]);
 
     expect(tester.takeException(), isNull);
@@ -107,13 +108,13 @@ void main() {
     expect(janeiro, lessThan(dezembro));
   });
 
-  testWidgets('mês sem contas mostra o vazio', (tester) async {
+  testWidgets('mês sem débito mostra o vazio', (tester) async {
     await _pump(tester, [
-      _e(row: 2, origem: 'Cartão', rateio: 'Julio', valor: 500, descricao: 'SO CARTAO'),
+      _e(row: 2, origem: kOrigemCredito, rateio: 'Julio', valor: 500, descricao: 'SO CARTAO'),
     ]);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Sem contas neste mês.'), findsOneWidget);
-    expect(find.text('Lançamentos de contas (0)'), findsOneWidget);
+    expect(find.text('Sem lançamentos de débito neste mês.'), findsOneWidget);
+    expect(find.text('Lançamentos de débito (0)'), findsOneWidget);
   });
 }

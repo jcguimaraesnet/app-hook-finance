@@ -1,6 +1,8 @@
 // Spec: docs/specs/data/despesas-sheet.md
 // Spec: docs/specs/api/endpoints.md
 
+import 'origem.dart';
+
 class ExpenseRow {
   final String data;
   final String dataRef;
@@ -31,7 +33,7 @@ class ExpenseRow {
         dataRef: (j['dataRef'] ?? '') as String,
         descricao: (j['descricao'] ?? '') as String,
         valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
-        origem: (j['origem'] ?? '') as String,
+        origem: normalizeOrigem((j['origem'] ?? '') as String),
         categoria: (j['categoria'] ?? '') as String,
         rateio: (j['rateio'] ?? '') as String,
         banco: (j['banco'] ?? '') as String,
@@ -63,7 +65,7 @@ class Entry extends ExpenseRow {
         dataRef: (j['dataRef'] ?? '') as String,
         descricao: (j['descricao'] ?? '') as String,
         valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
-        origem: (j['origem'] ?? '') as String,
+        origem: normalizeOrigem((j['origem'] ?? '') as String),
         categoria: (j['categoria'] ?? '') as String,
         rateio: (j['rateio'] ?? '') as String,
         banco: (j['banco'] ?? '') as String,

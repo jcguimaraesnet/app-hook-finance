@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
+import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -335,7 +336,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
   final _descCtrl = TextEditingController();
   final _categoriaCtrl = TextEditingController();
 
-  String _origem = 'Cartão'; // 'Cartão' | 'Pix (contas)'
+  String _origem = kOrigemCredito;
   String _rateio = 'Metade';
   // Sem default de propósito: escolher errado é pior que não escolher.
   String _banco = ''; // '' | 'Santander' | 'Revolut'
@@ -404,7 +405,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
       setState(() => _error = 'Informe um valor maior que zero.');
       return;
     }
-    final isCartao = _origem == 'Cartão';
+    final isCartao = _origem == kOrigemCredito;
     if (isCartao && _banco.isEmpty) {
       setState(() => _error = 'Selecione o banco.');
       return;
@@ -452,7 +453,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isCartao = _origem == 'Cartão';
+    final isCartao = _origem == kOrigemCredito;
     final monthAsync = ref.watch(monthDataProvider(null));
     final categorias = <String>{
       for (final r in monthAsync.value?.rows ?? const <ExpenseRow>[])
@@ -578,10 +579,10 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
                     _FieldLabel(label: 'FORMA'),
                     const SizedBox(height: 6),
                     _Segmented(
-                      options: const ['Cartão', 'Pix'],
-                      selected: isCartao ? 'Cartão' : 'Pix',
+                      options: const [kOrigemCredito, kOrigemDebito],
+                      selected: isCartao ? kOrigemCredito : kOrigemDebito,
                       onChange: (v) => setState(() {
-                        _origem = v == 'Pix' ? 'Pix (contas)' : 'Cartão';
+                        _origem = v == kOrigemDebito ? kOrigemDebito : kOrigemCredito;
                       }),
                     ),
                   ],

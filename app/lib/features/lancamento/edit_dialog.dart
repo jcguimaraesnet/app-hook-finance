@@ -5,17 +5,13 @@ import 'package:flutter/material.dart';
 import '../../api/endpoints.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/origem.dart';
 import '../../core/rules/parcela.dart';
 import '../../core/types.dart';
 import '../../widgets/bloom/month_year_picker.dart';
 
-const List<String> _origemOptions = [
-  'Cartão',
-  'Pix (contas)',
-  'Pessoal',
-  'Empregados',
-  'Contas',
-];
+// Spec: docs/specs/data/despesas-sheet.md (col E)
+const List<String> _origemOptions = kOrigens;
 
 // Spec: docs/specs/data/despesas-sheet.md (col H, Banco)
 const List<String> _bancoOptions = ['', 'Santander', 'Revolut'];
@@ -171,7 +167,7 @@ class _EditDialogState extends State<EditDialog> {
         data: formatBrDate(_data),
         dataRef: formatBrDateTime(_dataRef),
         origem: _origem,
-        banco: _origem == 'Cartão' ? _banco : '',
+        banco: _origem == kOrigemCredito ? _banco : '',
       );
       final r = await widget.api.updateEntry(widget.entry.row, fields);
       if (!mounted) return;
@@ -352,7 +348,7 @@ class _EditDialogState extends State<EditDialog> {
                       ],
                       onChanged: (v) => setState(() => _rateio = v ?? ''),
                     ),
-                    if (_origem == 'Cartão') ...[
+                    if (_origem == kOrigemCredito) ...[
                       const SizedBox(height: _fieldGap),
                       DropdownButtonFormField<String>(
                         initialValue:

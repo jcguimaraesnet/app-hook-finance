@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/split_for_person.dart';
+import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
   double valor = 100,
-  String origem = 'Cartão',
+  String origem = kOrigemCredito,
   String rateio = '',
 }) =>
     ExpenseRow(

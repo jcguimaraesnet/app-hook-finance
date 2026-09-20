@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/bucket_deltas.dart';
+import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -581,9 +582,9 @@ class _HeroCard extends StatelessWidget {
         pct: buckets.total == 0 ? 0 : buckets.pessoal / buckets.total * 100,
       ),
       DonutBucket(
-        label: 'Contas',
-        value: buckets.contas,
-        pct: buckets.total == 0 ? 0 : buckets.contas / buckets.total * 100,
+        label: 'Débito',
+        value: buckets.debito,
+        pct: buckets.total == 0 ? 0 : buckets.debito / buckets.total * 100,
       ),
     ];
     final colors = [
@@ -707,7 +708,7 @@ class _SmallTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalCartao = rows
-        .where((r) => r.origem == 'Cartão')
+        .where((r) => r.origem == kOrigemCredito)
         .fold<double>(0, (s, r) => s + r.valor);
     final totalParcelado = rows.where((r) {
       final p = r.parcela;
@@ -750,7 +751,7 @@ class _SmallTiles extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _Tile(label: 'Total cartão', value: totalCartao),
+                child: _Tile(label: 'Total crédito', value: totalCartao),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1063,14 +1064,14 @@ class _ComparativeCard extends ConsumerWidget {
         delta: deltas.pessoal,
       ),
       _Col(
-        label: 'Contas',
+        label: 'Débito',
         color: BloomColors.sky,
-        value: cur.contas,
-        delta: deltas.contas,
+        value: cur.debito,
+        delta: deltas.debito,
         // Compart já tem aba própria e Pessoal tem o "Ver pessoal →" do hero;
-        // Contas era o único bucket sem drill-down. Spec: pages/contas.md.
+        // Débito era o único bucket sem drill-down. Spec: pages/debito.md.
         onTap: () => context.push(
-            '/contas?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
+            '/debito?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
       ),
     ];
 

@@ -1,11 +1,11 @@
-// Spec: docs/specs/pages/contas.md
-// Drill-down da coluna Contas do Comparativo (Início) — ?person=julio|dani.
+// Spec: docs/specs/pages/debito.md
+// Drill-down da coluna Débito do Comparativo (Início) — ?person=julio|dani.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
-import '../../core/rules/contas_rows.dart';
+import '../../core/rules/debito_rows.dart';
 import '../../core/rules/split_for_person.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
@@ -20,15 +20,15 @@ import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
 import '../lancamento/edit_dialog.dart';
 
-class ContasPage extends ConsumerStatefulWidget {
+class DebitoPage extends ConsumerStatefulWidget {
   final Person? initialPerson;
-  const ContasPage({super.key, this.initialPerson});
+  const DebitoPage({super.key, this.initialPerson});
 
   @override
-  ConsumerState<ContasPage> createState() => _ContasPageState();
+  ConsumerState<DebitoPage> createState() => _DebitoPageState();
 }
 
-class _ContasPageState extends ConsumerState<ContasPage> {
+class _DebitoPageState extends ConsumerState<DebitoPage> {
   late Person _person;
 
   @override
@@ -44,15 +44,15 @@ class _ContasPageState extends ConsumerState<ContasPage> {
     final rows = monthAsync.value?.rows ?? const <Entry>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final contasRows = contasRowsForPerson(rows, _person)
+    final debitoRows = debitoRowsForPerson(rows, _person)
       ..sort((a, b) =>
           parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
 
-    // "Sua parte" tem que bater com a coluna Contas do Comparativo, que é de
-    // onde se chega aqui — mesma regra, ver docs/specs/rules/contas-rows.md.
+    // "Sua parte" tem que bater com a coluna Débito do Comparativo, que é de
+    // onde se chega aqui — mesma regra, ver docs/specs/rules/debito-rows.md.
     double suaParte = 0;
     double totalCheio = 0;
-    for (final r in contasRows) {
+    for (final r in debitoRows) {
       suaParte += splitForPerson(r, _person);
       totalCheio += r.valor;
     }
@@ -81,7 +81,7 @@ class _ContasPageState extends ConsumerState<ContasPage> {
           children: [
             ScreenHeader(
               showBack: true,
-              kicker: 'Contas',
+              kicker: 'Débito',
               title: _person.displayName,
               trailing: const MonthSelector(),
             ),
@@ -134,7 +134,7 @@ class _ContasPageState extends ConsumerState<ContasPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Text(
-                'Lançamentos de contas (${contasRows.length})',
+                'Lançamentos de débito (${debitoRows.length})',
                 style: BloomTypography.display(fontSize: 14),
               ),
             ),
@@ -144,12 +144,12 @@ class _ContasPageState extends ConsumerState<ContasPage> {
               child: BloomCard(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: contasRows.isEmpty && !loading
+                child: debitoRows.isEmpty && !loading
                     ? Padding(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
-                            'Sem contas neste mês.',
+                            'Sem lançamentos de débito neste mês.',
                             style: BloomTypography.geist(
                               fontSize: 12,
                               color: BloomColors.muted,
@@ -159,12 +159,12 @@ class _ContasPageState extends ConsumerState<ContasPage> {
                       )
                     : Column(
                         children: [
-                          for (var i = 0; i < contasRows.length; i++)
+                          for (var i = 0; i < debitoRows.length; i++)
                             RecentEntryRow(
-                              entry: contasRows[i],
+                              entry: debitoRows[i],
                               showDivider: i > 0,
-                              onTap: contasRows[i].row >= 2
-                                  ? () => openEdit(contasRows[i])
+                              onTap: debitoRows[i].row >= 2
+                                  ? () => openEdit(debitoRows[i])
                                   : null,
                             ),
                         ],

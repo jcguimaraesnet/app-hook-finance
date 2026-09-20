@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/diff_calculation.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
   double valor = 0,
-  String origem = 'Cartão',
+  String origem = kOrigemCredito,
   String rateio = '',
   String acerto = '',
 }) =>
@@ -23,69 +24,64 @@ ExpenseRow _row({
 
 void main() {
   group('diffCalculation', () {
-    group('quando o mês tem Pix', () {
-      test('considera todas as Pix (não filtra por acerto)', () {
-        final rows = [
-          _row(
-              origem: 'Pix (contas)',
-              rateio: 'Julio',
-              valor: 1000,
-              acerto: 'Sim'),
-          _row(origem: 'Pix (contas)', rateio: 'Dani', valor: 700),
-        ];
-        expect(diffCalculation(rows, Person.julio), 300);
-        expect(diffCalculation(rows, Person.dani), -300);
-      });
-
-      test('ignora Cartão e Contas/Empregados quando há Pix', () {
-        final rows = [
-          _row(origem: 'Pix (contas)', rateio: 'Julio', valor: 500),
-          _row(origem: 'Cartão', rateio: 'Metade', valor: 200),
-          _row(origem: 'Contas', rateio: 'Dani', valor: 100),
-        ];
-        expect(diffCalculation(rows, Person.julio), 500);
-        expect(diffCalculation(rows, Person.dani), -500);
-      });
-
-      test('aplica splitForPerson em Pix com rateio Metade', () {
-        final rows = [
-          _row(origem: 'Pix (contas)', rateio: 'Metade', valor: 200),
-        ];
-        expect(diffCalculation(rows, Person.julio), 0);
-      });
-    });
-
-    group('quando o mês NÃO tem Pix', () {
-      test('considera Contas + Empregados', () {
-        final rows = [
-          _row(origem: 'Contas', rateio: 'Julio', valor: 300),
-          _row(origem: 'Empregados', rateio: 'Dani', valor: 150),
-        ];
-        expect(diffCalculation(rows, Person.julio), 150);
-        expect(diffCalculation(rows, Person.dani), -150);
-      });
-
-      test('ignora Cartão e outras origens', () {
-        final rows = [
-          _row(origem: 'Cartão', rateio: 'Julio', valor: 1000),
-          _row(origem: 'Pessoal', rateio: 'Julio', valor: 500),
-          _row(origem: 'Contas', rateio: 'Julio', valor: 100),
-        ];
-        expect(diffCalculation(rows, Person.julio), 100);
-      });
-    });
-
-    test('mês completamente vazio retorna 0', () {
-      expect(diffCalculation([], Person.julio), 0);
-      expect(diffCalculation([], Person.dani), 0);
-    });
-
-    test('preserva sinal do valor (negativos)', () {
+    test('soma Débito das duas pessoas e devolve a diferença', () {
       final rows = [
-        _row(origem: 'Pix (contas)', rateio: 'Julio', valor: -100),
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 500),
+        _row(origem: kOrigemDebito, rateio: 'Dani', valor: 100),
       ];
-      expect(diffCalculation(rows, Person.julio), -100);
-      expect(diffCalculation(rows, Person.dani), 100);
+      expect(diffCalculation(rows, Person.julio), 400);
+      expect(diffCalculation(rows, Person.dani), -400);
+    });
+
+    test('não filtra por acerto', () {
+      final rows = [
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 300, acerto: 'Sim'),
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 200),
+      ];
+      expect(diffCalculation(rows, Person.julio), 500);
+    });
+
+    test('ignora Crédito', () {
+      final rows = [
+        _row(origem: kOrigemCredito, rateio: 'Julio', valor: 900),
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 100),
+      ];
+      expect(diffCalculation(rows, Person.julio), 100);
+    });
+
+    test('Metade não desequilibra (cancela entre as duas)', () {
+      final rows = [_row(origem: kOrigemDebito, rateio: 'Metade', valor: 400)];
+      expect(diffCalculation(rows, Person.julio), 0);
+      expect(diffCalculation(rows, Person.dani), 0);
+    });
+
+    test('rateio que não toca ninguém não entra', () {
+      final rows = [
+        _row(origem: kOrigemDebito, rateio: 'Alzira', valor: 700),
+        _row(origem: kOrigemDebito, rateio: '', valor: 800),
+      ];
+      expect(diffCalculation(rows, Person.julio), 0);
+    });
+
+    test('mês vazio retorna 0', () {
+      expect(diffCalculation(const <ExpenseRow>[], Person.julio), 0);
+    });
+
+    test('preserva sinal do valor (estorno)', () {
+      final rows = [_row(origem: kOrigemDebito, rateio: 'Julio', valor: -150)];
+      expect(diffCalculation(rows, Person.julio), -150);
+    });
+
+    // Pix e Contas/Empregados agora são o mesmo valor. Antes da migração a regra
+    // escolhia um conjunto ou outro; como os dois nunca coexistiam num mês, somar
+    // tudo dá o mesmo número — conferido nos 12 meses da planilha.
+    test('linhas das duas eras somam juntas, sem ramo', () {
+      final rows = [
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 100), // era Pix
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 50), // era Contas
+        _row(origem: kOrigemDebito, rateio: 'Dani', valor: 30), // era Empregados
+      ];
+      expect(diffCalculation(rows, Person.julio), 120);
     });
   });
 }

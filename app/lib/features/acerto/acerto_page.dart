@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/diff_calculation.dart';
 import '../../core/rules/split_for_person.dart';
+import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
@@ -35,14 +36,14 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
     // cartao(compart) + cartao(pessoal) + pix(acerto=='Sim'). Diferente do
     // bucketsForPerson.total porque este último inclui TODAS as Pix.
     final daniCartaoCompart = rows
-        .where((r) => r.origem == 'Cartão' && r.rateio == 'Metade')
+        .where((r) => r.origem == kOrigemCredito && r.rateio == 'Metade')
         .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
     final daniCartaoPessoal = rows
-        .where((r) => r.origem == 'Cartão' && r.rateio == Person.dani.name)
+        .where((r) => r.origem == kOrigemCredito && r.rateio == Person.dani.name)
         .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
     final daniPixAcerto = rows
         .where((r) =>
-            r.origem == 'Pix (contas)' &&
+            r.origem == kOrigemDebito &&
             r.rateio == Person.dani.name &&
             r.acerto == 'Sim')
         .fold<double>(0, (s, r) => s + r.valor);
@@ -180,7 +181,7 @@ class _PersonAcertoCard extends ConsumerWidget {
     final isJulio = person == Person.julio;
     final pixExpanded = ref.watch(acertoPixJulioProvider) && isJulio;
 
-    final cartao = rows.where((r) => r.origem == 'Cartão');
+    final cartao = rows.where((r) => r.origem == kOrigemCredito);
     final cartaoCompart = cartao
         .where((r) => r.rateio == 'Metade')
         .fold<double>(0, (s, r) => s + splitForPerson(r, person));
@@ -192,7 +193,7 @@ class _PersonAcertoCard extends ConsumerWidget {
     // por `acerto == 'Sim'`). Mantém o comportamento legado do PWA.
     final pixRows = rows
         .where((r) =>
-            r.origem == 'Pix (contas)' &&
+            r.origem == kOrigemDebito &&
             r.rateio == person.name &&
             (pixExpanded || r.acerto == 'Sim'))
         .toList();
@@ -347,17 +348,17 @@ class _PersonAcertoCard extends ConsumerWidget {
           ),
           // Cartão rows
           _DataRow(
-            label: 'Cartão (compartilhado)',
+            label: 'Crédito (compartilhado)',
             value: cartaoCompart,
             total: total,
           ),
           _DataRow(
-            label: 'Cartão (pessoal)',
+            label: 'Crédito (pessoal)',
             value: cartaoPessoal,
             total: total,
           ),
-          // Linha "Contas" — mesma identidade visual de Cartão (compart/pessoal),
-          // mostrando o subtotal Pix. Para Júlio, clicável (toggle expandir).
+          // Linha "Débito" — mesma identidade visual de Crédito (compart/pessoal),
+          // mostrando o subtotal de débito. Para Júlio, clicável (toggle expandir).
           InkWell(
             onTap: isJulio
                 ? () => ref
@@ -373,7 +374,7 @@ class _PersonAcertoCard extends ConsumerWidget {
                     child: Row(
                       children: [
                         Text(
-                          'Contas',
+                          'Débito',
                           style: BloomTypography.geist(
                             fontSize: 12.5,
                             color: BloomColors.ink,

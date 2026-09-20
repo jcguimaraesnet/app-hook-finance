@@ -1,6 +1,7 @@
 // Spec: docs/specs/rules/personal-summary.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../origem.dart';
 import '../types.dart';
 
 class PersonalSummary {
@@ -36,7 +37,7 @@ PersonalSummary personalSummaryForPerson(
   for (final r in rows) {
     if (r.rateio != person.name) continue;
     totalPessoal += r.valor;
-    if (r.origem != 'Cartão') continue;
+    if (r.origem != kOrigemCredito) continue;
     cartaoPessoal += r.valor;
     final (x, y) = _parseParcela(r.parcela);
     if (y <= 1) continue;

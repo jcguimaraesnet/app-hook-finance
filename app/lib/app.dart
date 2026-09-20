@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'core/types.dart';
-import 'features/contas/contas_page.dart';
+import 'features/debito/debito_page.dart';
 import 'features/detalhe/detalhe_page.dart';
 import 'features/login/login_screen.dart';
 import 'features/settings/captures_history_page.dart';
@@ -61,11 +61,11 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
               },
             ),
             GoRoute(
-              path: 'contas',
+              path: 'debito',
               builder: (_, state) {
                 final p = state.uri.queryParameters['person'];
                 final initial = p == 'dani' ? Person.dani : Person.julio;
-                return ContasPage(initialPerson: initial);
+                return DebitoPage(initialPerson: initial);
               },
             ),
             GoRoute(

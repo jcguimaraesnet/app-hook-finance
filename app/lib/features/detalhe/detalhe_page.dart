@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/origem.dart';
 import '../../core/rules/personal_summary.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
@@ -44,7 +45,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
     final pessoalRows = rows
-        .where((r) => r.origem == 'Cartão' && r.rateio == _person.name)
+        .where((r) => r.origem == kOrigemCredito && r.rateio == _person.name)
         .toList()
       ..sort((a, b) =>
           parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
@@ -114,7 +115,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _Tile(
-                                label: 'CARTÃO PESSOAL',
+                                label: 'CRÉDITO PESSOAL',
                                 value: summary.cartaoPessoal,
                               ),
                             ),

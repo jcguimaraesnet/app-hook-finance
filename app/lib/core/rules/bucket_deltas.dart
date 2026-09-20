@@ -1,6 +1,7 @@
 // Spec: docs/specs/rules/bucket-deltas.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../origem.dart';
 import '../types.dart';
 import 'split_for_person.dart';
 
@@ -8,45 +9,45 @@ import 'split_for_person.dart';
 class PersonBuckets {
   final double compart;
   final double pessoal;
-  final double contas;
+  final double debito;
 
   const PersonBuckets({
     required this.compart,
     required this.pessoal,
-    required this.contas,
+    required this.debito,
   });
 
-  double get total => compart + pessoal + contas;
+  double get total => compart + pessoal + debito;
 
-  static const zero = PersonBuckets(compart: 0, pessoal: 0, contas: 0);
+  static const zero = PersonBuckets(compart: 0, pessoal: 0, debito: 0);
 }
 
 /// Soma `splitForPerson(r, person)` por bucket.
 PersonBuckets bucketsForPerson(List<ExpenseRow> rows, Person person) {
-  double compart = 0, pessoal = 0, contas = 0;
+  double compart = 0, pessoal = 0, debito = 0;
   for (final r in rows) {
     final v = splitForPerson(r, person);
     if (v == 0) continue;
-    if (r.origem == 'Cartão') {
+    if (r.origem == kOrigemCredito) {
       if (r.rateio == 'Metade') {
         compart += v;
       } else {
         pessoal += v;
       }
     } else {
-      contas += v;
+      debito += v;
     }
   }
-  return PersonBuckets(compart: compart, pessoal: pessoal, contas: contas);
+  return PersonBuckets(compart: compart, pessoal: pessoal, debito: debito);
 }
 
 /// Δ% por bucket entre `current` e `previous`. `null` quando previous é 0.
 class BucketDeltas {
   final double? compart;
   final double? pessoal;
-  final double? contas;
+  final double? debito;
 
-  const BucketDeltas({this.compart, this.pessoal, this.contas});
+  const BucketDeltas({this.compart, this.pessoal, this.debito});
 
   static const empty = BucketDeltas();
 }
@@ -63,7 +64,7 @@ BucketDeltas bucketDeltas({
   return BucketDeltas(
     compart: delta(current.compart, previous.compart),
     pessoal: delta(current.pessoal, previous.pessoal),
-    contas: delta(current.contas, previous.contas),
+    debito: delta(current.debito, previous.debito),
   );
 }
 

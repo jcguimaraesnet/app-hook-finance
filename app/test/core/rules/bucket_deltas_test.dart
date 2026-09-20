@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/bucket_deltas.dart';
+import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
   required double valor,
-  String origem = 'Cartão',
+  String origem = kOrigemCredito,
   String rateio = '',
 }) =>
     ExpenseRow(
@@ -24,19 +25,19 @@ void main() {
   group('bucketsForPerson', () {
     test('soma compart com metade do valor (Metade)', () {
       final rows = [
-        _row(valor: 200, origem: 'Cartão', rateio: 'Metade'),
-        _row(valor: 100, origem: 'Cartão', rateio: 'Metade'),
+        _row(valor: 200, origem: kOrigemCredito, rateio: 'Metade'),
+        _row(valor: 100, origem: kOrigemCredito, rateio: 'Metade'),
       ];
       final b = bucketsForPerson(rows, Person.julio);
       expect(b.compart, 150); // 100 + 50
       expect(b.pessoal, 0);
-      expect(b.contas, 0);
+      expect(b.debito, 0);
     });
 
     test('soma pessoal apenas para a pessoa correspondente', () {
       final rows = [
-        _row(valor: 80, origem: 'Cartão', rateio: 'Julio'),
-        _row(valor: 50, origem: 'Cartão', rateio: 'Dani'),
+        _row(valor: 80, origem: kOrigemCredito, rateio: 'Julio'),
+        _row(valor: 50, origem: kOrigemCredito, rateio: 'Dani'),
       ];
       final ju = bucketsForPerson(rows, Person.julio);
       expect(ju.pessoal, 80);
@@ -49,11 +50,11 @@ void main() {
 
     test('contas = origem != Cartão', () {
       final rows = [
-        _row(valor: 30, origem: 'Pix (contas)', rateio: 'Julio'),
-        _row(valor: 40, origem: 'Pix (contas)', rateio: 'Metade'),
+        _row(valor: 30, origem: kOrigemDebito, rateio: 'Julio'),
+        _row(valor: 40, origem: kOrigemDebito, rateio: 'Metade'),
       ];
       final b = bucketsForPerson(rows, Person.julio);
-      expect(b.contas, 50); // 30 + 20
+      expect(b.debito, 50); // 30 + 20
       expect(b.compart, 0);
       expect(b.pessoal, 0);
     });
@@ -66,32 +67,32 @@ void main() {
 
   group('bucketDeltas', () {
     test('delta% calculado quando previous > 0', () {
-      final cur = const PersonBuckets(compart: 110, pessoal: 80, contas: 90);
-      final prev = const PersonBuckets(compart: 100, pessoal: 100, contas: 0);
+      final cur = const PersonBuckets(compart: 110, pessoal: 80, debito: 90);
+      final prev = const PersonBuckets(compart: 100, pessoal: 100, debito: 0);
       final d = bucketDeltas(current: cur, previous: prev);
       expect(d.compart, 10.0);
       expect(d.pessoal, -20.0);
-      expect(d.contas, isNull); // previous.contas == 0
+      expect(d.debito, isNull); // previous.debito == 0
     });
 
     test('previous tudo zero → todos os deltas null', () {
       final d = bucketDeltas(
-        current: const PersonBuckets(compart: 50, pessoal: 0, contas: 10),
+        current: const PersonBuckets(compart: 50, pessoal: 0, debito: 10),
         previous: PersonBuckets.zero,
       );
       expect(d.compart, isNull);
       expect(d.pessoal, isNull);
-      expect(d.contas, isNull);
+      expect(d.debito, isNull);
     });
 
     test('current zero / previous cheio → -100%', () {
       final d = bucketDeltas(
         current: PersonBuckets.zero,
-        previous: const PersonBuckets(compart: 50, pessoal: 50, contas: 50),
+        previous: const PersonBuckets(compart: 50, pessoal: 50, debito: 50),
       );
       expect(d.compart, -100.0);
       expect(d.pessoal, -100.0);
-      expect(d.contas, -100.0);
+      expect(d.debito, -100.0);
     });
   });
 

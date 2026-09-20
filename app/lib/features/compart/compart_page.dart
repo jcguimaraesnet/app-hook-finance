@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
+import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
@@ -22,7 +23,7 @@ class CompartPage extends ConsumerWidget {
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final cards = rows.where((r) => r.origem == 'Cartão').toList();
+    final cards = rows.where((r) => r.origem == kOrigemCredito).toList();
     final byCat = <String, _CatAgg>{};
     for (final r in cards) {
       final key = r.categoria.isEmpty ? '—' : r.categoria;
@@ -41,7 +42,7 @@ class CompartPage extends ConsumerWidget {
 
     final grandTotal = categories.fold<double>(0, (s, c) => s + c.value);
     final compartFull = rows
-        .where((r) => r.origem == 'Cartão' && r.rateio == 'Metade')
+        .where((r) => r.origem == kOrigemCredito && r.rateio == 'Metade')
         .fold<double>(0, (s, r) => s + r.valor);
     final compartHalf = compartFull / 2;
     final totalParcelado = rows.where((r) {

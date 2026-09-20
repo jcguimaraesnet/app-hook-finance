@@ -1,13 +1,14 @@
 // Spec: docs/specs/rules/bucket-key.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../origem.dart';
 import '../types.dart';
 
 String bucketKey(ExpenseRow row) {
-  if (row.origem == 'Cartão') {
+  if (row.origem == kOrigemCredito) {
     return row.rateio == 'Metade'
-        ? 'Cartão (compartilhado)'
-        : 'Cartão (pessoal)';
+        ? 'Crédito (compartilhado)'
+        : 'Crédito (pessoal)';
   }
   return row.origem;
 }
