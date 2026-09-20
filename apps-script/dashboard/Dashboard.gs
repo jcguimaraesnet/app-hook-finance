@@ -11,6 +11,8 @@ function doGet(e) {
       return jsonResponse_(getLastEntries(e.parameter.token, parseInt(e.parameter.n, 10) || 10));
     case "newInvoicePreview":
       return jsonResponse_(previewNewInvoice_(e.parameter.token));
+    case "fixedExpenses":
+      return jsonResponse_(getFixedExpenses(e.parameter.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }
@@ -41,6 +43,12 @@ function doPost(e) {
       return jsonResponse_(ensureHeader(body.token));
     case "migrateOrigem":
       return jsonResponse_(migrateOrigem(body.token));
+    case "addFixedExpense":
+      return jsonResponse_(addFixedExpense(body.token, body.fields));
+    case "updateFixedExpense":
+      return jsonResponse_(updateFixedExpense(body.token, body.row, body.fields));
+    case "deleteFixedExpense":
+      return jsonResponse_(deleteFixedExpense(body.token, body.row));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }

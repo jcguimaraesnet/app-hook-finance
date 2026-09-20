@@ -29,6 +29,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `historicalSummary` | `token` | `{ ok, months[], history: { months[], totals[], julioPessoal[], daniPessoal[] } }` | Agregado pré-computado dos últimos 12 meses. |
 | `lastEntries` | `token`, `n` (default 10) | `{ ok, entries[] }` | Últimas N linhas inseridas (com `row` 1-indexed para edit/delete). |
 | `newInvoicePreview` | `token` | `{ ok, invoiceClosing }` | Read-only: data que `newInvoice` criaria agora (última fatura da planilha + 1 mês), sem inserir nada. Usado pelo dialog de confirmação. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
+| `fixedExpenses` | `token` | `{ ok, rows[] }` | Linhas da aba `despesas-fixas` com `row` (1-indexed) para edit/delete. **Leitura tolerante**: devolve também a linha inválida, com `invalid` preenchido — ver abaixo. Pós-2026-09-20. |
 | `(none)` ou desconhecido | — | `{ ok: false, error: "unknown_action" }` | Não há landing page; backend é JSON-only. |
 
 ### POST endpoints (body JSON, `Content-Type: text/plain` para evitar preflight CORS)
@@ -40,6 +41,9 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `ensureHeader` | — | `{ ok, inserted }` | Garante que a linha 1 é o cabeçalho (`SHEET_HEADERS`). Se a linha 1 não começa com `Data`, insere uma linha acima e grava os headers (`inserted: true`); senão só reescreve (`inserted: false`). Idempotente, com `LockService`. Manutenção. |
+| `addFixedExpense` | `fields: { dia, descricao, valor, origem, categoria, rateio, acerto? }` | `{ ok, row }` | Insere **no fim** da aba `despesas-fixas`. |
+| `updateFixedExpense` | `row`, `fields` (mesmos de add) | `{ ok, row }` | Sobrescreve A..G da linha. |
+| `deleteFixedExpense` | `row` | `{ ok }` | Remove a linha da aba. |
 | `migrateOrigem` | — | `{ ok, despesas, fixas }` | **One-off de manutenção** (2026-09-20). Converte a col E da aba Despesas e a col D de `despesas-fixas` para `Crédito`/`Débito`. Idempotente; valor desconhecido é reportado e não é tocado. Cada resultado traz `{ changed, kept, blank, unknown[] }`. Remover junto com a ponte de normalização. Ver [../data/despesas-sheet.md](../data/despesas-sheet.md). |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
@@ -108,6 +112,20 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 - Col A: grava `parseBrDate_(data)` (Date) + `setNumberFormat("dd/MM/yyyy")`. **Até 2026-09-12** forçava `@` e gravava a string — toda linha editada pelo app ficava com a data da fatura em texto. Editar a linha de novo agora converte para Date.
 - Força `setNumberFormat("@")` nas colunas B (dataRef) e I (parcela).
 - Sem `LockService` — assume baixa concorrência em edição manual (diferente do `addEntry`/webhook).
+
+#### Despesas fixas (`fixedExpenses` / `addFixedExpense` / `updateFixedExpense` / `deleteFixedExpense`) — detalhes
+
+CRUD da aba `despesas-fixas` ([../data/despesas-fixas-sheet.md](../data/despesas-fixas-sheet.md)), criado em 2026-09-20 para a tela de Despesas fixas ([../pages/despesas-fixas.md](../pages/despesas-fixas.md)). Antes a aba só era editável à mão no Google Sheets.
+
+**Validação:** `validateFixedExpense_` em `apps-script/webhook/FixedExpenses.gs` é a fonte única — `loadFixedExpenses_` (webhook) e os três endpoints de escrita usam a mesma função, para não divergirem. Regras: `dia` inteiro 1–31; `descricao` e `categoria` não-vazias; `valor` numérico (negativo é legítimo); `origem` ∈ `Crédito`|`Débito` (enum legado é normalizado); `rateio` ∈ `Julio`|`Dani`|`Metade`|`Alzira` (**não** aceita vazio, diferente da aba Despesas); `acerto` ∈ `""`|`Sim`.
+
+**Erro de escrita:** `{ ok: false, error: "invalid_fields", detail: "<motivo>" }` — `detail` traz o mesmo texto que o webhook usaria (ex.: `"dia inválido (32)"`).
+
+**Leitura tolerante — a diferença que importa:** `loadFixedExpenses_` **lança** numa linha inválida, de propósito: ela viraria lançamento errado na planilha, então a Nova fatura trava até alguém corrigir (`fixed_expenses_failed`). `fixedExpenses` faz o **oposto**: devolve a linha com `invalid: "<motivo>"` preenchido e os campos crus. Se ele também lançasse, uma linha quebrada deixaria a tela em branco — justamente a tela que existe para consertá-la.
+
+**Ordem:** `addFixedExpense` insere **no fim** da aba, não no topo. A ordem das linhas define a ordem do bloco que a Nova fatura insere em `Despesas`; inserir no topo mudaria o layout da fatura sem o usuário pedir.
+
+**Sem `LockService`:** edição manual de uma aba de configuração, baixa concorrência — mesmo critério do `updateEntry`.
 
 #### `newInvoice` — detalhes
 

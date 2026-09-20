@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-08-01
+last_updated: 2026-09-20
 ---
 
 # Despesas-fixas — schema da aba
@@ -34,7 +34,8 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 
 ### Escrita
 
-- Edição manual via Google Sheets.
+- **Pela tela de Despesas fixas do app** (pós-2026-09-20) — `addFixedExpense` / `updateFixedExpense` / `deleteFixedExpense`, ver [../api/endpoints.md](../api/endpoints.md). Validação compartilhada com `loadFixedExpenses_` via `validateFixedExpense_`.
+- Edição manual via Google Sheets continua valendo.
 - Função utilitária `seedFixedExpenses()` em `apps-script/webhook/FixedExpenses.gs` popula a aba inicialmente. Idempotente — aborta se a aba já tem dados. (Nome sem `_` no fim para aparecer no dropdown do editor Apps Script.)
 
 ## Edge cases

@@ -2,6 +2,62 @@
 // Spec: docs/specs/rules/fixed-expenses.md
 // Schema da aba: docs/specs/data/despesas-fixas-sheet.md
 
+// Regras de validação da aba, em um lugar só: a leitura do webhook e os
+// endpoints de edição compartilham daqui. Retorna {ok, value} ou {ok, error}.
+// Spec: docs/specs/data/despesas-fixas-sheet.md
+const FIXED_RATEIOS = ["Julio", "Dani", "Metade", "Alzira"];
+
+function validateFixedExpense_(f) {
+  const dia = Number(f.dia);
+  if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
+    return { ok: false, error: `dia inválido (${f.dia})` };
+  }
+  const descricao = String(f.descricao === undefined ? "" : f.descricao).trim();
+  if (!descricao) return { ok: false, error: "descrição vazia" };
+
+  if (f.valor === undefined || f.valor === null || f.valor === "") {
+    return { ok: false, error: "valor vazio" };
+  }
+  const valor = Number(f.valor);
+  if (isNaN(valor)) return { ok: false, error: `valor inválido (${f.valor})` };
+
+  const origemRaw = String(f.origem === undefined ? "" : f.origem).trim();
+  if (!origemRaw) return { ok: false, error: "origem vazia" };
+  // Normaliza o enum antigo da col D. A aba foi migrada junto com Despesas em
+  // 2026-09-20, mas uma linha digitada à mão pode trazer valor legado — e ela
+  // vira lançamento de verdade na Nova fatura.
+  const origem = normalizeOrigem_(origemRaw);
+  if (ORIGENS.indexOf(origem) < 0) {
+    return { ok: false, error: `origem inválida (${origemRaw})` };
+  }
+
+  const categoria = String(f.categoria === undefined ? "" : f.categoria).trim();
+  if (!categoria) return { ok: false, error: "categoria vazia" };
+
+  const rateio = String(f.rateio === undefined ? "" : f.rateio).trim();
+  if (FIXED_RATEIOS.indexOf(rateio) < 0) {
+    return { ok: false, error: `rateio inválido (${f.rateio})` };
+  }
+
+  const acerto = String(f.acerto === undefined || f.acerto === null ? "" : f.acerto).trim();
+  if (acerto !== "" && acerto !== "Sim") {
+    return { ok: false, error: `acerto inválido (${acerto})` };
+  }
+
+  return {
+    ok: true,
+    value: { dia: dia, descricao: descricao, valor: valor, origem: origem,
+             categoria: categoria, rateio: rateio, acerto: acerto },
+  };
+}
+
+// Linha 100% em branco é ignorada: getLastRow() pode incluir linhas vazias no
+// fim/meio quando sobra conteúdo ou formatação numa célula qualquer. Uma linha
+// PARCIALMENTE preenchida NÃO é branco intencional — segue sendo validada.
+function isBlankFixedRow_(r) {
+  return r.every((c) => String(c).trim() === "");
+}
+
 function loadFixedExpenses_() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const sheet = ss.getSheetByName(FIXED_SHEET_NAME);
@@ -15,43 +71,26 @@ function loadFixedExpenses_() {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const line = i + 2;
+    if (isBlankFixedRow_(r)) continue;
 
-    // Linha totalmente em branco (todas as 7 colunas vazias) é ignorada:
-    // getLastRow() pode incluir linhas vazias no fim/meio quando sobra
-    // conteúdo ou formatação numa célula qualquer. Uma linha PARCIALMENTE
-    // preenchida continua sendo validada — é erro real, não branco intencional.
-    if (r.every((c) => String(c).trim() === "")) continue;
-
-    const [dia, descricao, valor, origem, categoria, rateio, acerto] = r;
-
-    if (!Number.isInteger(dia) || dia < 1 || dia > 31)
-      throw new Error(`despesas-fixas L${line}: dia inválido (${dia})`);
-    if (!descricao || typeof descricao !== "string")
-      throw new Error(`despesas-fixas L${line}: descrição vazia`);
-    if (typeof valor !== "number" || isNaN(valor))
-      throw new Error(`despesas-fixas L${line}: valor inválido (${valor})`);
-    if (!origem) throw new Error(`despesas-fixas L${line}: origem vazia`);
-    // Normaliza o enum antigo da col D. A aba foi migrada junto com Despesas em
-    // 2026-09-20, mas uma linha nova digitada à mão pode trazer valor legado —
-    // e ela vira lançamento de verdade na Nova fatura.
-    const origemNorm = normalizeOrigem_(origem);
-    if (ORIGENS.indexOf(origemNorm) < 0)
-      throw new Error(`despesas-fixas L${line}: origem inválida (${origem})`);
-    if (!categoria) throw new Error(`despesas-fixas L${line}: categoria vazia`);
-    if (!["Julio", "Dani", "Metade", "Alzira"].includes(String(rateio)))
-      throw new Error(`despesas-fixas L${line}: rateio inválido (${rateio})`);
-    const acertoStr = String(acerto || "");
-    if (acertoStr !== "" && acertoStr !== "Sim")
-      throw new Error(`despesas-fixas L${line}: acerto inválido (${acertoStr})`);
+    const v = validateFixedExpense_({
+      dia: r[0], descricao: r[1], valor: r[2], origem: r[3],
+      categoria: r[4], rateio: r[5], acerto: r[6],
+    });
+    // Lança, como sempre: uma linha ruim aqui trava a Nova fatura de propósito,
+    // porque ela viraria lançamento errado na planilha. O endpoint de leitura da
+    // tela faz o oposto — marca a linha e devolve, senão a tela que serve para
+    // consertar seria a primeira a quebrar.
+    if (!v.ok) throw new Error(`despesas-fixas L${line}: ${v.error}`);
 
     result.push({
-      refDay: dia,
-      description: descricao,
-      value: valor,
-      origem: origemNorm,
-      categoria,
-      rateio: String(rateio),
-      acerto: acertoStr,
+      refDay: v.value.dia,
+      description: v.value.descricao,
+      value: v.value.valor,
+      origem: v.value.origem,
+      categoria: v.value.categoria,
+      rateio: v.value.rateio,
+      acerto: v.value.acerto,
     });
   }
   return result;
@@ -214,4 +253,97 @@ function seedFixedExpenses() {
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold");
   sheet.getRange(2, 1, data.length, headers.length).setValues(data);
+}
+
+// ---------------------------------------------------------------------------
+// CRUD da aba para a tela de Despesas fixas (pós-2026-09-20).
+// Spec: docs/specs/api/endpoints.md, docs/specs/pages/despesas-fixas.md
+// ---------------------------------------------------------------------------
+
+// Leitura tolerante: devolve TODAS as linhas não-vazias, inclusive as inválidas,
+// com `invalid` preenchido. Diferente de loadFixedExpenses_, que lança — aqui
+// derrubar a resposta esconderia justamente a linha que precisa de conserto.
+// `row` é a linha real da aba, necessária para editar/excluir.
+function getFixedExpenses(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+
+  const last = sheet.getLastRow();
+  if (last < 2) return { ok: true, rows: [] };
+
+  const values = sheet.getRange(2, 1, last - 1, 7).getValues();
+  const rows = [];
+  for (let i = 0; i < values.length; i++) {
+    const r = values[i];
+    if (isBlankFixedRow_(r)) continue;
+    const raw = {
+      dia: r[0], descricao: String(r[1] || ""), valor: r[2],
+      origem: String(r[3] || ""), categoria: String(r[4] || ""),
+      rateio: String(r[5] || ""), acerto: String(r[6] || ""),
+    };
+    const v = validateFixedExpense_(raw);
+    rows.push({
+      row: i + 2,
+      dia: Number(raw.dia) || 0,
+      descricao: raw.descricao,
+      valor: Number(raw.valor) || 0,
+      origem: v.ok ? v.value.origem : raw.origem,
+      categoria: raw.categoria,
+      rateio: raw.rateio,
+      acerto: raw.acerto,
+      invalid: v.ok ? "" : v.error,
+    });
+  }
+  return { ok: true, rows: rows };
+}
+
+// Insere no fim da aba: a ordem das linhas define a ordem do bloco inserido na
+// Nova fatura, então inserir no topo mudaria o layout da fatura sem pedir.
+function addFixedExpense(token, fields) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const v = validateFixedExpense_(fields || {});
+  if (!v.ok) return { ok: false, error: "invalid_fields", detail: v.error };
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+
+  const row = Math.max(sheet.getLastRow(), 1) + 1;
+  writeFixedExpenseRow_(sheet, row, v.value);
+  return { ok: true, row: row };
+}
+
+function updateFixedExpense(token, row, fields) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  if (!row || row < 2) return { ok: false, error: "invalid_row" };
+  const v = validateFixedExpense_(fields || {});
+  if (!v.ok) return { ok: false, error: "invalid_fields", detail: v.error };
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+  if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
+
+  writeFixedExpenseRow_(sheet, row, v.value);
+  return { ok: true, row: row };
+}
+
+function deleteFixedExpense(token, row) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  if (!row || row < 2) return { ok: false, error: "invalid_row" };
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  if (!sheet) return { ok: false, error: "fixed_sheet_not_found" };
+  if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
+
+  sheet.deleteRow(row);
+  return { ok: true };
+}
+
+function writeFixedExpenseRow_(sheet, row, v) {
+  sheet.getRange(row, 1, 1, 7).setValues([[
+    v.dia, v.descricao, v.valor, v.origem, v.categoria, v.rateio, v.acerto,
+  ]]);
 }
