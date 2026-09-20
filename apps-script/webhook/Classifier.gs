@@ -31,7 +31,9 @@ function classifyFromHistory_(sheet, descricao) {
   let bestScore = 0;
   let best = null;
   for (const r of data) {
-    if (String(r[4] || "").trim() !== ORIGEM) continue;
+    // normalizeOrigem_ para não perder o histórico entre o deploy e a migração
+    // da col E: linha ainda em "Cartão" precisa continuar servindo de base.
+    if (normalizeOrigem_(r[4]) !== ORIGEM) continue;
     const cat = String(r[5] || "").trim();
     const rat = String(r[6] || "").trim();
     if (!cat && !rat) continue;

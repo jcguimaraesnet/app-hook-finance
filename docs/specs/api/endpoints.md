@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-26
+last_updated: 2026-09-20
 ---
 
 # API endpoints
@@ -40,6 +40,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `ensureHeader` | — | `{ ok, inserted }` | Garante que a linha 1 é o cabeçalho (`SHEET_HEADERS`). Se a linha 1 não começa com `Data`, insere uma linha acima e grava os headers (`inserted: true`); senão só reescreve (`inserted: false`). Idempotente, com `LockService`. Manutenção. |
+| `migrateOrigem` | — | `{ ok, despesas, fixas }` | **One-off de manutenção** (2026-09-20). Converte a col E da aba Despesas e a col D de `despesas-fixas` para `Crédito`/`Débito`. Idempotente; valor desconhecido é reportado e não é tocado. Cada resultado traz `{ changed, kept, blank, unknown[] }`. Remover junto com a ponte de normalização. Ver [../data/despesas-sheet.md](../data/despesas-sheet.md). |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
 #### `addEntry` — detalhes
@@ -49,7 +50,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 **Campos obrigatórios**:
 - `descricao` (string, não-vazia após trim)
 - `valor` (number; aceita negativo para estornos/ajustes)
-- `origem` (string ∈ `Cartão` \| `Pix (contas)` \| `Pessoal` \| `Empregados` \| `Contas`)
+- `origem` (string ∈ `Crédito` \| `Débito`). Valores do enum antigo (`Cartão`, `Pix (contas)`, `Pessoal`, `Empregados`, `Contas`) são **normalizados no write** em vez de rejeitados — ponte temporária para o APK antigo, que ainda manda os valores velhos e re-sujaria a col E. `Cartão` → `Crédito`; qualquer outro legado → `Débito`.
 
 **Campos opcionais** (default em `""`, exceto datas):
 - `data` (string `DD/MM/YYYY`) — default: hoje no TZ do script.

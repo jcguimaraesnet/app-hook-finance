@@ -37,10 +37,10 @@ Apenas no Flutter:
   - **Mês Fatura** (pós-2026-05-12) — `_MonthYearTap` que abre `showMonthYearPicker` (dois dropdowns Mês + Ano). Default = mês corrente. Salva sempre com `day=6`. Send: `data: "06/MM/YYYY"`.
   - **Estabelecimento** (TextField, obrigatório).
   - **Categoria** (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
-  - **Forma** (segmented `Cartão`/`Pix` → mapeia `Pix` → `"Pix (contas)"` no envio).
+  - **Forma** (segmented `Crédito`/`Débito` → envia o valor literal da col E). Até 2026-09-20 era `Cartão`/`Pix`, mapeando `Pix` → `"Pix (contas)"`.
   - **Divisão** (segmented `Metade`/`Júlio`/`Dani`/`Alzira` → envia como `rateio`).
-  - **Parcela** (stepper 1..99 — só renderiza se Forma=`Cartão`). Default 1 (à vista).
-  - **Banco** (segmented `Santander`/`Revolut`, só se Forma=`Cartão`). **Sem default** — obrigatório escolher; validação local "Selecione o banco." se vazio ao salvar. Envia `banco`. Substituiu o TextField "Cartão (4 dígitos)" em 2026-09-12.
+  - **Parcela** (stepper 1..99 — só renderiza se Forma=`Crédito`). Default 1 (à vista).
+  - **Banco** (segmented `Santander`/`Revolut`, só se Forma=`Crédito`). **Sem default** — obrigatório escolher; validação local "Selecione o banco." se vazio ao salvar. Envia `banco`. Substituiu o TextField "Cartão (4 dígitos)" em 2026-09-12.
   - **Marcar para Acerto Final** (Switch, só se Forma=`Pix`; envia `acerto: "Sim"`).
   - **Salvar lançamento** → `api.addEntry(...)`. Loading state desabilita botão. Erro (server ou validação local) aparece em pílula vermelha.
 - **Defaults enviados ao backend**: `data` sempre enviada (pós-2026-05-12) — `dataRef` omitido → o Apps Script usa agora no TZ. `categoria` vazia OK. `banco` vazio quando Forma=`Pix`. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
@@ -101,7 +101,7 @@ Ordem dos campos no modal, de cima pra baixo:
    - chip data: `showDatePicker` que preserva hora/minuto atuais.
    - chip hora: `showTimePicker` que preserva ano/mês/dia. Quando `_dataRef` é epoch sentinel (year < 2000), o picker de hora usa `DateTime.now()` como base de data para evitar serializar `"01/01/1970 HH:MM"`.
    - Send: `dataRef: "DD/MM/YYYY HH:MM"`.
-3. **Origem** (col E) — `DropdownButtonFormField<String>` com `ADD_ENTRY_ORIGEMS` (`Cartão` | `Pix (contas)` | `Pessoal` | `Empregados` | `Contas`). Se `entry.origem` vier fora do enum (legado), é adicionado como item extra prefixado `(?) <valor>` para correção sem perda. Send: `origem`.
+3. **Origem** (col E) — `DropdownButtonFormField<String>` com `ADD_ENTRY_ORIGEMS` (`Crédito` | `Débito`). Se `entry.origem` vier fora do enum (legado), é adicionado como item extra prefixado `(?) <valor>` para correção sem perda. Send: `origem`.
 4. Descrição (TextField).
 5. Valor (R$, decimal).
 6. Categoria (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).

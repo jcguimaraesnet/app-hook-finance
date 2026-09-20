@@ -28,12 +28,12 @@ docs/specs/
 │   └── webhook.md                  Tasker/IFTTT POST {title, text, token}
 ├── rules/
 │   ├── split-for-person.md         valor que cabe a uma pessoa por linha
-│   ├── bucket-key.md               agrupamento Cartão+rateio → label
+│   ├── bucket-key.md               agrupamento Crédito+rateio → label
 │   ├── bucket-deltas.md            % vs. mês anterior por bucket (Flutter Início)
-│   ├── diff-calculation.md         diff Pix vs Contas+Empregados (PersonCard/AcertoCard)
+│   ├── diff-calculation.md         diff de Débito entre pessoas (PersonCard/AcertoCard)
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
 │   ├── personal-summary.md         4 tiles (total/cartão/parcelado atual+próx) por pessoa
-│   ├── contas-rows.md              linhas do bucket Contas de uma pessoa (não-Cartão)
+│   ├── debito-rows.md              linhas do bucket Débito de uma pessoa
 │   ├── classifier.md               Jaccard sobre histórico (categoria/rateio)
 │   ├── webhook-parser.md           PURCHASE_RE (Santander) + NEW_APP_VALUE_RE (Revolut)
 │   ├── invoice-closing-date.md     próximo fechamento + INVOICE_CLOSING_DAY
@@ -53,7 +53,7 @@ docs/specs/
 │   ├── compart.md                  Flutter (Bloom): cartão compartilhado por categoria
 │   ├── historico.md                Flutter (Bloom): 6 meses (total + per-pessoa)
 │   ├── detalhe.md                  PWA: accordions; Flutter: drill-down ?person=
-│   ├── contas.md                   Flutter: drill-down da coluna Contas do Comparativo
+│   ├── debito.md                   Flutter: drill-down da coluna Débito do Comparativo
 │   ├── lancamento.md               lista + edit modal; Flutter tem tab "+ Novo" stub
 │   └── acerto.md                   PWA: 2 cards; Flutter: D/J selector + 1 tabela
 ├── state/

@@ -21,12 +21,32 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 | 2 | B | Data Referência | string `DD/MM/YYYY HH:MM` | Data+hora real da compra (extraída do texto da notificação). |
 | 3 | C | Descrição | string | Estabelecimento. Extraído via `PURCHASE_RE` (Santander) ou do `title` (Revolut). |
 | 4 | D | Valor | number | Numérico, com 2 casas. Pode ser negativo (estornos, ajustes). |
-| 5 | E | Origem | string enum | `Cartão` \| `Pix (contas)` \| `Pessoal` \| `Empregados` \| `Contas`. Webhook **sempre** escreve `Cartão` (constante `ORIGEM`). |
+| 5 | E | Origem | string enum | `Crédito` \| `Débito`. Webhook **sempre** escreve `Crédito` (constante `ORIGEM`). **Pré-2026-09-20** o enum tinha 5 valores (`Cartão`, `Pix (contas)`, `Pessoal`, `Empregados`, `Contas`) — ver "Migração de Origem" abaixo. |
 | 6 | F | Categoria | string | Texto livre. Sugerido por `Classifier` (Jaccard). Comuns: `Alimentação`, `Pessoal`, `Contas`, `Saúde`. |
 | 7 | G | Rateio | string | `Julio` \| `Dani` \| `Metade` \| `Alzira` \| `""`. Vazio = não rateado. |
 | 8 | H | Banco | string enum | `Santander` \| `Revolut` \| `""`. Banco emissor do cartão. Webhook preenche pelo padrão da notificação; `addEntry`/`updateEntry` recebem `banco`. Só faz sentido com Origem `Cartão`; demais origens ficam `""`. **Pré-2026-09-12** guardava os 4 dígitos finais do cartão (`1018`, `2236`, `784`…). Só a fatura 06/10/2026 foi convertida; faturas fechadas mantêm os dígitos por decisão do usuário. |
 | 9 | I | Parcela | string | `"X/Y"` (ex.: `"1/3"` = 1ª de 3). Vazio = à vista. Editável só via modal de Lançamento. Ver [parcela-format.md](../rules/parcela-format.md). |
 | 10 | J | Acerto | string | `"Sim"` se a linha conta para o "Acerto Final". Vazio caso contrário. |
+
+### Migração de Origem (2026-09-20)
+
+A col E passou de 5 valores para 2. Mapa aplicado:
+
+| Antes | Depois | Linhas migradas |
+|---|---|---|
+| `Cartão` | `Crédito` | 1.678 |
+| `Pix (contas)` | `Débito` | 116 |
+| `Contas` | `Débito` | 109 |
+| `Empregados` | `Débito` | 30 |
+| `Pessoal` | `Débito` | 0 (valor nunca usado na planilha) |
+
+**A migração é irreversível sem backup**: `Pix (contas)`, `Contas` e `Empregados` colapsam no mesmo valor e a distinção some. Nenhuma regra depende mais dela — ver [../rules/diff-calculation.md](../rules/diff-calculation.md), onde isso é demonstrado — mas um backup `row → origem` das 1.933 linhas foi gerado antes de rodar.
+
+Migrada também a col D da aba `despesas-fixas` ([despesas-fixas-sheet.md](despesas-fixas-sheet.md)); sem isso a Nova fatura voltaria a inserir `Pix (contas)`.
+
+Rotina: `migrateOrigemToCreditoDebito()` em `apps-script/shared/Maintenance.gs`, idempotente, rodada manualmente pelo editor.
+
+**Compatibilidade:** `addEntry`/`updateEntry` normalizam valores legados no write (APK antigo manda `Cartão` e o backend grava `Crédito`), e o app normaliza na leitura. As duas pontes são temporárias — ver [../api/endpoints.md](../api/endpoints.md).
 
 ### Leitura
 

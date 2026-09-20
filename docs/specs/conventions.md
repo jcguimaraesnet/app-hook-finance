@@ -66,7 +66,7 @@ Convenções globais que valem em todas as codebases (Apps Script, PWA, Flutter)
 
 ## Internal data keys
 
-Chaves de dados internas (ex: `byOrigem["Pix (contas)"]`) usam o **valor literal da coluna**. Não inventar aliases ("pix" em vez de "Pix (contas)"). Isso evita drift entre planilha e código.
+Chaves de dados internas (ex: `byOrigem["Débito"]`) usam o **valor literal da coluna**. Não inventar aliases ("debito" em vez de "Débito"). Isso evita drift entre planilha e código.
 
 ## Import paths
 

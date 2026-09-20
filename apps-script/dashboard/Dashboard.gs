@@ -39,6 +39,8 @@ function doPost(e) {
       return jsonResponse_(newInvoice_(body.token));
     case "ensureHeader":
       return jsonResponse_(ensureHeader(body.token));
+    case "migrateOrigem":
+      return jsonResponse_(migrateOrigem(body.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }
@@ -227,9 +229,10 @@ function getHistoricalSummary(token) {
     const valor = Number(r[3]) || 0;
     const origem = String(r[4] || "");
     const rateio = String(r[6] || "");
-    if (origem !== "Pessoal") byMonth[data].total += valor;
-    // "Pessoal" segue Regra 2: Cartão + rateio em {Julio, Dani} (full value).
-    if (origem === "Cartão") {
+    // Até 2026-09-20 a origem "Pessoal" era excluída do total. O valor nunca foi
+    // usado na planilha (0 linhas em 12 meses) e saiu do enum na migração.
+    byMonth[data].total += valor;
+    if (origem === ORIGEM_CREDITO) {
       if (rateio === "Julio") byMonth[data].julioPessoal += valor;
       else if (rateio === "Dani") byMonth[data].daniPessoal += valor;
     }
@@ -300,7 +303,28 @@ function getLastEntries(token, n) {
 }
 
 // Enums aceitos por addEntry. Espelha o spec em docs/specs/data/despesas-sheet.md.
-const ADD_ENTRY_ORIGEMS = ["Cartão", "Pix (contas)", "Pessoal", "Empregados", "Contas"];
+// Função, não const: ORIGENS vive em shared/Constants.gs, avaliado depois
+// deste arquivo (mesma TDZ que motivou addEntryBancos_).
+function addEntryOrigens_() {
+  return ORIGENS.slice();
+}
+
+// Aceita o enum antigo no write e converte, em vez de rejeitar. Sem isso um APK
+// pré-2026-09-20 (que manda "Cartão") receberia invalid_origem em todo save —
+// ou, pior, regravaria o valor legado na col E recém-migrada.
+// Ponte temporária: remover quando não houver mais cliente antigo em uso.
+// Spec: docs/specs/api/endpoints.md
+const LEGACY_ORIGEM_CREDITO = ["Cartão"];
+const LEGACY_ORIGEM_DEBITO = ["Pix (contas)", "Pessoal", "Empregados", "Contas"];
+
+function normalizeOrigem_(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+  if (ORIGENS.indexOf(v) >= 0) return v;
+  if (LEGACY_ORIGEM_CREDITO.indexOf(v) >= 0) return ORIGEM_CREDITO;
+  if (LEGACY_ORIGEM_DEBITO.indexOf(v) >= 0) return ORIGEM_DEBITO;
+  return v; // desconhecido: segue para a validação, que rejeita
+}
 const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
 const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
 const BR_DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -341,9 +365,9 @@ function addEntry(token, fields) {
   const valor = Number(valorRaw);
   if (isNaN(valor)) return { ok: false, error: "invalid_valor" };
 
-  const origem = String(fields.origem || "").trim();
+  const origem = normalizeOrigem_(fields.origem);
   if (!origem) return { ok: false, error: "missing_origem" };
-  if (ADD_ENTRY_ORIGEMS.indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
+  if (addEntryOrigens_().indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
 
   const rateio = String(fields.rateio || "").trim();
   if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
@@ -423,9 +447,9 @@ function updateEntry(token, row, fields) {
   const dataRef = String(fields.dataRef || "").trim();
   if (!dataRef) return { ok: false, error: "missing_dataRef" };
 
-  const origem = String(fields.origem || "").trim();
+  const origem = normalizeOrigem_(fields.origem);
   if (!origem) return { ok: false, error: "missing_origem" };
-  if (ADD_ENTRY_ORIGEMS.indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
+  if (addEntryOrigens_().indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
 
   // `banco` é opcional: clientes antigos (APK pré-2026-09-12) não mandam o campo
   // e não podem apagar a col H sem querer. Só validamos/gravamos se veio no body.

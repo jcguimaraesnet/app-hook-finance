@@ -28,12 +28,12 @@ Para cada par `(rows, person)`:
 buckets = {
   'compart': Σ splitForPerson(r, person) where bucketKey(r) == 'compart',
   'pessoal': Σ splitForPerson(r, person) where bucketKey(r) == 'pessoal',
-  'contas':  Σ splitForPerson(r, person) where bucketKey(r) == 'contas',
+  'debito':  Σ splitForPerson(r, person) where bucketKey(r) == 'debito',
 }
 ```
 
 Onde:
-- [bucketKey](bucket-key.md) classifica a linha em `compart`/`pessoal`/`contas`.
+- [bucketKey](bucket-key.md) classifica a linha em `compart`/`pessoal`/`debito`.
 - [splitForPerson](split-for-person.md) retorna o valor que cabe à pessoa (cheio quando `rateio == person`, metade quando `Metade`, 0 quando da outra pessoa).
 
 ### Cálculo do delta
@@ -51,7 +51,7 @@ else                → delta = (curValue - prevValue) / prevValue * 100
 ### Função
 
 ```dart
-({double? compart, double? pessoal, double? contas}) bucketDeltas({
+({double? compart, double? pessoal, double? debito}) bucketDeltas({
   required List<ExpenseRow> currentRows,
   required List<ExpenseRow> previousRows,
   required Person person,

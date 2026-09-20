@@ -5,6 +5,8 @@ last_updated: 2026-05-07
 
 # AcertoCard — card de pessoa em Acerto Final
 
+> **Congelado (PWA legada).** Descreve a PWA React em `web/`, que não é mais deployada. Os nomes de origem citados aqui (`Cartão`, `Pix (contas)`, `Empregados`) são o enum **pré-2026-09-20**; a col E hoje é `Crédito` | `Débito` — ver [../data/despesas-sheet.md](../data/despesas-sheet.md).
+
 Card que mostra, para uma pessoa, o que entra no acerto do mês: Cartão (compartilhado), Cartão (pessoal), e Pix (contas) marcadas como `acerto = "Sim"`. Inclui Δ no header — mesma regra do PersonCard.
 
 ## Contexto

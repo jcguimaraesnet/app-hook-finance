@@ -31,6 +31,12 @@ function loadFixedExpenses_() {
     if (typeof valor !== "number" || isNaN(valor))
       throw new Error(`despesas-fixas L${line}: valor inválido (${valor})`);
     if (!origem) throw new Error(`despesas-fixas L${line}: origem vazia`);
+    // Normaliza o enum antigo da col D. A aba foi migrada junto com Despesas em
+    // 2026-09-20, mas uma linha nova digitada à mão pode trazer valor legado —
+    // e ela vira lançamento de verdade na Nova fatura.
+    const origemNorm = normalizeOrigem_(origem);
+    if (ORIGENS.indexOf(origemNorm) < 0)
+      throw new Error(`despesas-fixas L${line}: origem inválida (${origem})`);
     if (!categoria) throw new Error(`despesas-fixas L${line}: categoria vazia`);
     if (!["Julio", "Dani", "Metade", "Alzira"].includes(String(rateio)))
       throw new Error(`despesas-fixas L${line}: rateio inválido (${rateio})`);
@@ -42,7 +48,7 @@ function loadFixedExpenses_() {
       refDay: dia,
       description: descricao,
       value: valor,
-      origem,
+      origem: origemNorm,
       categoria,
       rateio: String(rateio),
       acerto: acertoStr,

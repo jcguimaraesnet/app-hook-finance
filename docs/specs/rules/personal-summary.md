@@ -11,8 +11,8 @@ Calcula os quatro indicadores exibidos no topo da página [Detalhe](../pages/det
 
 A página de despesas pessoais precisa responder, num relance, quatro perguntas distintas sobre a pessoa selecionada:
 
-1. Quanto, no total, é "meu" este mês — incluindo qualquer origem (Cartão, Pix, etc.).
-2. Quanto foi no Cartão pessoal (subset histórico, equivalente ao bucket `pessoal` de [bucket-deltas.md](bucket-deltas.md)).
+1. Quanto, no total, é "meu" este mês — incluindo qualquer origem (Crédito e Débito).
+2. Quanto foi no Crédito pessoal (subset histórico, equivalente ao bucket `pessoal` de [bucket-deltas.md](bucket-deltas.md)).
 3. Quanto disso é parcelado no mês corrente (afeta o "cheio" de hoje).
 4. Quanto vai retornar como parcela no próximo mês (projeção de compromisso futuro).
 
@@ -33,9 +33,9 @@ Todos os 4 cálculos compartilham `r.rateio === person.name` (string exata, case
 
 ```text
 totalPessoal     = Σ r.valor  onde  rateio = person  (qualquer origem)
-cartaoPessoal    = Σ r.valor  onde  rateio = person  E  origem = "Cartão"
-parceladoAtual   = Σ r.valor  onde  rateio = person  E  origem = "Cartão"  E  parcelaTotal(r.parcela) > 1
-parceladoProx    = Σ r.valor  onde  rateio = person  E  origem = "Cartão"  E  parcelaTotal(r.parcela) > 1  E  parcelaAtual(r.parcela) < parcelaTotal(r.parcela)
+cartaoPessoal    = Σ r.valor  onde  rateio = person  E  origem = "Crédito"
+parceladoAtual   = Σ r.valor  onde  rateio = person  E  origem = "Crédito"  E  parcelaTotal(r.parcela) > 1
+parceladoProx    = Σ r.valor  onde  rateio = person  E  origem = "Crédito"  E  parcelaTotal(r.parcela) > 1  E  parcelaAtual(r.parcela) < parcelaTotal(r.parcela)
 ```
 
 - `parcelaTotal("X/Y")` → `int Y`. Vazio/legado retorna 1. Ver [parcela-format.md](parcela-format.md).
@@ -53,7 +53,7 @@ parceladoProx    = Σ r.valor  onde  rateio = person  E  origem = "Cartão"  E  
 - `r.parcela = "1"` (legado, sem `/`) → `parcelaTotal = 1`, não conta como parcelado.
 - `r.parcela = "1/1"` → `parcelaTotal = 1`, idem (à vista).
 - `r.parcela = "3/3"` → entra em `parceladoAtual`, não entra em `parceladoProx` (última parcela).
-- `r.origem` diferente de `"Cartão"` (ex.: `"Pix (contas)"`, `"Pessoal"`) → conta só em `totalPessoal`.
+- `r.origem` diferente de `"Crédito"` (ou seja, `"Débito"`) → conta só em `totalPessoal`.
 - `r.rateio = "Metade"` ou rateio de outra pessoa → ignorado para essa person em todos os 4 campos.
 
 ## Implementações

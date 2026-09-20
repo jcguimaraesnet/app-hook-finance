@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-29
+last_updated: 2026-09-20
 ---
 
 # Início — visão pessoal (Flutter, direção Bloom)
@@ -11,7 +11,7 @@ Página default ao logar **no app Flutter** (Bloom IA, 5 abas). Mostra a despesa
 
 ## Contexto
 
-Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, tratando a divisão da fatura como dado primário (donut + 3 buckets compart/pessoal/contas). O total compartilhado tem visualização separada em [Compart](compart.md), e o detalhamento de lançamentos pessoais é drill-down via tap no donut → [Detalhe pessoal](detalhe.md).
+Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, tratando a divisão da fatura como dado primário (donut + 3 buckets compart/pessoal/debito). O total compartilhado tem visualização separada em [Compart](compart.md), e o detalhamento de lançamentos pessoais é drill-down via tap no donut → [Detalhe pessoal](detalhe.md).
 
 ## Regras
 
@@ -35,14 +35,14 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
    - 3 linhas (1 por bucket) com cor + label + percentual; tap reflete no donut.
    - Link "Ver pessoal →" que navega para `/detalhe?person=<atual>`.
 4. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`.
-5. **Tiles 2-col**: `Cartão geral` + `Parcelado` (totais brutos do mês).
-6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Compart/Pessoal/Contas), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
-   - **Coluna Contas é clicável** (pós-2026-09-19): navega para `/contas?person=<atual>` — ver [contas.md](contas.md). As outras duas não são: Compartilhado já tem a aba Compart e Pessoal já tem o "Ver pessoal →" do hero.
+5. **Tiles 2-col**: `Total crédito` + `Parcelado` (totais brutos do mês). Rotulado `TOTAL CARTÃO` até a migração de Origem (2026-09-20).
+6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Compart/Pessoal/Débito), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
+   - **Coluna Débito é clicável** (pós-2026-09-19): navega para `/debito?person=<atual>` — ver [debito.md](debito.md). As outras duas não são: Compartilhado já tem a aba Compart e Pessoal já tem o "Ver pessoal →" do hero.
 7. **Seção "Últimos lançamentos"**: 2 itens via `lastEntries(2)` + link "Ver mais →" para `/lancamento`.
 
 ### Donut interativo
 
-- 3 arcos compart/pessoal/contas com cores `violet`/`mint`/`sky` (escala fixa, não Person-derived).
+- 3 arcos compart/pessoal/debito com cores `violet`/`mint`/`sky` (escala fixa, não Person-derived).
 - Tap em arco → segmento expande (`stroke + 4`), demais ficam 35% opacos. Centro mostra label do bucket + valor + `pct%`.
 - Tap fora dos arcos / segundo tap → desselecciona.
 - Cálculo dos buckets: ver [bucket-key.md](../rules/bucket-key.md) e [split-for-person.md](../rules/split-for-person.md).
@@ -58,7 +58,7 @@ Selectiona a pessoa cuja visão pessoal é exibida (afeta donut + tiles + compar
 
 Aplicadas via `BloomColors.forPerson(p)` — usadas no avatar do `_PersonTile`, donut central, pill ativa de troca e em qualquer linha de lançamento cujo `rateio` aponte para essa pessoa (ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md)).
 
-**Importante:** cores dos buckets (`Compartilhado=violet`, `Pessoal=mint`, `Contas=sky`) no `_HeroCard` são independentes da pessoa e não trocam.
+**Importante:** cores dos buckets (`Compartilhado=violet`, `Pessoal=mint`, `Débito=sky`) no `_HeroCard` são independentes da pessoa e não trocam.
 
 ## Edge cases
 
@@ -75,7 +75,7 @@ Aplicadas via `BloomColors.forPerson(p)` — usadas no avatar do `_PersonTile`, 
 ## Specs relacionadas
 
 - [bucket-deltas.md](../rules/bucket-deltas.md) — cálculo de % vs. mês anterior
-- [bucket-key.md](../rules/bucket-key.md) — agrupamento Cartão+rateio
+- [bucket-key.md](../rules/bucket-key.md) — agrupamento Crédito+rateio
 - [split-for-person.md](../rules/split-for-person.md) — alocação por pessoa
 - [detalhe.md](detalhe.md) — drill-down do donut
 - [compart.md](compart.md) — visão complementar (categoria)

@@ -20,7 +20,7 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 | 1 | A | `Dia` | number int | 1–31 |
 | 2 | B | `Descrição` | string | não-vazia |
 | 3 | C | `Valor` | number | qualquer (negativos legítimos para ajustes/estornos) |
-| 4 | D | `Origem` | string | não-vazia (atualmente todas `Pix (contas)`) |
+| 4 | D | `Origem` | string enum | `Crédito` \| `Débito` (atualmente todas `Débito`). Migrada junto com a aba Despesas em 2026-09-20 — ver [despesas-sheet.md](despesas-sheet.md). |
 | 5 | E | `Categoria` | string | não-vazia (atualmente todas `Contas`) |
 | 6 | F | `Rateio` | string enum | `Julio` \| `Dani` \| `Metade` \| `Alzira` |
 | 7 | G | `Acerto` | string | `""` \| `"Sim"` |

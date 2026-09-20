@@ -49,7 +49,7 @@ Para cada item, o backend constrói uma row:
 | B | `${dd}/${mm}/${yyyy}` onde `dd = refDay`, `mm/yyyy` = mês/ano da fatura |
 | C | `description` |
 | D | `value` |
-| E | `origem` (sempre `"Pix (contas)"` na lista atual) |
+| E | `origem` (sempre `"Débito"` na lista atual) |
 | F | `categoria` |
 | G | `rateio` |
 | H | `""` (n/a para Pix) |

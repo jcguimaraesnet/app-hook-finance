@@ -40,7 +40,7 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 ### Toggle do Pix do Júlio
 
 - Estado `acertoPixJulio: boolean` no store global (Zustand, persistido). Default `false`.
-- Click no header `"Pix (contas)"` do card de Júlio → `toggleAcertoPix`.
+- Click no header `"Débito"` do card de Júlio → `toggleAcertoPix`. Rotulado `"Pix (contas)"` até a migração de Origem (2026-09-20).
 - Quando `true`: card de Júlio mostra **todas** as Pix dele do mês. Total do card cresce.
 - Card de Dani **não** tem toggle equivalente.
 

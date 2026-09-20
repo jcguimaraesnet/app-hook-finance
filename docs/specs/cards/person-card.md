@@ -5,6 +5,8 @@ last_updated: 2026-05-07
 
 # PersonCard — card de pessoa em Consulta
 
+> **Congelado (PWA legada).** Descreve a PWA React em `web/`, que não é mais deployada. Os nomes de origem citados aqui (`Cartão`, `Pix (contas)`, `Empregados`) são o enum **pré-2026-09-20**; a col E hoje é `Crédito` | `Débito` — ver [../data/despesas-sheet.md](../data/despesas-sheet.md).
+
 Card que mostra, para uma pessoa (`Júlio` ou `Dani`), o resumo das despesas do mês corrente agrupadas por bucket, com totais e %.
 
 ## Contexto

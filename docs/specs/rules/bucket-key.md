@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-09-20
 ---
 
 # bucketKey
@@ -15,17 +15,17 @@ Cards como [PersonCard](../cards/person-card.md) e [AcertoCard](../cards/acerto-
 
 `bucketKey(row) → string`:
 
-1. Se `row.origem === "Cartão"`:
-   - Se `row.rateio === "Metade"`, retorna `"Cartão (compartilhado)"`.
-   - Caso contrário (qualquer outro rateio, inclusive vazio), retorna `"Cartão (pessoal)"`.
-2. Caso contrário, retorna `row.origem` literalmente (`"Pix (contas)"`, `"Pessoal"`, `"Empregados"`, `"Contas"`, etc).
+1. Se `row.origem === "Crédito"`:
+   - Se `row.rateio === "Metade"`, retorna `"Crédito (compartilhado)"`.
+   - Caso contrário (qualquer outro rateio, inclusive vazio), retorna `"Crédito (pessoal)"`.
+2. Caso contrário, retorna `row.origem` literalmente — hoje só `"Débito"`, já que o enum da col E tem dois valores desde 2026-09-20 (ver [../data/despesas-sheet.md](../data/despesas-sheet.md)). A regra segue genérica para aguentar linha legada não migrada.
 
 A chave volta como **string com a label exata** que aparece na UI. Não introduzir uma camada de tradução (`"cartao_shared"` → `"Cartão (compartilhado)"`) — a chave é a label.
 
 ## Edge cases
 
 - **`origem` vazio:** retorna `""`. Componentes devem tratar como bucket "(sem origem)" se quiserem exibir, mas pela regra a chave é `""` mesmo.
-- **`origem = "Cartão"` E `rateio = ""`:** cai em `"Cartão (pessoal)"` pela regra 1. Hoje no PWA isso aparece em `RateioChart` como `"(sem rateio)"`, mas no `PersonCard` cai em `"Cartão (pessoal)"` — note que o **bucket** está alinhado, é só a label do RateioChart que difere ([../cards/rateio-chart.md](../cards/rateio-chart.md) usa label diferente).
+- **`origem = "Crédito"` E `rateio = ""`:** cai em `"Crédito (pessoal)"` pela regra 1. Hoje no PWA isso aparece em `RateioChart` como `"(sem rateio)"`, mas no `PersonCard` cai em `"Crédito (pessoal)"` — note que o **bucket** está alinhado, é só a label do RateioChart que difere ([../cards/rateio-chart.md](../cards/rateio-chart.md) usa label diferente).
 - **`origem` desconhecida** (ex.: linha legada com `"Outros"`): retorna `"Outros"`. Card decide se renderiza ou ignora.
 
 ## Ordem canônica de buckets
@@ -33,11 +33,9 @@ A chave volta como **string com a label exata** que aparece na UI. Não introduz
 Quando a UI lista buckets, a ordem padrão é:
 
 ```
-1. Cartão (compartilhado)
-2. Cartão (pessoal)
-3. Pix (contas)
-4. Pessoal
-5. Empregados
+1. Crédito (compartilhado)
+2. Crédito (pessoal)
+3. Débito
 ```
 
 Buckets fora dessa lista vão ao final, em ordem de inserção. Implementações devem expor essa ordem como constante (`BUCKET_ORDER`).
@@ -50,20 +48,18 @@ Buckets fora dessa lista vão ao final, em ordem de inserção. Implementações
 ```ts
 // Reference impl
 export function bucketKey(row: Row): string {
-  if (row.origem === "Cartão") {
+  if (row.origem === "Crédito") {
     return row.rateio === "Metade"
-      ? "Cartão (compartilhado)"
-      : "Cartão (pessoal)";
+      ? "Crédito (compartilhado)"
+      : "Crédito (pessoal)";
   }
   return row.origem;
 }
 
 export const BUCKET_ORDER = [
-  "Cartão (compartilhado)",
-  "Cartão (pessoal)",
-  "Pix (contas)",
-  "Pessoal",
-  "Empregados",
+  "Crédito (compartilhado)",
+  "Crédito (pessoal)",
+  "Débito",
 ] as const;
 ```
 

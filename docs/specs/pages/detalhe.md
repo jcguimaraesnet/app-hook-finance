@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-09-18
+last_updated: 2026-09-20
 ---
 
 # Detalhe — despesas pessoais por pessoa
@@ -12,7 +12,7 @@ Página que lista despesas pessoais (não compartilhadas) do mês corrente, com 
 
 ## Contexto
 
-Útil para revisar o que cada um gastou de forma pessoal — separado da despesa compartilhada que vai para o acerto. A lista usa só Cartão pessoal (atrito de leitura), mas os 4 tiles superiores resumem também o impacto de parcelas em meses futuros.
+Útil para revisar o que cada um gastou de forma pessoal — separado da despesa compartilhada que vai para o acerto. A lista usa só Crédito pessoal (atrito de leitura), mas os 4 tiles superiores resumem também o impacto de parcelas em meses futuros.
 
 ## Regras
 
@@ -22,7 +22,7 @@ Lê `monthData(currentMonth)`. Não chama outros endpoints.
 
 ### Filtragem da lista de lançamentos
 
-- `r.origem === "Cartão"` (só Cartão).
+- `r.origem === "Crédito"` (só Crédito).
 - `r.rateio !== ""` E `r.rateio !== "Metade"` (exclui sem rateio e compartilhado).
 
 ### Agregação dos tiles superiores (Flutter)
@@ -72,11 +72,11 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 
 ## Edge cases
 
-- **Mês sem nenhuma despesa Cartão pessoal:** mostra mensagem de vazio.
+- **Mês sem nenhuma despesa Crédito pessoal:** mostra mensagem de vazio.
 - **Pessoa só com despesas compartilhadas no mês:** não aparece (filtra `rateio === "Metade"`).
 - **Rateio com valor diferente de Julio/Dani/Alzira:** entra na seção `others`, ordem alfabética.
 - **`dataRef` sem horário:** PWA legada usa `localeCompare` (ordena por string). Flutter ordena com `parseBrRefDate`, que aceita col B com e sem hora — ver [../conventions.md](../conventions.md). Até 2026-09-18 usava `parseBrDate`, que descartava o ano e invertia dezembro/janeiro na fatura que cruza o ano.
-- **Editar muda o mês ou o rateio:** a linha some da lista ao recarregar (o filtro é `origem === "Cartão"` + rateio da pessoa). Comportamento esperado, não erro — o lançamento foi para outro mês/pessoa.
+- **Editar muda o mês ou o rateio:** a linha some da lista ao recarregar (o filtro é `origem === "Crédito"` + rateio da pessoa). Comportamento esperado, não erro — o lançamento foi para outro mês/pessoa.
 - **Excluir pelo modal:** permitido aqui como em Lançamentos. A lista recarrega sem a linha.
 
 ## Implementações
