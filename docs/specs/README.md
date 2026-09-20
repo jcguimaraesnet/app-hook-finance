@@ -54,6 +54,7 @@ docs/specs/
 │   ├── historico.md                Flutter (Bloom): 6 meses (total + per-pessoa)
 │   ├── detalhe.md                  PWA: accordions; Flutter: drill-down ?person=
 │   ├── debito.md                   Flutter: drill-down da coluna Débito do Comparativo
+│   ├── despesas-fixas.md           Flutter: edita a aba template da Nova fatura
 │   ├── lancamento.md               lista + edit modal; Flutter tem tab "+ Novo" stub
 │   └── acerto.md                   PWA: 2 cards; Flutter: D/J selector + 1 tabela
 ├── state/

@@ -7,6 +7,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -186,8 +187,49 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                 ),
               ),
             ],
+            const SizedBox(height: 22),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 22),
+              child: _VersionFooter(),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Versão do binário em execução. Lida em runtime (não hardcoded) para não
+/// divergir do pubspec: no web vem do version.json gerado no build, no Android
+/// do PackageInfo. Útil para saber se o APK instalado é o da release atual —
+/// depois da migração de Origem, APK velho mostra zero em tudo.
+class _VersionFooter extends StatefulWidget {
+  const _VersionFooter();
+
+  @override
+  State<_VersionFooter> createState() => _VersionFooterState();
+}
+
+class _VersionFooterState extends State<_VersionFooter> {
+  String? _label;
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() => _label = 'hook-finance ${info.version} (${info.buildNumber})');
+    }).catchError((_) {
+      if (mounted) setState(() => _label = 'hook-finance — versão indisponível');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        _label ?? '',
+        style: BloomTypography.mono(fontSize: 11, color: BloomColors.muted),
       ),
     );
   }

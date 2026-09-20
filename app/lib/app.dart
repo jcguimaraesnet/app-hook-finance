@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'core/types.dart';
 import 'features/debito/debito_page.dart';
+import 'features/despesas_fixas/despesas_fixas_page.dart';
 import 'features/detalhe/detalhe_page.dart';
 import 'features/login/login_screen.dart';
 import 'features/settings/captures_history_page.dart';
@@ -67,6 +68,10 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
                 final initial = p == 'dani' ? Person.dani : Person.julio;
                 return DebitoPage(initialPerson: initial);
               },
+            ),
+            GoRoute(
+              path: 'despesas-fixas',
+              builder: (_, _) => const DespesasFixasPage(),
             ),
             GoRoute(
               path: 'settings',

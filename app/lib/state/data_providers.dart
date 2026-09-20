@@ -42,6 +42,13 @@ final lastEntriesProvider =
   return api.getLastEntries(n: n);
 });
 
+/// despesas-fixas — aba de configuração, muda raramente.
+final fixedExpensesProvider =
+    FutureProvider<FixedExpensesResponse>((ref) async {
+  final api = ref.watch(apiProvider);
+  return api.getFixedExpenses();
+});
+
 /// Helper para invalidar caches após mutation (equivalente ao queryClient.invalidateQueries).
 void invalidateAfterMutation(Ref ref) {
   ref.invalidate(monthDataProvider);

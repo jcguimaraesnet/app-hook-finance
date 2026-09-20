@@ -26,7 +26,8 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 1. **App-bar custom** com `BloomLogo` + label "hook" à esquerda, **menu hambúrguer** (`☰`) à direita. Items:
    - **Nova fatura** — busca a data via GET `?action=newInvoicePreview` (última fatura da planilha + 1 mês; o cliente não a computa localmente), abre dialog "Criar fatura DD/MM/YYYY? Vai inserir despesas fixas e parcelas pendentes." Confirma → POST `?action=newInvoice` → SnackBar com `$fixedCount fixas + $parcelaCount parcelas`. Durante o preview + criação o item fica `busy`. Ver [../rules/new-invoice.md](../rules/new-invoice.md).
    - **Atualizar** — invalida providers `monthData`, `previousMonthData`, `historicalSummary`, `lastEntries`. SnackBar "Atualizado".
-   - **Configurações** — `context.push('/settings')`.
+   - **Despesas fixas** — `context.push('/despesas-fixas')`. Edita o template da Nova fatura — ver [despesas-fixas.md](despesas-fixas.md). Pós-2026-09-20.
+   - **Configurações** — `context.push('/settings')`. Mostra também a versão do binário no rodapé (`PackageInfo`, não hardcoded).
    - **Sair** — `signOut()` no auth provider.
 2. **Saudação** "Olá, Júlio" + título display "Junho, 2026" + `MonthSelector` à direita.
 3. **Card hero**: `BloomDonut` à esquerda + bloco com:

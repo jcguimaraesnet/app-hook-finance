@@ -325,6 +325,11 @@ class _TopAppBarState extends ConsumerState<_TopAppBar> {
         ),
         PopupMenuDivider(),
         PopupMenuItem(
+          value: _MenuAction.despesasFixas,
+          child: _MenuRow(
+              icon: Icons.event_repeat_outlined, label: 'Despesas fixas'),
+        ),
+        PopupMenuItem(
           value: _MenuAction.settings,
           child: _MenuRow(icon: Icons.settings_outlined, label: 'Configurações'),
         ),
@@ -341,6 +346,9 @@ class _TopAppBarState extends ConsumerState<_TopAppBar> {
         break;
       case _MenuAction.refresh:
         await widget.onRefresh();
+        break;
+      case _MenuAction.despesasFixas:
+        if (mounted) context.push('/despesas-fixas');
         break;
       case _MenuAction.settings:
         if (mounted) context.push('/settings');
@@ -382,7 +390,7 @@ class _TopAppBarState extends ConsumerState<_TopAppBar> {
   }
 }
 
-enum _MenuAction { novaFatura, refresh, settings, logout }
+enum _MenuAction { novaFatura, refresh, despesasFixas, settings, logout }
 
 class _MenuRow extends StatelessWidget {
   final IconData icon;

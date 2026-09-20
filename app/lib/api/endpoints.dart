@@ -26,6 +26,33 @@ class ApiEndpoints {
     return LastEntriesResponse.fromJson(r);
   }
 
+  // Spec: docs/specs/api/endpoints.md (despesas fixas)
+  Future<FixedExpensesResponse> getFixedExpenses() async {
+    final r = await _client.get('fixedExpenses');
+    return FixedExpensesResponse.fromJson(r);
+  }
+
+  Future<MutationResponse> addFixedExpense(Map<String, dynamic> fields) async {
+    final r = await _client.post('addFixedExpense', {'fields': fields});
+    return MutationResponse.fromJson(r);
+  }
+
+  Future<MutationResponse> updateFixedExpense(
+    int row,
+    Map<String, dynamic> fields,
+  ) async {
+    final r = await _client.post('updateFixedExpense', {
+      'row': row,
+      'fields': fields,
+    });
+    return MutationResponse.fromJson(r);
+  }
+
+  Future<MutationResponse> deleteFixedExpense(int row) async {
+    final r = await _client.post('deleteFixedExpense', {'row': row});
+    return MutationResponse.fromJson(r);
+  }
+
   Future<MutationResponse> addEntry(AddEntryFields fields) async {
     final r = await _client.post('addEntry', {'fields': fields.toJson()});
     return MutationResponse.fromJson(r);

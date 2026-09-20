@@ -262,12 +262,23 @@ class MutationResponse {
   final String? error;
   final int? row;
 
-  const MutationResponse({required this.ok, this.error, this.row});
+  /// Motivo legível quando `error` é genérico (ex.: `invalid_fields` das
+  /// despesas fixas traz "dia inválido (32)"). Mostrar só o código esconderia
+  /// do usuário o que precisa corrigir.
+  final String? detail;
+
+  const MutationResponse({
+    required this.ok,
+    this.error,
+    this.row,
+    this.detail,
+  });
 
   factory MutationResponse.fromJson(Map<String, dynamic> j) => MutationResponse(
         ok: j['ok'] == true,
         error: j['error'] as String?,
         row: (j['row'] as num?)?.toInt(),
+        detail: j['detail'] as String?,
       );
 }
 
@@ -315,4 +326,100 @@ extension PersonX on Person {
         Person.julio => Person.dani,
         Person.dani => Person.julio,
       };
+}
+
+/// Linha da aba `despesas-fixas`. Spec: docs/specs/data/despesas-fixas-sheet.md
+///
+/// `invalid` vem preenchido quando o backend considera a linha malformada. A
+/// leitura é tolerante de propósito: a Nova fatura trava numa linha assim, e a
+/// tela precisa mostrá-la para permitir o conserto — ver endpoints.md.
+class FixedExpense {
+  final int row;
+  final int dia;
+  final String descricao;
+  final double valor;
+  final String origem;
+  final String categoria;
+  final String rateio;
+  final String acerto;
+  final String invalid;
+
+  const FixedExpense({
+    required this.row,
+    required this.dia,
+    required this.descricao,
+    required this.valor,
+    required this.origem,
+    required this.categoria,
+    required this.rateio,
+    required this.acerto,
+    this.invalid = '',
+  });
+
+  bool get isValid => invalid.isEmpty;
+
+  factory FixedExpense.fromJson(Map<String, dynamic> j) => FixedExpense(
+        row: (j['row'] as num?)?.toInt() ?? 0,
+        dia: (j['dia'] as num?)?.toInt() ?? 0,
+        descricao: (j['descricao'] ?? '') as String,
+        valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
+        origem: normalizeOrigem((j['origem'] ?? '') as String),
+        categoria: (j['categoria'] ?? '') as String,
+        rateio: (j['rateio'] ?? '') as String,
+        acerto: (j['acerto'] ?? '') as String,
+        invalid: (j['invalid'] ?? '') as String,
+      );
+
+  Map<String, dynamic> toFields() => {
+        'dia': dia,
+        'descricao': descricao,
+        'valor': valor,
+        'origem': origem,
+        'categoria': categoria,
+        'rateio': rateio,
+        'acerto': acerto,
+      };
+
+  FixedExpense copyWith({
+    int? dia,
+    String? descricao,
+    double? valor,
+    String? origem,
+    String? categoria,
+    String? rateio,
+    String? acerto,
+  }) =>
+      FixedExpense(
+        row: row,
+        dia: dia ?? this.dia,
+        descricao: descricao ?? this.descricao,
+        valor: valor ?? this.valor,
+        origem: origem ?? this.origem,
+        categoria: categoria ?? this.categoria,
+        rateio: rateio ?? this.rateio,
+        acerto: acerto ?? this.acerto,
+        invalid: invalid,
+      );
+}
+
+class FixedExpensesResponse {
+  final bool ok;
+  final String? error;
+  final List<FixedExpense> rows;
+
+  const FixedExpensesResponse({
+    required this.ok,
+    this.error,
+    this.rows = const [],
+  });
+
+  factory FixedExpensesResponse.fromJson(Map<String, dynamic> j) =>
+      FixedExpensesResponse(
+        ok: j['ok'] == true,
+        error: j['error'] as String?,
+        rows: (j['rows'] as List?)
+                ?.map((e) => FixedExpense.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
+      );
 }
