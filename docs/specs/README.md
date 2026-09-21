@@ -34,6 +34,7 @@ docs/specs/
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
 │   ├── personal-summary.md         4 tiles (total/cartão/parcelado atual+próx) por pessoa
 │   ├── debito-rows.md              linhas do bucket Débito de uma pessoa
+│   ├── categoria-rows.md           linhas de Crédito de uma categoria + totais
 │   ├── classifier.md               Jaccard sobre histórico (categoria/rateio)
 │   ├── webhook-parser.md           PURCHASE_RE (Santander) + NEW_APP_VALUE_RE (Revolut)
 │   ├── invoice-closing-date.md     próximo fechamento + INVOICE_CLOSING_DAY
@@ -55,6 +56,7 @@ docs/specs/
 │   ├── detalhe.md                  PWA: accordions; Flutter: drill-down ?person=
 │   ├── debito.md                   Flutter: drill-down da coluna Débito do Comparativo
 │   ├── despesas-fixas.md           Flutter: edita a aba template da Nova fatura
+│   ├── categoria.md                Flutter: drill-down de uma categoria do Compart
 │   ├── lancamento.md               lista + edit modal; Flutter tem tab "+ Novo" stub
 │   └── acerto.md                   PWA: 2 cards; Flutter: D/J selector + 1 tabela
 ├── state/

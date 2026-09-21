@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-09-20
 ---
 
 # Compart — Cartão compartilhado por categoria (Flutter, direção Bloom)
@@ -33,6 +33,7 @@ A despesa de cartão é categorizada (Mercado, Restaurante, Pessoal, etc.). Para
      - Percentual sobre `total`.
      - Linha secundária abaixo: `Compart: R$ X` (mint se >0, dimmed senão).
      - Bar inline (atrás do conteúdo) com largura proporcional a `valor / max`.
+     - **Tap abre o detalhamento** da categoria em `/categoria?nome=<label>` (chevron lilás ao lado do rótulo) — ver [categoria.md](categoria.md). Pós-2026-09-20.
    - Última linha: `Total | R$ X | 100,00%` (border-top destacado).
 
 ### Cálculo dos valores por categoria

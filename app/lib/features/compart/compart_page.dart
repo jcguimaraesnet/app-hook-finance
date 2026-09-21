@@ -3,8 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/format/money.dart';
 import '../../core/origem.dart';
+import '../../core/rules/categoria_rows.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
@@ -26,7 +28,7 @@ class CompartPage extends ConsumerWidget {
     final cards = rows.where((r) => r.origem == kOrigemCredito).toList();
     final byCat = <String, _CatAgg>{};
     for (final r in cards) {
-      final key = r.categoria.isEmpty ? '—' : r.categoria;
+      final key = categoriaLabel(r);
       final agg = byCat.putIfAbsent(key, () => _CatAgg());
       agg.total += r.valor;
       if (r.rateio == 'Metade') agg.compart += r.valor / 2;
@@ -173,6 +175,9 @@ class CompartPage extends ConsumerWidget {
                               row: c,
                               total: grandTotal,
                               maxValue: maxValue,
+                              onTap: () => context.push(
+                                '/categoria?nome=${Uri.encodeQueryComponent(c.label)}',
+                              ),
                             ),
                           if (categories.isNotEmpty)
                             _TotalLine(
@@ -292,18 +297,20 @@ class _CategoryLine extends StatelessWidget {
   final _CatRow row;
   final double total;
   final double maxValue;
+  final VoidCallback? onTap;
 
   const _CategoryLine({
     required this.row,
     required this.total,
     required this.maxValue,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final pct = total == 0 ? 0.0 : row.value / total * 100;
     final fillFrac = maxValue == 0 ? 0.0 : (row.value / maxValue).clamp(0.0, 1.0);
-    return Container(
+    final conteudo = Container(
       decoration: const BoxDecoration(
         border: Border(
           top: BorderSide(color: BloomColors.divider, width: 1),
@@ -342,7 +349,7 @@ class _CategoryLine extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    Flexible(
                       child: Text(
                         row.label,
                         style: BloomTypography.geist(
@@ -353,6 +360,10 @@ class _CategoryLine extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (onTap != null)
+                      const Icon(Icons.chevron_right,
+                          size: 14, color: BloomColors.violet),
+                    const Spacer(),
                     SizedBox(
                       width: 70,
                       child: Text(
@@ -404,6 +415,12 @@ class _CategoryLine extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    if (onTap == null) return conteudo;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onTap, child: conteudo),
     );
   }
 }
