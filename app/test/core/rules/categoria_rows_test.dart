@@ -40,7 +40,7 @@ void main() {
         _r(categoria: 'Casa', origem: kOrigemDebito, descricao: 'd'),
       ];
       expect(
-        categoriaRowsForMonth(rows, 'Casa').map((r) => r.descricao),
+        categoriaRowsForMonth(rows, 'Casa', origem: kOrigemCredito).map((r) => r.descricao),
         ['a', 'b'],
       );
     });
@@ -51,13 +51,13 @@ void main() {
         _r(categoria: 'Casa', descricao: 'com'),
       ];
       expect(
-        categoriaRowsForMonth(rows, kCategoriaVazia).map((r) => r.descricao),
+        categoriaRowsForMonth(rows, kCategoriaVazia, origem: kOrigemCredito).map((r) => r.descricao),
         ['sem'],
       );
     });
 
     test('categoria inexistente retorna vazio', () {
-      expect(categoriaRowsForMonth([_r()], 'Viagem'), isEmpty);
+      expect(categoriaRowsForMonth([_r()], 'Viagem', origem: kOrigemCredito), isEmpty);
     });
   });
 
@@ -73,7 +73,7 @@ void main() {
     ];
 
     test('total é o cheio, compart é metade só das linhas Metade', () {
-      final t = categoriaTotais(categoriaRowsForMonth(rows, 'Casa'));
+      final t = categoriaTotais(categoriaRowsForMonth(rows, 'Casa', origem: kOrigemCredito));
       expect(t.total, 280); // 200 + 50 + 30, sem o Débito
       expect(t.compart, 100); // 200/2
     });
@@ -86,7 +86,7 @@ void main() {
       }
       for (final entry in byCat.entries) {
         expect(
-          categoriaTotais(categoriaRowsForMonth(rows, entry.key)).total,
+          categoriaTotais(categoriaRowsForMonth(rows, entry.key, origem: kOrigemCredito)).total,
           entry.value,
           reason: 'categoria ${entry.key} não fecha',
         );
@@ -95,9 +95,49 @@ void main() {
 
     test('sem linhas Metade, compart é zero', () {
       final t = categoriaTotais(
-          categoriaRowsForMonth([_r(categoria: 'Casa', rateio: 'Julio')], 'Casa'));
+          categoriaRowsForMonth([_r(categoria: 'Casa', rateio: 'Julio')], 'Casa',
+              origem: kOrigemCredito));
       expect(t.total, 100);
       expect(t.compart, 0);
+    });
+  });
+
+  // A tela de categoria passou a mostrar dois grupos (2026-10-01). O recorte por
+  // origem é explícito na chamada justamente para os dois não se misturarem.
+  group('grupo de Débito', () {
+    final rows = [
+      _r(categoria: 'Casa', origem: kOrigemCredito, valor: 100, descricao: 'cred'),
+      _r(categoria: 'Casa', origem: kOrigemDebito, valor: 300, descricao: 'deb'),
+      _r(categoria: 'Casa', origem: kOrigemDebito, rateio: 'Julio', valor: 50, descricao: 'deb2'),
+      _r(categoria: 'Alimentação', origem: kOrigemDebito, valor: 900, descricao: 'outra'),
+    ];
+
+    test('separa as duas origens da mesma categoria', () {
+      expect(
+        categoriaRowsForMonth(rows, 'Casa', origem: kOrigemCredito)
+            .map((r) => r.descricao),
+        ['cred'],
+      );
+      expect(
+        categoriaRowsForMonth(rows, 'Casa', origem: kOrigemDebito)
+            .map((r) => r.descricao),
+        ['deb', 'deb2'],
+      );
+    });
+
+    test('o tile de Crédito segue igual à linha da tabela do Compart', () {
+      // A tabela do Compart é só de Crédito; incluir Débito aqui faria o
+      // detalhamento divergir do número que foi clicado.
+      final t = categoriaTotais(
+          categoriaRowsForMonth(rows, 'Casa', origem: kOrigemCredito));
+      expect(t.total, 100);
+    });
+
+    test('compartilhado de cada grupo conta só as linhas Metade', () {
+      final td = categoriaTotais(
+          categoriaRowsForMonth(rows, 'Casa', origem: kOrigemDebito));
+      expect(td.total, 350); // 300 + 50
+      expect(td.compart, 150); // só a de Metade, 300/2
     });
   });
 }

@@ -53,35 +53,62 @@ Future<void> _pump(WidgetTester tester, List<Entry> rows, String categoria) asyn
 }
 
 void main() {
-  testWidgets('lista só a categoria e reconcilia com os dois totais',
-      (tester) async {
+  // A tela passou a ter dois grupos (Crédito e Débito) em 2026-10-01.
+  testWidgets('separa os dois grupos e soma cada um', (tester) async {
     await _pump(tester, [
       _e(row: 2, categoria: 'Casa', rateio: 'Metade', valor: 200, descricao: 'LUZ'),
       _e(row: 3, categoria: 'Casa', rateio: 'Julio', valor: 50, descricao: 'FURADEIRA'),
-      _e(row: 4, categoria: 'Alimentação', valor: 900, descricao: 'MERCADO'),
-      _e(row: 5, categoria: 'Casa', origem: kOrigemDebito, valor: 777, descricao: 'CONTA LUZ'),
+      _e(row: 4, categoria: 'Casa', origem: kOrigemDebito, rateio: 'Julio', valor: 300, descricao: 'CONTA LUZ'),
+      _e(row: 5, categoria: 'Alimentação', valor: 900, descricao: 'MERCADO'),
     ], 'Casa');
 
     expect(tester.takeException(), isNull);
+
+    // Grupos com contagem e subtotal no cabeçalho.
+    expect(find.text('Crédito (2)'), findsOneWidget);
+    expect(find.text('Débito (1)'), findsOneWidget);
+
     expect(find.text('LUZ'), findsOneWidget);
     expect(find.text('FURADEIRA'), findsOneWidget);
+    expect(find.text('CONTA LUZ'), findsOneWidget);
     expect(find.text('MERCADO'), findsNothing);
-    expect(find.text('CONTA LUZ'), findsNothing);
-    expect(find.text('Lançamentos (2)'), findsOneWidget);
-    expect(find.text('R\$ 250,00'), findsOneWidget); // total cheio
-    expect(find.text('R\$ 100,00'), findsOneWidget); // compartilhado (200/2)
+
+    // Tiles: CRÉDITO 250, DÉBITO 300, TOTAL 550, COMPARTILHADO 100 (200/2).
+    expect(find.text('R\$ 250,00'), findsWidgets);
+    expect(find.text('R\$ 300,00'), findsWidgets);
+    expect(find.text('R\$ 550,00'), findsOneWidget);
+    expect(find.text('R\$ 100,00'), findsOneWidget);
   });
 
-  testWidgets('ordena por dataRef descendente', (tester) async {
+  testWidgets('grupo de Débito aparece no lugar certo, abaixo do Crédito',
+      (tester) async {
     await _pump(tester, [
-      _e(row: 2, descricao: 'ANTIGO', dataRef: '20/12/2025 10:00'),
-      _e(row: 3, descricao: 'RECENTE', dataRef: '05/01/2026 09:00'),
+      _e(row: 2, categoria: 'Casa', descricao: 'CRED'),
+      _e(row: 3, categoria: 'Casa', origem: kOrigemDebito, descricao: 'DEB'),
     ], 'Casa');
 
     expect(
-      tester.getTopLeft(find.text('RECENTE')).dy,
-      lessThan(tester.getTopLeft(find.text('ANTIGO')).dy),
+      tester.getTopLeft(find.text('Crédito (1)')).dy,
+      lessThan(tester.getTopLeft(find.text('Débito (1)')).dy),
     );
+    expect(
+      tester.getTopLeft(find.text('CRED')).dy,
+      lessThan(tester.getTopLeft(find.text('DEB')).dy),
+    );
+  });
+
+  testWidgets('cada grupo ordena por dataRef descendente', (tester) async {
+    await _pump(tester, [
+      _e(row: 2, descricao: 'CRED ANTIGO', dataRef: '20/12/2025 10:00'),
+      _e(row: 3, descricao: 'CRED NOVO', dataRef: '05/01/2026 09:00'),
+      _e(row: 4, origem: kOrigemDebito, descricao: 'DEB ANTIGO', dataRef: '20/12/2025 10:00'),
+      _e(row: 5, origem: kOrigemDebito, descricao: 'DEB NOVO', dataRef: '05/01/2026 09:00'),
+    ], 'Casa');
+
+    expect(tester.getTopLeft(find.text('CRED NOVO')).dy,
+        lessThan(tester.getTopLeft(find.text('CRED ANTIGO')).dy));
+    expect(tester.getTopLeft(find.text('DEB NOVO')).dy,
+        lessThan(tester.getTopLeft(find.text('DEB ANTIGO')).dy));
   });
 
   testWidgets('categoria vazia usa o traço da tabela', (tester) async {
@@ -92,9 +119,25 @@ void main() {
     expect(find.text('SEM CATEGORIA'), findsOneWidget);
   });
 
-  testWidgets('categoria sem lançamentos mostra o vazio', (tester) async {
+  testWidgets('cada grupo tem seu próprio vazio', (tester) async {
+    await _pump(tester, [
+      _e(row: 2, categoria: 'Casa', descricao: 'SO CREDITO'),
+    ], 'Casa');
+
+    expect(find.text('Crédito (1)'), findsOneWidget);
+    expect(find.text('Débito (0)'), findsOneWidget);
+    expect(find.text('Sem lançamentos de débito nesta categoria.'),
+        findsOneWidget);
+    expect(find.text('Sem lançamentos de crédito nesta categoria.'),
+        findsNothing);
+  });
+
+  testWidgets('categoria inexistente deixa os dois grupos vazios',
+      (tester) async {
     await _pump(tester, [_e(row: 2, categoria: 'Casa')], 'Viagem');
-    expect(find.text('Sem lançamentos nesta categoria.'), findsOneWidget);
-    expect(find.text('Lançamentos (0)'), findsOneWidget);
+    expect(find.text('Sem lançamentos de crédito nesta categoria.'),
+        findsOneWidget);
+    expect(find.text('Sem lançamentos de débito nesta categoria.'),
+        findsOneWidget);
   });
 }

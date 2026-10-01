@@ -34,12 +34,20 @@ class RecentEntryRow extends StatelessWidget {
     final avatarLabel = _avatarLabel(entry.rateio);
 
     final rawDateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
-    final dateRef = _stripTime(rawDateRef);
+    // Data sai da meta-linha e vai para a direita da descrição, em DD/MM — a
+    // meta ficava com três informações disputando uma linha de 10px.
+    final diaMes = _diaMes(_stripTime(rawDateRef));
     final cat = entry.categoria.isEmpty ? '—' : entry.categoria;
     final parcelaSuffix = _parcelaSuffix(entry.parcela);
+    // parcelaSuffix já vem com " · " na frente; sem categoria antes, sobra o
+    // separador solto.
     final meta = hideCategory
-        ? '$dateRef$parcelaSuffix'
-        : '$dateRef · $cat$parcelaSuffix';
+        ? parcelaSuffix.replaceFirst(' · ', '')
+        : '$cat$parcelaSuffix';
+    final metaStyle = BloomTypography.mono(
+      fontSize: 10,
+      color: BloomColors.muted,
+    );
 
     final row = Row(
       children: [
@@ -66,26 +74,37 @@ class RecentEntryRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                entry.descricao.isEmpty ? '—' : entry.descricao,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: BloomTypography.geist(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: descColor,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Flexible(
+                    child: Text(
+                      entry.descricao.isEmpty ? '—' : entry.descricao,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: BloomTypography.geist(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: descColor,
+                      ),
+                    ),
+                  ),
+                  if (diaMes.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(diaMes, style: metaStyle),
+                  ],
+                ],
               ),
-              const SizedBox(height: 1),
-              Text(
-                meta,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: BloomTypography.mono(
-                  fontSize: 10,
-                  color: BloomColors.muted,
+              if (meta.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: metaStyle,
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -153,6 +172,13 @@ class RecentEntryRow extends StatelessWidget {
     final y = int.tryParse(parts[1]);
     if (x == null || y == null || y <= 0) return '';
     return ' · ($x / $y)';
+  }
+
+  /// "30/09/2026" -> "30/09". Formato inesperado passa intacto.
+  String _diaMes(String brDate) {
+    final parts = brDate.split('/');
+    if (parts.length < 2) return brDate;
+    return '${parts[0]}/${parts[1]}';
   }
 
   String _stripTime(String s) {

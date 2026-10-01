@@ -48,7 +48,7 @@ class BloomBottomNav extends StatelessWidget {
               ),
               _NavItem(
                 tab: BloomTab.compart,
-                label: 'Compart',
+                label: 'Categoria',
                 icon: _Icon.shared,
                 active: active == BloomTab.compart,
                 onTap: () => onChange(BloomTab.compart),

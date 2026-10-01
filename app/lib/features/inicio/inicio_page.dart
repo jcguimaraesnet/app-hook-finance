@@ -22,6 +22,7 @@ import '../../widgets/bloom/bloom_donut.dart';
 import '../../widgets/bloom/bloom_logo.dart';
 import '../../widgets/bloom/month_selector.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
+import '../lancamento/edit_dialog.dart';
 
 class InicioPage extends ConsumerStatefulWidget {
   const InicioPage({super.key});
@@ -1094,12 +1095,18 @@ class _ComparativeCard extends ConsumerWidget {
         color: BloomColors.violet,
         value: cur.credito,
         delta: deltas.credito,
+        // Aba Categoria: o "Total compartilhado" de lá é Σ valor/2 das linhas
+        // Crédito+Metade — a mesma conta desta fatia, então os dois fecham.
+        onTap: () =>
+            ref.read(activeTabProvider.notifier).state = BloomTab.compart,
       ),
       _Col(
         label: 'Pessoal',
         color: BloomColors.mint,
         value: cur.pessoal,
         delta: deltas.pessoal,
+        onTap: () => context.push(
+            '/detalhe?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
       ),
       _Col(
         label: 'Débito',
@@ -1320,6 +1327,28 @@ class _RecentEntriesSection extends ConsumerWidget {
   final AsyncValue<LastEntriesResponse> asyncLast;
   const _RecentEntriesSection({required this.asyncLast});
 
+  Future<void> _editar(
+      BuildContext context, WidgetRef ref, Entry entry) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => EditDialog(
+        entry: entry,
+        rowsForCategoriaSuggestions:
+            ref.read(monthDataProvider(ref.read(currentMonthProvider)))
+                    .value
+                    ?.rows ??
+                const <ExpenseRow>[],
+        api: ref.read(apiProvider),
+      ),
+    );
+    if (saved == true) {
+      ref.invalidate(monthDataProvider);
+      ref.invalidate(previousMonthDataProvider);
+      ref.invalidate(historicalSummaryProvider);
+      ref.invalidate(lastEntriesProvider);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = asyncLast.value?.entries ?? const <Entry>[];
@@ -1384,6 +1413,11 @@ class _RecentEntriesSection extends ConsumerWidget {
                         RecentEntryRow(
                           entry: shown[i],
                           showDivider: i > 0,
+                          // Sem row válido (backend antigo) o save falharia com
+                          // invalid_row — mesma guarda das outras listas.
+                          onTap: shown[i].row >= 2
+                              ? () => _editar(context, ref, shown[i])
+                              : null,
                         ),
                     ],
                   ),

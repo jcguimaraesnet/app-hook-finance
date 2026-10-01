@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/origem.dart';
 import '../../core/rules/categoria_rows.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
@@ -29,10 +30,22 @@ class CategoriaPage extends ConsumerWidget {
     final rows = monthAsync.value?.rows ?? const <Entry>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final daCategoria = categoriaRowsForMonth(rows, categoria)
-      ..sort((a, b) =>
-          parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
-    final totais = categoriaTotais(daCategoria);
+    int maisRecentePrimeiro(Entry a, Entry b) =>
+        parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef));
+
+    final credito =
+        categoriaRowsForMonth(rows, categoria, origem: kOrigemCredito)
+          ..sort(maisRecentePrimeiro);
+    final debito =
+        categoriaRowsForMonth(rows, categoria, origem: kOrigemDebito)
+          ..sort(maisRecentePrimeiro);
+
+    // Os totais de Crédito continuam sendo os da linha clicada na tabela do
+    // Compart (que é só de Crédito); Débito é o grupo que a tabela não mostra.
+    final tCredito = categoriaTotais(credito);
+    final tDebito = categoriaTotais(debito);
+    final totalGeral = tCredito.total + tDebito.total;
+    final compartGeral = tCredito.compart + tDebito.compart;
 
     Future<void> openEdit(Entry e) async {
       final saved = await showDialog<bool>(
@@ -75,72 +88,152 @@ class CategoriaPage extends ConsumerWidget {
                         ),
                       ),
                     )
-                  : Row(
+                  : Column(
                       children: [
-                        Expanded(
-                          child: _Tile(
-                            label: 'TOTAL',
-                            value: totais.total,
-                            accent: BloomColors.violet,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _Tile(
+                                label: 'CRÉDITO',
+                                value: tCredito.total,
+                                accent: BloomColors.violet,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Tile(
+                                label: 'DÉBITO',
+                                value: tDebito.total,
+                                accent: BloomColors.sky,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _Tile(
-                            label: 'COMPARTILHADO',
-                            value: totais.compart,
-                          ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _Tile(
+                                label: 'COMPARTILHADO',
+                                value: compartGeral,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Tile(
+                                label: 'TOTAL',
+                                value: totalGeral,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
             ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Text(
-                'Lançamentos (${daCategoria.length})',
-                style: BloomTypography.display(fontSize: 14),
-              ),
+            const SizedBox(height: 18),
+            _Grupo(
+              titulo: 'Crédito',
+              rows: credito,
+              loading: loading,
+              vazio: 'Sem lançamentos de crédito nesta categoria.',
+              onEdit: openEdit,
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: BloomCard(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: daCategoria.isEmpty && !loading
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        child: Center(
-                          child: Text(
-                            'Sem lançamentos nesta categoria.',
-                            style: BloomTypography.geist(
-                              fontSize: 12,
-                              color: BloomColors.muted,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (var i = 0; i < daCategoria.length; i++)
-                            RecentEntryRow(
-                              entry: daCategoria[i],
-                              showDivider: i > 0,
-                              // Todas são da mesma categoria: repeti-la em cada
-                              // linha não acrescenta informação.
-                              hideCategory: true,
-                              onTap: daCategoria[i].row >= 2
-                                  ? () => openEdit(daCategoria[i])
-                                  : null,
-                            ),
-                        ],
-                      ),
-              ),
+            const SizedBox(height: 18),
+            _Grupo(
+              titulo: 'Débito',
+              rows: debito,
+              loading: loading,
+              vazio: 'Sem lançamentos de débito nesta categoria.',
+              onEdit: openEdit,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Grupo extends StatelessWidget {
+  final String titulo;
+  final List<Entry> rows;
+  final bool loading;
+  final String vazio;
+  final Future<void> Function(Entry) onEdit;
+
+  const _Grupo({
+    required this.titulo,
+    required this.rows,
+    required this.loading,
+    required this.vazio,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = rows.fold<double>(0, (s, r) => s + r.valor);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  '$titulo (${rows.length})',
+                  style: BloomTypography.display(fontSize: 14),
+                ),
+              ),
+              if (rows.isNotEmpty)
+                Text(
+                  'R\$ ${formatMoney(total)}',
+                  style: BloomTypography.mono(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: BloomCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: rows.isEmpty && !loading
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    child: Center(
+                      child: Text(
+                        vazio,
+                        textAlign: TextAlign.center,
+                        style: BloomTypography.geist(
+                          fontSize: 12,
+                          color: BloomColors.muted,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < rows.length; i++)
+                        RecentEntryRow(
+                          entry: rows[i],
+                          showDivider: i > 0,
+                          // Todas são da mesma categoria: repeti-la em cada
+                          // linha não acrescenta informação.
+                          hideCategory: true,
+                          onTap: rows[i].row >= 2
+                              ? () => onEdit(rows[i])
+                              : null,
+                        ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

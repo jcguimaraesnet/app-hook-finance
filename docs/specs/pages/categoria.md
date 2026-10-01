@@ -25,27 +25,32 @@ A tabela do Compart mostra quanto foi gasto por categoria, mas não *no quê*. D
 
 ### Filtragem
 
-`categoriaRowsForMonth(rows, categoria)` — ver [../rules/categoria-rows.md](../rules/categoria-rows.md). Ordenada por `dataRef` descendente via `parseBrRefDate`.
+`categoriaRowsForMonth(rows, categoria, origem: ...)` — chamada **duas vezes**, uma por origem, para montar os dois grupos. Ver [../rules/categoria-rows.md](../rules/categoria-rows.md). Cada grupo ordenado por `dataRef` descendente via `parseBrRefDate`.
 
 ### Tiles
 
+Grid 2×2:
+
 | Tile | Valor |
 |---|---|
-| **TOTAL** | `Σ valor` — o mesmo número da coluna Valor na linha clicada. |
-| **COMPARTILHADO** | `Σ valor/2` das linhas `Metade` — o mesmo `Compart: R$ X` da linha clicada. |
+| **CRÉDITO** | `Σ valor` do grupo de Crédito — o mesmo número da coluna Valor na linha clicada. |
+| **DÉBITO** | `Σ valor` do grupo de Débito. Não existe na tabela do Compart, que é só de Cartão. |
+| **COMPARTILHADO** | `Σ valor/2` das linhas `Metade` das **duas** origens. |
+| **TOTAL** | Crédito + Débito. |
 
-Os dois reconciliam com a tabela por construção: a página e a tabela usam a mesma regra.
+O tile **CRÉDITO** é o que reconcilia com a tabela de onde se clicou — por isso `origem` é parâmetro obrigatório da regra, para ninguém somar as duas origens por acidente e divergir do número clicado.
 
 ### Render
 
 - `ScreenHeader` com back, kicker "Categoria", título = nome da categoria e `MonthSelector`.
+- **Dois grupos** (pós-2026-10-01), nesta ordem: **Crédito** e **Débito**. Cada um com cabeçalho `<nome> (N)` + subtotal à direita, e seu próprio card de lista.
 - Lista de `RecentEntryRow` com `hideCategory: true` — todas são da mesma categoria, repeti-la não acrescenta nada.
 - **Tap edita o lançamento**, como em [detalhe.md](detalhe.md) e [debito.md](debito.md). Ao salvar, invalida `monthDataProvider` e `lastEntriesProvider`.
 
 ### Loading / vazio
 
 - Loading: spinner no lugar dos tiles.
-- Sem linhas: `"Sem lançamentos nesta categoria."`.
+- Sem linhas: cada grupo tem seu vazio — `"Sem lançamentos de crédito nesta categoria."` / `"...de débito..."`. Um grupo vazio não esconde o outro.
 
 ## Edge cases
 

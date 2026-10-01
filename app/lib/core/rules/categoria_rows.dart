@@ -11,17 +11,20 @@ const String kCategoriaVazia = '—';
 String categoriaLabel(ExpenseRow r) =>
     r.categoria.isEmpty ? kCategoriaVazia : r.categoria;
 
-/// Linhas de Crédito de uma categoria no mês. Mesma regra que o Compart usa
-/// para montar cada linha da tabela — é o que faz o detalhamento fechar com o
-/// número que foi clicado.
+/// Linhas de uma categoria no mês, por origem. `origem` é obrigatório de
+/// propósito: com Crédito reproduz exatamente a linha da tabela do Compart (é o
+/// que faz o detalhamento fechar com o número clicado), e com Débito dá o grupo
+/// que a tabela não mostra. Um default escondido aqui seria a forma mais fácil
+/// de somar coisa errada.
 ///
 /// Genérica em `T` para preservar `Entry` (e o `row` que o editar precisa).
 List<T> categoriaRowsForMonth<T extends ExpenseRow>(
   List<T> rows,
-  String categoria,
-) {
+  String categoria, {
+  required String origem,
+}) {
   return rows
-      .where((r) => r.origem == kOrigemCredito && categoriaLabel(r) == categoria)
+      .where((r) => r.origem == origem && categoriaLabel(r) == categoria)
       .toList();
 }
 
@@ -34,6 +37,8 @@ class CategoriaTotais {
   const CategoriaTotais({required this.total, required this.compart});
 }
 
+/// Total cheio e parte compartilhada de um conjunto já filtrado. Vale para
+/// qualquer origem — quem filtra decide o recorte.
 CategoriaTotais categoriaTotais(List<ExpenseRow> rowsDaCategoria) {
   double total = 0;
   double compart = 0;

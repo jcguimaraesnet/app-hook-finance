@@ -38,8 +38,11 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 4. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`.
 5. **Tiles 2-col**: `Total crédito` + `Parcelado` (totais brutos do mês). Rotulado `TOTAL CARTÃO` até a migração de Origem (2026-09-20).
 6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Crédito/Pessoal/Débito), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
-   - **Coluna Débito é clicável** (pós-2026-09-19): navega para `/debito?person=<atual>` — ver [debito.md](debito.md). As outras duas não são: Compartilhado já tem a aba Compart e Pessoal já tem o "Ver pessoal →" do hero.
-7. **Seção "Últimos lançamentos"**: 2 itens via `lastEntries(2)` + link "Ver mais →" para `/lancamento`.
+   - **As três colunas são clicáveis** (pós-2026-10-01):
+     - **Crédito** → aba Categoria (antes rotulada "Compart"). O "Total compartilhado" de lá é `Σ valor/2` das linhas Crédito+Metade — a mesma conta da fatia, então os dois fecham (conferido: R$ 1.101,47 nas duas telas em 06/11/2026).
+     - **Pessoal** → `/detalhe?person=<atual>`. O tile "TOTAL PESSOAL" de lá é `Σ valor` onde `rateio == pessoa`, idêntico à fatia. ⚠️ A **lista** daquela tela é só de Crédito, então ela mostra um subconjunto do próprio tile — pendência anterior à mudança.
+     - **Débito** → `/debito?person=<atual>`. ⚠️ A tela lista todo o débito da pessoa, enquanto a fatia conta só `Metade` — ver [../rules/bucket-deltas.md](../rules/bucket-deltas.md).
+7. **Seção "Últimos lançamentos"**: 2 itens via `lastEntries(2)` + link "Ver mais →" para `/lancamento`. **Tap edita** o lançamento no mesmo `EditDialog` das outras listas (pós-2026-10-01); ao salvar invalida `monthData`, `previousMonthData`, `historicalSummary` e `lastEntries`.
 
 ### Donut interativo
 

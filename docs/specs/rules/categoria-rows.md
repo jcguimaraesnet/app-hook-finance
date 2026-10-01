@@ -16,7 +16,7 @@ Dois detalhes fáceis de errar sozinho: o agrupamento só considera `origem === 
 ## Regras
 
 1. `categoriaLabel(row)` → `row.categoria` ou `"—"` quando vazia. **Usada pelos dois lados**: pelo Compart ao agrupar e pela tela ao filtrar.
-2. `categoriaRowsForMonth(rows, categoria)` → linhas com `origem === "Crédito"` **e** `categoriaLabel(row) === categoria`. Preserva a ordem de entrada.
+2. `categoriaRowsForMonth(rows, categoria, origem)` → linhas com aquela `origem` **e** `categoriaLabel(row) === categoria`. Preserva a ordem de entrada. **`origem` é obrigatório**: com `Crédito` reproduz a linha da tabela do Compart (que é só de Cartão), com `Débito` dá o grupo que a tabela não mostra. Um default escondido aqui seria a forma mais fácil de somar as duas origens e divergir do número clicado.
 3. `categoriaTotais(linhas)` → `{ total, compart }`:
    - `total = Σ valor` (cheio).
    - `compart = Σ valor/2` apenas das linhas com `rateio === "Metade"`.

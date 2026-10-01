@@ -5,6 +5,8 @@ last_updated: 2026-09-20
 
 # Compart — Cartão compartilhado por categoria (Flutter, direção Bloom)
 
+> **Rótulo na barra inferior: "Categoria"** (pós-2026-10-01; era "Compart"). O nome interno da aba (`BloomTab.compart`) e desta spec não mudaram.
+
 Página dedicada do Flutter para visualizar o total da fatura de cartão **por categoria**, com destaque para a porção compartilhada de cada uma. Substitui a sub-aba `Categoria` da [Consulta](consulta.md) do PWA.
 
 > **Escopo:** apenas Flutter. PWA continua na sub-aba.
