@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/diff_calculation.dart';
+import '../../core/rules/acerto_total.dart';
 import '../../core/rules/split_for_person.dart';
-import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
@@ -32,23 +32,9 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    // Total Pessoal da Dani — mesmo cálculo da tabela em _PersonAcertoCard:
-    // cartao(compart) + cartao(pessoal) + pix(acerto=='Sim'). Diferente do
-    // bucketsForPerson.total porque este último inclui TODAS as Pix.
-    final daniCartaoCompart = rows
-        .where((r) => r.origem == kOrigemCredito && r.rateio == 'Metade')
-        .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
-    final daniCartaoPessoal = rows
-        .where((r) => r.origem == kOrigemCredito && r.rateio == Person.dani.name)
-        .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
-    final daniPixAcerto = rows
-        .where((r) =>
-            r.origem == kOrigemDebito &&
-            r.rateio == Person.dani.name &&
-            r.acerto == 'Sim')
-        .fold<double>(0, (s, r) => s + r.valor);
-    final daniTotalPessoal =
-        daniCartaoCompart + daniCartaoPessoal + daniPixAcerto;
+    // Mesma função que o card usa no "Total Pessoal" — este número e aquele são
+    // o mesmo valor, e já divergiram por estarem calculados em dois lugares.
+    final daniTotalPessoal = acertoBreakdown(rows, Person.dani).total;
 
     Future<void> onRefresh() async {
       ref.invalidate(monthDataProvider);
@@ -80,8 +66,7 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                  child: CircularProgressIndicator(
-                      color: BloomColors.violet),
+                  child: CircularProgressIndicator(color: BloomColors.violet),
                 ),
               )
             else
@@ -91,8 +76,9 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
                   person: _selected,
                   rows: rows,
                   onSwap: () => setState(() {
-                    _selected =
-                        _selected == Person.dani ? Person.julio : Person.dani;
+                    _selected = _selected == Person.dani
+                        ? Person.julio
+                        : Person.dani;
                   }),
                 ),
               ),
@@ -192,30 +178,16 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
     final onSwap = widget.onSwap;
     final personColor = BloomColors.forPerson(person);
 
-    final cartao = rows.where((r) => r.origem == kOrigemCredito);
-    final cartaoCompart = cartao
-        .where((r) => r.rateio == 'Metade')
-        .fold<double>(0, (s, r) => s + splitForPerson(r, person));
-    final cartaoPessoal = cartao
-        .where((r) => r.rateio == person.name)
-        .fold<double>(0, (s, r) => s + splitForPerson(r, person));
-
-    // Débito dividido e débito da pessoa, em duas linhas — paralelo às duas de
-    // Crédito. Ambas contam só o que está marcado para acerto.
-    // Spec: docs/specs/pages/acerto.md
-    final debito = rows.where(
-        (r) => r.origem == kOrigemDebito && r.acerto == 'Sim');
-    final debitoCompartRows =
-        debito.where((r) => r.rateio == 'Metade').toList();
-    final debitoCompart = debitoCompartRows.fold<double>(
-        0, (s, r) => s + splitForPerson(r, person));
-    final debitoPessoalRows =
-        debito.where((r) => r.rateio == person.name).toList();
-    final debitoPessoal =
-        debitoPessoalRows.fold<double>(0, (s, r) => s + r.valor);
-
-    final total =
-        cartaoCompart + cartaoPessoal + debitoCompart + debitoPessoal;
+    // Spec: docs/specs/cards/acerto-card.md
+    final b = acertoBreakdown(rows, person);
+    final linhas = acertoDebitoRows(rows, person);
+    final cartaoCompart = b.creditoCompart;
+    final cartaoPessoal = b.creditoPessoal;
+    final debitoCompart = b.debitoCompart;
+    final debitoPessoal = b.debitoPessoal;
+    final debitoCompartRows = linhas.compart;
+    final debitoPessoalRows = linhas.pessoal;
+    final total = b.total;
 
     final diff = diffCalculation(rows, person).abs();
 
@@ -305,7 +277,9 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: personColor.withValues(alpha: 0.13),
                     borderRadius: BorderRadius.circular(999),
@@ -317,8 +291,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
                         'Diferença ',
                         style: BloomTypography.mono(
                           fontSize: 10.5,
-                          color:
-                              personColor.withValues(alpha: 0.85),
+                          color: personColor.withValues(alpha: 0.85),
                         ),
                       ),
                       Text(
@@ -341,8 +314,8 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             child: Row(
               children: [
                 Expanded(
-                    child: Text('DESPESA',
-                        style: BloomTypography.kicker())),
+                  child: Text('DESPESA', style: BloomTypography.kicker()),
+                ),
                 SizedBox(
                   width: 80,
                   child: Text(
@@ -382,7 +355,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             dividirPelaMetade: true,
             aberto: _compartAberto,
             onToggle: () => setState(() => _compartAberto = !_compartAberto),
-            vazio: 'Sem débito dividido no acerto.',
+            vazio: 'Sem débito dividido neste mês.',
           ),
           _DebitoGrupo(
             label: 'Débito (pessoal)',
@@ -393,24 +366,21 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             dividirPelaMetade: false,
             aberto: _pessoalAberto,
             onToggle: () => setState(() => _pessoalAberto = !_pessoalAberto),
-            vazio: 'Sem débito pessoal no acerto.',
+            vazio: 'Sem débito pessoal neste mês.',
           ),
           const SizedBox(height: 6),
           // Total Pessoal
           Container(
             decoration: const BoxDecoration(
               color: BloomColors.bg3,
-              border: Border(
-                top: BorderSide(color: BloomColors.ink, width: 2),
-              ),
+              border: Border(top: BorderSide(color: BloomColors.ink, width: 2)),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(22),
                 bottomRight: Radius.circular(22),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               child: Row(
                 children: [
                   Expanded(
@@ -495,58 +465,63 @@ class _DebitoGrupo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: BloomTypography.geist(
-                            fontSize: 12.5,
-                            color: BloomColors.ink,
+        // Material próprio: o InkWell depende de um ancestral Material, que aqui
+        // vinha só do Scaffold do shell — o widget quebra fora dele.
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: BloomTypography.geist(
+                              fontSize: 12.5,
+                              color: BloomColors.ink,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          aberto ? Icons.expand_less : Icons.expand_more,
+                          size: 16,
+                          color: BloomColors.muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      formatMoney(subtotal),
+                      textAlign: TextAlign.right,
+                      style: BloomTypography.mono(
+                        fontSize: 12,
+                        color: BloomColors.ink,
                       ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        aberto ? Icons.expand_less : Icons.expand_more,
-                        size: 16,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '${pct.toStringAsFixed(1).replaceAll('.', ',')}%',
+                      textAlign: TextAlign.right,
+                      style: BloomTypography.mono(
+                        fontSize: 10.5,
                         color: BloomColors.muted,
                       ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    formatMoney(subtotal),
-                    textAlign: TextAlign.right,
-                    style: BloomTypography.mono(
-                      fontSize: 12,
-                      color: BloomColors.ink,
                     ),
                   ),
-                ),
-                SizedBox(
-                  width: 50,
-                  child: Text(
-                    '${pct.toStringAsFixed(1).replaceAll('.', ',')}%',
-                    textAlign: TextAlign.right,
-                    style: BloomTypography.mono(
-                      fontSize: 10.5,
-                      color: BloomColors.muted,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -566,9 +541,7 @@ class _DebitoGrupo extends StatelessWidget {
             for (final r in rows)
               _DataRow(
                 label: r.descricao.isEmpty ? '—' : r.descricao,
-                value: dividirPelaMetade
-                    ? splitForPerson(r, person)
-                    : r.valor,
+                value: dividirPelaMetade ? splitForPerson(r, person) : r.valor,
                 total: subtotal,
                 small: true,
                 indent: 20,
@@ -598,7 +571,11 @@ class _DataRow extends StatelessWidget {
     final pct = total == 0 ? 0.0 : (value / total) * 100;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          18 + indent, small ? 5 : 9, 18, small ? 5 : 9),
+        18 + indent,
+        small ? 5 : 9,
+        18,
+        small ? 5 : 9,
+      ),
       child: Row(
         children: [
           Expanded(
