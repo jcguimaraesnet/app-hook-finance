@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/acerto_total.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/acerto/acerto_page.dart';
 import 'package:hook_finance/state/data_providers.dart';
@@ -31,9 +32,9 @@ Entry _e({
     );
 
 final _rows = [
-  _e(row: 2, origem: kOrigemCredito, rateio: 'Metade', valor: 200),
+  _e(row: 2, origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 200),
   _e(row: 3, origem: kOrigemCredito, rateio: 'Dani', valor: 60),
-  _e(row: 4, origem: kOrigemDebito, rateio: 'Metade', valor: 400, acerto: 'Sim'),
+  _e(row: 4, origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400, acerto: 'Sim'),
   _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'SEM MARCA'),
   _e(row: 6, origem: kOrigemDebito, rateio: 'Dani', valor: 30, acerto: 'Sim', descricao: 'COM MARCA'),
 ];

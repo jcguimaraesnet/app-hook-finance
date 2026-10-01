@@ -1,6 +1,7 @@
 // Spec: docs/specs/cards/acerto-card.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../rateio.dart';
 import '../origem.dart';
 import '../types.dart';
 import 'split_for_person.dart';
@@ -44,7 +45,7 @@ class AcertoDebito {
 AcertoDebito acertoDebitoRows(List<ExpenseRow> rows, Person person) {
   final debito = rows.where((r) => r.origem == kOrigemDebito);
   return AcertoDebito(
-    compart: debito.where((r) => r.rateio == 'Metade').toList(),
+    compart: debito.where((r) => r.rateio == kRateioCompartilhado).toList(),
     pessoal: debito.where((r) => r.rateio == person.name).toList(),
   );
 }
@@ -55,7 +56,7 @@ AcertoBreakdown acertoBreakdown(List<ExpenseRow> rows, Person person) {
 
   return AcertoBreakdown(
     creditoCompart: credito
-        .where((r) => r.rateio == 'Metade')
+        .where((r) => r.rateio == kRateioCompartilhado)
         .fold<double>(0, (s, r) => s + splitForPerson(r, person)),
     creditoPessoal: credito
         .where((r) => r.rateio == person.name)

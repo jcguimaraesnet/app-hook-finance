@@ -28,7 +28,7 @@ Aparece na aba "Pessoal" (mobile/tablet) ou ao lado da CategoriaTable (PC). Visu
 
 ### Labels
 
-- `rateio === "Metade"` → label `"Compartilhado"`.
+- `rateio === "Compartilhado"` → label `"Compartilhado"`.
 - Outros → valor literal (`"Julio"`, `"Dani"`, `"Alzira"`, `"(sem rateio)"`).
 
 ### Render (Chart.js v4)
@@ -57,7 +57,7 @@ Aparece na aba "Pessoal" (mobile/tablet) ou ao lado da CategoriaTable (PC). Visu
 
 - **Mês sem Cartão:** `byRateio = {}` → chart vazio (0 bars). UI deve renderizar mesmo (eixos visíveis).
 - **`rateio` vazio:** vira label `"(sem rateio)"` com cor única igual aos outros.
-- **`rateio = "Metade"` é único:** mostra só uma barra `"Compartilhado"`.
+- **`rateio = "Compartilhado"` é único:** mostra só uma barra `"Compartilhado"`.
 
 ## Implementações
 

@@ -43,7 +43,7 @@ O valor exibido é sempre `Math.abs(diff)`, prefixado com o sinal e `R$ `. Cor e
 - **Mês com Débito mas só de uma pessoa:** `outro = 0`. Diff = `meu`. (Ex.: novo mês onde só inseriram `"Plano de Saúde (Julio)"`.)
 - **Toggle do diff:** controle de visibilidade vive em `sessionStorage` (`hook-finance-diff-${person}`). Default `true`. Implementação em cada card, não nesta regra. Ver [../state/persistence.md](../state/persistence.md).
 - **`splitForPerson` retorna 0** para linhas com `rateio` não pertinente: contribuição zero, regra não muda.
-- **`origem = "Débito"` mas `rateio = "Metade"`:** acontece raramente; `splitForPerson` divide ao meio para ambos, então `meu - outro = 0` para essa linha. Esperado.
+- **`origem = "Débito"` mas `rateio = "Compartilhado"`:** acontece raramente; `splitForPerson` divide ao meio para ambos, então `meu - outro = 0` para essa linha. Esperado.
 
 ## Implementações
 

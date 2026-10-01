@@ -23,7 +23,7 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 | 4 | D | Valor | number | Numérico, com 2 casas. Pode ser negativo (estornos, ajustes). |
 | 5 | E | Origem | string enum | `Crédito` \| `Débito`. Webhook **sempre** escreve `Crédito` (constante `ORIGEM`). **Pré-2026-09-20** o enum tinha 5 valores (`Cartão`, `Pix (contas)`, `Pessoal`, `Empregados`, `Contas`) — ver "Migração de Origem" abaixo. |
 | 6 | F | Categoria | string | Texto livre. Sugerido por `Classifier` (Jaccard). Comuns: `Alimentação`, `Pessoal`, `Contas`, `Saúde`. |
-| 7 | G | Rateio | string | `Julio` \| `Dani` \| `Metade` \| `Alzira` \| `""`. Vazio = não rateado. |
+| 7 | G | Rateio | string | `Julio` \| `Dani` \| `Compartilhado` \| `Alzira` \| `""`. Vazio = não rateado. **Pré-2026-10-01** o valor compartilhado chamava-se `Metade`; 3.384 linhas foram migradas por `migrateRateio()`. Backend e app aceitam o termo antigo na leitura/escrita durante a transição. |
 | 8 | H | Banco | string enum | `Santander` \| `Revolut` \| `""`. Banco emissor do cartão. Webhook preenche pelo padrão da notificação; `addEntry`/`updateEntry` recebem `banco`. Só faz sentido com Origem `Cartão`; demais origens ficam `""`. **Pré-2026-09-12** guardava os 4 dígitos finais do cartão (`1018`, `2236`, `784`…). Só a fatura 06/10/2026 foi convertida; faturas fechadas mantêm os dígitos por decisão do usuário. |
 | 9 | I | Parcela | string | `"X/Y"` (ex.: `"1/3"` = 1ª de 3). Vazio = à vista. Editável só via modal de Lançamento. Ver [parcela-format.md](../rules/parcela-format.md). |
 | 10 | J | Acerto | string | `"Sim"` se a linha conta para o "Acerto Final". Vazio caso contrário. |

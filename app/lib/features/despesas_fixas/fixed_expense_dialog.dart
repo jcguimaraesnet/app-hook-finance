@@ -3,12 +3,19 @@
 
 import 'package:flutter/material.dart';
 import '../../api/endpoints.dart';
+import '../../core/rateio.dart';
 import '../../core/origem.dart';
 import '../../core/types.dart';
 
 // Diferente da col G da aba Despesas, aqui rateio vazio NÃO é aceito: a linha
 // vira lançamento de verdade na Nova fatura e ficaria sem dono.
-const List<String> _rateioOptions = ['Julio', 'Dani', 'Metade', 'Alzira'];
+// Sem o vazio do kRateios: aqui a linha vira lançamento e precisa de dono.
+const List<String> _rateioOptions = [
+  'Julio',
+  'Dani',
+  kRateioCompartilhado,
+  'Alzira',
+];
 
 /// Descrição que ainda carrega a parcela escrita à mão ("Retiro 5x",
 /// "Festa 3/6x"). Com o contador ativo esse texto não é atualizado por ninguém
@@ -81,7 +88,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
       text: (e?.parcelasRestantes ?? 0) > 0 ? '${e!.parcelasRestantes}' : '',
     );
     _origem = kOrigens.contains(e?.origem) ? e!.origem : kOrigemDebito;
-    _rateio = _rateioOptions.contains(e?.rateio) ? e!.rateio : 'Metade';
+    _rateio = _rateioOptions.contains(e?.rateio) ? e!.rateio : kRateioCompartilhado;
     _acerto = e?.acerto == 'Sim';
   }
 
@@ -302,13 +309,12 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                         for (final r in _rateioOptions)
                           DropdownMenuItem(
                             value: r,
-                            child: Text(
-                                r == 'Metade' ? 'Metade (compartilhado)' : r),
+                            child: Text(r),
                           ),
                       ],
                       onChanged: _busy
                           ? null
-                          : (v) => setState(() => _rateio = v ?? 'Metade'),
+                          : (v) => setState(() => _rateio = v ?? kRateioCompartilhado),
                     ),
                     const SizedBox(height: 10),
                     TextField(

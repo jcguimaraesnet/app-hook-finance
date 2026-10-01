@@ -76,7 +76,7 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 ## Edge cases
 
 - **Mês sem nenhuma despesa Crédito pessoal:** mostra mensagem de vazio.
-- **Pessoa só com despesas compartilhadas no mês:** não aparece (filtra `rateio === "Metade"`).
+- **Pessoa só com despesas compartilhadas no mês:** não aparece (filtra `rateio === "Compartilhado"`).
 - **Rateio com valor diferente de Julio/Dani/Alzira:** entra na seção `others`, ordem alfabética.
 - **`dataRef` sem horário:** PWA legada usa `localeCompare` (ordena por string). Flutter ordena com `parseBrRefDate`, que aceita col B com e sem hora — ver [../conventions.md](../conventions.md). Até 2026-09-18 usava `parseBrDate`, que descartava o ano e invertia dezembro/janeiro na fatura que cruza o ano.
 - **Editar muda o mês ou o rateio:** a linha some da lista ao recarregar (o filtro é `origem === "Crédito"` + rateio da pessoa). Comportamento esperado, não erro — o lançamento foi para outro mês/pessoa.

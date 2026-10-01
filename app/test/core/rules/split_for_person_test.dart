@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/split_for_person.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
@@ -30,12 +31,12 @@ void main() {
           splitForPerson(_row(valor: 50, rateio: 'Dani'), Person.dani), 50);
     });
 
-    test("retorna valor/2 quando rateio === 'Metade' (Julio/Dani)", () {
+    test("retorna valor/2 quando rateio === kRateioCompartilhado (Julio/Dani)", () {
       expect(
-          splitForPerson(_row(valor: 100, rateio: 'Metade'), Person.julio),
+          splitForPerson(_row(valor: 100, rateio: kRateioCompartilhado), Person.julio),
           50);
       expect(
-          splitForPerson(_row(valor: 100, rateio: 'Metade'), Person.dani), 50);
+          splitForPerson(_row(valor: 100, rateio: kRateioCompartilhado), Person.dani), 50);
     });
 
     test('retorna 0 quando rateio é de outra pessoa', () {
@@ -52,13 +53,13 @@ void main() {
     test('preserva sinal do valor (negativo => negativo)', () {
       expect(splitForPerson(_row(valor: -100, rateio: 'Julio'), Person.julio),
           -100);
-      expect(splitForPerson(_row(valor: -100, rateio: 'Metade'), Person.dani),
+      expect(splitForPerson(_row(valor: -100, rateio: kRateioCompartilhado), Person.dani),
           -50);
     });
 
     test('retorna 0 para valor zero independente do rateio', () {
       expect(splitForPerson(_row(valor: 0, rateio: 'Julio'), Person.julio), 0);
-      expect(splitForPerson(_row(valor: 0, rateio: 'Metade'), Person.julio),
+      expect(splitForPerson(_row(valor: 0, rateio: kRateioCompartilhado), Person.julio),
           0);
     });
   });

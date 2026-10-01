@@ -17,7 +17,7 @@ class BloomColors {
   static const inkSoft = Color(0xFF3A3873);
   static const muted = Color(0xFF7B7AA8);
   // Cinza neutro (sem viés violeta de `muted`). Usado em avatares de rateio
-  // "Metade" pra contrastar claramente com o lilás da Dani.
+  // "Compartilhado" pra contrastar claramente com o lilás da Dani.
   static const neutral = Color(0xFF8E8E96);
 
   // Surfaces

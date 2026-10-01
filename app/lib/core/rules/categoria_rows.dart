@@ -1,6 +1,7 @@
 // Spec: docs/specs/rules/categoria-rows.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../rateio.dart';
 import '../types.dart';
 
 /// Label usada quando a linha não tem categoria. É o que aparece na tabela do
@@ -43,7 +44,7 @@ CategoriaTotais categoriaTotais(List<ExpenseRow> rowsDaCategoria) {
   double compart = 0;
   for (final r in rowsDaCategoria) {
     total += r.valor;
-    if (r.rateio == 'Metade') compart += r.valor / 2;
+    if (r.rateio == kRateioCompartilhado) compart += r.valor / 2;
   }
   return CategoriaTotais(total: total, compart: compart);
 }

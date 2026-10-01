@@ -54,7 +54,7 @@ parceladoProx    = Σ r.valor  onde  rateio = person  E  origem = "Crédito"  E 
 - `r.parcela = "1/1"` → `parcelaTotal = 1`, idem (à vista).
 - `r.parcela = "3/3"` → entra em `parceladoAtual`, não entra em `parceladoProx` (última parcela).
 - `r.origem` diferente de `"Crédito"` (ou seja, `"Débito"`) → conta só em `totalPessoal`.
-- `r.rateio = "Metade"` ou rateio de outra pessoa → ignorado para essa person em todos os 4 campos.
+- `r.rateio = "Compartilhado"` ou rateio de outra pessoa → ignorado para essa person em todos os 4 campos.
 
 ## Implementações
 

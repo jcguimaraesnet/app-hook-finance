@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
+import '../../core/rateio.dart';
 import '../../core/origem.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
@@ -337,7 +338,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
   final _categoriaCtrl = TextEditingController();
 
   String _origem = kOrigemCredito;
-  String _rateio = 'Metade';
+  String _rateio = kRateioCompartilhado;
   // Sem default de propósito: escolher errado é pior que não escolher.
   String _banco = ''; // '' | 'Santander' | 'Revolut'
   int _parcela = 1;
@@ -596,7 +597,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
                     _FieldLabel(label: 'DIVISÃO'),
                     const SizedBox(height: 6),
                     _Segmented(
-                      options: const ['Metade', 'Julio', 'Dani', 'Alzira'],
+                      options: const [kRateioCompartilhado, 'Julio', 'Dani', 'Alzira'],
                       selected: _rateio,
                       onChange: (v) => setState(() => _rateio = v),
                       compact: true,
@@ -897,7 +898,7 @@ class _Segmented extends StatelessWidget {
   }
 
   String _shortLabel(String o) => switch (o) {
-        'Metade' => '½',
+        kRateioCompartilhado => '½',
         'Julio' => 'Júlio',
         _ => o,
       };

@@ -41,10 +41,10 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 - Estado `acertoPixJulio: boolean` no store global (Zustand, persistido). Default `false`.
 - **Duas linhas de débito** (pós-2026-10-01), ambas expansíveis, nos dois cards:
-  - `Débito (compartilhado)` — `origem === "Débito"` E `rateio === "Metade"` E `acerto === "Sim"`, somando `splitForPerson` (metade). Os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho.
+  - `Débito (compartilhado)` — `origem === "Débito"` E `rateio === "Compartilhado"` E `acerto === "Sim"`, somando `splitForPerson` (metade). Os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho.
   - `Débito (pessoal)` — `origem === "Débito"` E `rateio === <pessoa>` E `acerto === "Sim"`, valor cheio. É a antiga linha única `"Débito"` (antes `"Pix (contas)"`).
   - Expandir **só mostra ou esconde** os lançamentos. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía linhas fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
-  - A linha compartilhada hoje soma zero (não há débito `Metade` na planilha) e **não alterou o acerto**: conferido em 06/11/2026, R$ 6.580,55 (Dani) e R$ 6.099,15 (Julio) antes e depois.
+  - A linha compartilhada hoje soma zero (não há débito `Compartilhado` na planilha) e **não alterou o acerto**: conferido em 06/11/2026, R$ 6.580,55 (Dani) e R$ 6.099,15 (Julio) antes e depois.
 - Quando `true`: card de Júlio mostra **todas** as Pix dele do mês. Total do card cresce.
 - Card de Dani **não** tem toggle equivalente.
 

@@ -60,7 +60,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - `data` (string `DD/MM/YYYY`) — default: hoje no TZ do script.
 - `dataRef` (string `DD/MM/YYYY` ou `DD/MM/YYYY HH:MM`) — default: agora no TZ do script.
 - `categoria` (string livre)
-- `rateio` (string ∈ `""` \| `Julio` \| `Dani` \| `Metade` \| `Alzira`)
+- `rateio` (string ∈ `""` \| `Julio` \| `Dani` \| `Compartilhado` \| `Alzira`)
 - `banco` (string ∈ `""` \| `Santander` \| `Revolut`) — banco emissor do cartão; só faz sentido com `origem = Cartão`. **Pré-2026-09-12** o campo era `cardLast4` (4 dígitos); `cardLast4` no body agora é ignorado.
 - `parcela` (string vazia OU `"X/Y"` onde X,Y são dígitos)
 - `acerto` (string vazia OU `"Sim"`)
@@ -119,7 +119,7 @@ CRUD da aba `despesas-fixas` ([../data/despesas-fixas-sheet.md](../data/despesas
 
 **`parcelasRestantes`:** opcional. Vazio/ausente = recorrente; inteiro ≥ 1 = quantas faturas ainda recebem a linha. Na leitura vem como número, com `0` para recorrente. Ver [../rules/fixed-expenses.md](../rules/fixed-expenses.md).
 
-**Validação:** `validateFixedExpense_` em `apps-script/webhook/FixedExpenses.gs` é a fonte única — `loadFixedExpenses_` (webhook) e os três endpoints de escrita usam a mesma função, para não divergirem. Regras: `dia` inteiro 1–31; `descricao` e `categoria` não-vazias; `valor` numérico (negativo é legítimo); `origem` ∈ `Crédito`|`Débito` (enum legado é normalizado); `rateio` ∈ `Julio`|`Dani`|`Metade`|`Alzira` (**não** aceita vazio, diferente da aba Despesas); `acerto` ∈ `""`|`Sim`.
+**Validação:** `validateFixedExpense_` em `apps-script/webhook/FixedExpenses.gs` é a fonte única — `loadFixedExpenses_` (webhook) e os três endpoints de escrita usam a mesma função, para não divergirem. Regras: `dia` inteiro 1–31; `descricao` e `categoria` não-vazias; `valor` numérico (negativo é legítimo); `origem` ∈ `Crédito`|`Débito` (enum legado é normalizado); `rateio` ∈ `Julio`|`Dani`|`Compartilhado`|`Alzira` (**não** aceita vazio, diferente da aba Despesas); `acerto` ∈ `""`|`Sim`.
 
 **Erro de escrita:** `{ ok: false, error: "invalid_fields", detail: "<motivo>" }` — `detail` traz o mesmo texto que o webhook usaria (ex.: `"dia inválido (32)"`).
 
@@ -165,7 +165,7 @@ Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
   "valor": 89.50,
   "origem": "Cartão",
   "categoria": "Alimentação",
-  "rateio": "Metade",
+  "rateio": "Compartilhado",
   "banco": "Santander",
   "parcela": "",
   "acerto": ""

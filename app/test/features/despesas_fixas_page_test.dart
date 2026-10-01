@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/despesas_fixas/despesas_fixas_page.dart';
 import 'package:hook_finance/features/despesas_fixas/fixed_expense_dialog.dart';
@@ -14,7 +15,7 @@ Map<String, dynamic> _json({
   String descricao = 'CONDOMINIO',
   double valor = 500,
   String origem = kOrigemDebito,
-  String rateio = 'Metade',
+  String rateio = kRateioCompartilhado,
   String acerto = '',
   String invalid = '',
 }) =>

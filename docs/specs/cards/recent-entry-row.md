@@ -29,7 +29,7 @@ A regra atual: o avatar passa a representar o **rateio** da linha — quem paga,
 
 | Rateio | Símbolo |
 |---|---|
-| `Metade` | `½` |
+| `Compartilhado` | `½` |
 | `Dani` | `D` |
 | `Julio` | `J` |
 | `Alzira` | `A` |
@@ -42,7 +42,7 @@ A cor `tone` é aplicada como `tone.withValues(alpha: 0.13)` no fundo e como cor
 
 | Rateio | `tone` |
 |---|---|
-| `Metade` | `BloomColors.neutral` (cinza neutro sem viés violeta) |
+| `Compartilhado` | `BloomColors.neutral` (cinza neutro sem viés violeta) |
 | `Dani` | `BloomColors.violet` (= `forPerson(dani)`) |
 | `Julio` | `BloomColors.mint` (= `forPerson(julio)`) |
 | Outro não-vazio (ex.: `Alzira`) | `BloomColors.amber` |

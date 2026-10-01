@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/diff_calculation.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
@@ -50,7 +51,7 @@ void main() {
     });
 
     test('Metade não desequilibra (cancela entre as duas)', () {
-      final rows = [_row(origem: kOrigemDebito, rateio: 'Metade', valor: 400)];
+      final rows = [_row(origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400)];
       expect(diffCalculation(rows, Person.julio), 0);
       expect(diffCalculation(rows, Person.dani), 0);
     });

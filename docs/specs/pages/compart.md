@@ -27,7 +27,7 @@ A despesa de cartão é categorizada (Mercado, Restaurante, Pessoal, etc.). Para
 2. **Grid 2×2 de tiles** (pós-2026-10-01):
    - `TOTAL CRÉDITO` — `Σ valor` onde `origem == "Crédito"`. Rotulado `TOTAL CARTÃO` até 2026-10-01; mesmo número.
    - `TOTAL DÉBITO` — `Σ valor` onde `origem == "Débito"`. Entrou no lugar do tile `PARCELADO`, que saiu desta tela (segue na [Início](inicio.md)).
-   - `COMPARTILHADO` — `Σ valor` das linhas `Metade`, **recortado pelo filtro de origem** (ver abaixo). Sem filtro, soma as duas origens. Tile destacado.
+   - `COMPARTILHADO` — `Σ valor` das linhas `Compartilhado`, **recortado pelo filtro de origem** (ver abaixo). Sem filtro, soma as duas origens. Tile destacado.
    - `COMPARTILHADO / 2` — o anterior dividido por dois. Tile destacado.
 
 ### Filtro de origem (pós-2026-10-01)
@@ -39,8 +39,8 @@ Os dois tiles de cima (`TOTAL CRÉDITO` e `TOTAL DÉBITO`) são **selecionáveis
 3. **Chegando pela [Início](inicio.md)** (coluna do Comparativo), o tile correspondente já vem marcado — é o que faz o número da coluna fechar com o `COMPARTILHADO / 2` desta tela.
 4. **Chegando pela barra inferior**, o filtro é limpo: navegação sem contexto não marca nada.
 
-A **tabela de categorias não é afetada** pelo filtro — segue listando Crédito por categoria. Decisão pendente de confirmação do usuário.
-3. **Tabela de categorias** dentro de um `BloomCard`:
+A tabela **é** afetada pelo filtro e lista só o que é dividido; sem seleção, mostra as duas origens.
+3. **Tabela de categorias** dentro de um `BloomCard`. Lista **somente linhas com `rateio === "Compartilhado"`** (pós-2026-10-01) e respeita o filtro de origem dos tiles de cima — por isso o `Total` da tabela é igual ao tile `COMPARTILHADO`:
    - Cabeçalho 3-col: `Categoria | Valor | %`.
    - Cada linha:
      - Bullet violeta + label da categoria.
@@ -64,7 +64,7 @@ groupBy(rows where origem == "Cartão", r => r.categoria)
 .sort(desc by value)
 ```
 
-`splitForCompart`: aplica regra de [split-for-person](../rules/split-for-person.md) — quando `rateio == "Metade"`, metade vai para cada pessoa (logo, todo o valor é compartilhado). Quando `rateio == "Julio"`/`"Dani"`/`"Alzira"`, valor é pessoal (compart = 0).
+`splitForCompart`: aplica regra de [split-for-person](../rules/split-for-person.md) — quando `rateio == "Compartilhado"`, metade vai para cada pessoa (logo, todo o valor é compartilhado). Quando `rateio == "Julio"`/`"Dani"`/`"Alzira"`, valor é pessoal (compart = 0).
 
 ### Loading / vazio
 

@@ -36,7 +36,7 @@ Composto pelo retorno de `loadFixedExpenses_()` em [FixedExpenses.gs](../../../a
   value: <number>,
   origem: <string>,
   categoria: <string>,
-  rateio: "Julio" | "Dani" | "Metade" | "Alzira",
+  rateio: "Julio" | "Dani" | "Compartilhado" | "Alzira",
   acerto: "" | "Sim",
 }
 ```

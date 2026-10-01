@@ -19,7 +19,7 @@ Dois detalhes fáceis de errar sozinho: o agrupamento só considera `origem === 
 2. `categoriaRowsForMonth(rows, categoria, origem)` → linhas com aquela `origem` **e** `categoriaLabel(row) === categoria`. Preserva a ordem de entrada. **`origem` é obrigatório**: com `Crédito` reproduz a linha da tabela do Compart (que é só de Cartão), com `Débito` dá o grupo que a tabela não mostra. Um default escondido aqui seria a forma mais fácil de somar as duas origens e divergir do número clicado.
 3. `categoriaTotais(linhas)` → `{ total, compart }`:
    - `total = Σ valor` (cheio).
-   - `compart = Σ valor/2` apenas das linhas com `rateio === "Metade"`.
+   - `compart = Σ valor/2` apenas das linhas com `rateio === "Compartilhado"`.
 
 **Invariante de reconciliação** (garantida por teste): para toda categoria da tabela, `categoriaTotais(categoriaRowsForMonth(rows, cat)).total` é igual ao valor que o Compart soma para `cat`.
 
@@ -28,7 +28,7 @@ Dois detalhes fáceis de errar sozinho: o agrupamento só considera `origem === 
 - **`rows` vazio:** retorna `[]` e totais zerados.
 - **Categoria vazia:** acessível pelo nome `—`; nenhuma linha se perde.
 - **Linhas de Débito:** ficam de fora, mesmo com a mesma categoria — o Compart é de Cartão.
-- **Sem linhas `Metade`:** `compart = 0`, `total` continua cheio.
+- **Sem linhas `Compartilhado`:** `compart = 0`, `total` continua cheio.
 - **`valor` negativo (estorno):** entra normalmente nos dois totais.
 
 ## Implementações

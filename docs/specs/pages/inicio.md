@@ -39,9 +39,9 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 5. ~~**Tiles 2-col** `Total crédito` + `Parcelado`~~ — **removidos em 2026-10-01**. O total de crédito está na aba [Categoria](compart.md); o parcelado saiu da Início junto.
 6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Crédito/Débito/Pessoal, mesma ordem do hero). Sem o link "Ver histórico →" desde 2026-10-01 — a aba Histórico está na barra inferior, separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
    - **As três colunas são clicáveis** (pós-2026-10-01):
-     - **Crédito** → aba Categoria (antes rotulada "Compart"). O "Total compartilhado" de lá é `Σ valor/2` das linhas Crédito+Metade — a mesma conta da fatia, então os dois fecham (conferido: R$ 1.101,47 nas duas telas em 06/11/2026).
+     - **Crédito** → aba Categoria (antes rotulada "Compart"). O "Total compartilhado" de lá é `Σ valor/2` das linhas Crédito+Compartilhado — a mesma conta da fatia, então os dois fecham (conferido: R$ 1.101,47 nas duas telas em 06/11/2026).
      - **Pessoal** → `/detalhe?person=<atual>`. O tile "TOTAL PESSOAL" de lá é `Σ valor` onde `rateio == pessoa`, idêntico à fatia. ⚠️ A **lista** daquela tela é só de Crédito, então ela mostra um subconjunto do próprio tile — pendência anterior à mudança.
-     - **Débito** → `/debito?person=<atual>`. ⚠️ A tela lista todo o débito da pessoa, enquanto a fatia conta só `Metade` — ver [../rules/bucket-deltas.md](../rules/bucket-deltas.md).
+     - **Débito** → aba Categoria com o tile `TOTAL DÉBITO` marcado, mesmo fluxo do Crédito (pós-2026-10-01). A tela `/debito` foi removida.
 7. **Seção "Últimos lançamentos"**: 4 itens via `lastEntries(4)` (eram 2 até 2026-10-01) + link "Ver mais →" para `/lancamento`. **Tap edita** o lançamento no mesmo `EditDialog` das outras listas (pós-2026-10-01); ao salvar invalida `monthData`, `previousMonthData`, `historicalSummary` e `lastEntries`.
 
 ### Donut interativo

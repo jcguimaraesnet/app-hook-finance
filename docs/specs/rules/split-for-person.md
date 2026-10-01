@@ -16,7 +16,7 @@ A planilha registra apenas o `valor` cheio da despesa. Cada linha tem uma marca 
 `splitForPerson(row, person) → number`:
 
 1. Se `row.rateio === person`, retorna `row.valor` (cheio).
-2. Se `row.rateio === "Metade"` E `person ∈ {"Julio", "Dani"}`, retorna `row.valor / 2`.
+2. Se `row.rateio === "Compartilhado"` E `person ∈ {"Julio", "Dani"}`, retorna `row.valor / 2`.
 3. Caso contrário, retorna `0`.
 
 A função **não filtra por `origem`**. Quem chama decide se quer rodar só sobre Cartão, Pix, etc.
@@ -25,7 +25,7 @@ A função **não filtra por `origem`**. Quem chama decide se quer rodar só sob
 
 - **`rateio` vazio (`""`):** retorna `0` para qualquer `person` (regras 1 e 2 não casam).
 - **`rateio = "Alzira"`** com `person = "Julio"` ou `"Dani"`: retorna `0`.
-- **`rateio = "Metade"`** com `person = "Alzira"` (ou outro fora de Julio/Dani): a regra 2 só vale para Julio/Dani — retorna `0`. (Hoje `Person` é tipado como apenas `"Julio" | "Dani"`; se a tipagem for relaxada, manter essa restrição na implementação.)
+- **`rateio = "Compartilhado"`** com `person = "Alzira"` (ou outro fora de Julio/Dani): a regra 2 só vale para Julio/Dani — retorna `0`. (Hoje `Person` é tipado como apenas `"Julio" | "Dani"`; se a tipagem for relaxada, manter essa restrição na implementação.)
 - **`valor` negativo:** retorna o valor negativo cheio (regra 1) ou `valor / 2` (regra 2). Estornos seguem a mesma regra que despesas.
 - **`valor === 0`:** retorna `0` em todas as regras (caso degenerado, sem efeito).
 
@@ -38,7 +38,7 @@ A função **não filtra por `origem`**. Quem chama decide se quer rodar só sob
 // PWA reference impl (idêntica ao código atual)
 export function splitForPerson(row: Row, person: Person): number {
   if (row.rateio === person) return row.valor;
-  if (row.rateio === "Metade" && (person === "Julio" || person === "Dani")) {
+  if (row.rateio === "Compartilhado" && (person === "Julio" || person === "Dani")) {
     return row.valor / 2;
   }
   return 0;

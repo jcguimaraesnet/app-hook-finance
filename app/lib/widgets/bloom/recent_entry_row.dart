@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../core/format/money.dart';
+import '../../core/rateio.dart';
 import '../../core/types.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
@@ -151,14 +152,16 @@ class RecentEntryRow extends StatelessWidget {
   }
 
   Color _toneFor(String rateio) {
-    if (rateio == 'Metade' || rateio.isEmpty) return BloomColors.neutral;
+    if (rateio == kRateioCompartilhado || rateio.isEmpty) {
+      return BloomColors.neutral;
+    }
     if (rateio == 'Dani') return BloomColors.forPerson(Person.dani);
     if (rateio == 'Julio') return BloomColors.forPerson(Person.julio);
     return BloomColors.amber;
   }
 
   String _avatarLabel(String rateio) {
-    if (rateio == 'Metade') return '½';
+    if (rateio == kRateioCompartilhado) return '½';
     if (rateio.isEmpty) return '?';
     return rateio.characters.first.toUpperCase();
   }

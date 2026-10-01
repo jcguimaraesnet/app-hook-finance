@@ -4,6 +4,7 @@ import 'package:hook_finance/api/client.dart';
 import 'package:hook_finance/api/config.dart';
 import 'package:hook_finance/api/endpoints.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/despesas_fixas/fixed_expense_dialog.dart';
 import 'package:hook_finance/features/lancamento/edit_dialog.dart';
@@ -54,7 +55,7 @@ void main() {
           valor: 10,
           origem: kOrigemCredito,
           categoria: 'Casa',
-          rateio: 'Metade',
+          rateio: kRateioCompartilhado,
           banco: 'Santander',
           parcela: '',
           acerto: '',
@@ -81,7 +82,7 @@ void main() {
           valor: 500,
           origem: kOrigemDebito,
           categoria: 'Contas',
-          rateio: 'Metade',
+          rateio: kRateioCompartilhado,
           acerto: '',
         ),
         api: _api(),

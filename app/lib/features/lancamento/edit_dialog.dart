@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../api/endpoints.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/rateio.dart';
 import '../../core/origem.dart';
 import '../../core/rules/parcela.dart';
 import '../../core/types.dart';
@@ -17,11 +18,10 @@ const List<String> _origemOptions = kOrigens;
 const List<String> _bancoOptions = ['', 'Santander', 'Revolut'];
 
 // Spec: docs/specs/data/despesas-sheet.md (col G, Rateio)
-const List<String> _rateioOptions = ['', 'Julio', 'Dani', 'Metade', 'Alzira'];
+const List<String> _rateioOptions = kRateios;
 
 String _rateioLabel(String v) => switch (v) {
       '' => '(vazio)',
-      'Metade' => 'Metade (compartilhado)',
       _ => v,
     };
 

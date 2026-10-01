@@ -1,6 +1,7 @@
 // Spec: docs/specs/rules/bucket-deltas.md
 // Mudanças aqui DEVEM começar pela spec.
 
+import '../rateio.dart';
 import '../origem.dart';
 import '../types.dart';
 import 'split_for_person.dart';
@@ -39,7 +40,7 @@ PersonBuckets bucketsForPerson(List<ExpenseRow> rows, Person person) {
     // fatia de débito mesmo sendo rateio individual.
     if (r.rateio == person.name) {
       pessoal += v;
-    } else if (r.rateio == 'Metade') {
+    } else if (r.rateio == kRateioCompartilhado) {
       if (r.origem == kOrigemCredito) {
         credito += v;
       } else {

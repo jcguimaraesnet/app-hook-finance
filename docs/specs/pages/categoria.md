@@ -35,7 +35,7 @@ Grid 2×2:
 |---|---|
 | **CRÉDITO** | `Σ valor` do grupo de Crédito — o mesmo número da coluna Valor na linha clicada. |
 | **DÉBITO** | `Σ valor` do grupo de Débito. Não existe na tabela do Compart, que é só de Cartão. |
-| **COMPARTILHADO** | `Σ valor/2` das linhas `Metade` das **duas** origens. |
+| **COMPARTILHADO** | `Σ valor/2` das linhas `Compartilhado` das **duas** origens. |
 | **TOTAL** | Crédito + Débito. |
 
 O tile **CRÉDITO** é o que reconcilia com a tabela de onde se clicou — por isso `origem` é parâmetro obrigatório da regra, para ninguém somar as duas origens por acidente e divergir do número clicado.

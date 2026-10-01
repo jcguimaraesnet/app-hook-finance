@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/compart/compart_page.dart';
 import 'package:hook_finance/state/data_providers.dart';
@@ -11,7 +12,7 @@ import 'package:hook_finance/theme/theme.dart';
 Entry _e({
   required int row,
   String origem = kOrigemCredito,
-  String rateio = 'Metade',
+  String rateio = kRateioCompartilhado,
   double valor = 100,
   String categoria = 'Casa',
 }) =>
@@ -30,9 +31,9 @@ Entry _e({
     );
 
 final _rows = [
-  _e(row: 2, origem: kOrigemCredito, rateio: 'Metade', valor: 200),
+  _e(row: 2, origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 200),
   _e(row: 3, origem: kOrigemCredito, rateio: 'Julio', valor: 50),
-  _e(row: 4, origem: kOrigemDebito, rateio: 'Metade', valor: 400),
+  _e(row: 4, origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400),
   _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70),
 ];
 
@@ -63,15 +64,26 @@ void main() {
   // só a origem dele. Spec: docs/specs/pages/compart.md
   testWidgets('sem filtro soma as duas origens', (tester) async {
     await _pump(tester);
-    // Metade: 200 (crédito) + 400 (débito) = 600; /2 = 300.
-    expect(find.text('R\$ 600,00'), findsOneWidget);
+    // Compartilhado: 200 (crédito) + 400 (débito) = 600; /2 = 300.
+    // Aparece duas vezes: no tile e no Total da tabela — desde que a tabela
+    // passou a listar só o que é dividido, os dois são o mesmo número.
+    expect(find.text('R\$ 600,00'), findsWidgets);
     expect(find.text('R\$ 300,00'), findsOneWidget);
     expect(find.text('COMPARTILHADO'), findsOneWidget);
   });
 
+  testWidgets('tabela lista só categorias compartilhadas', (tester) async {
+    await _pump(tester);
+    // As linhas de rateio individual (50 crédito Julio, 70 débito Dani) ficam
+    // de fora; a tabela soma 600, igual ao tile COMPARTILHADO.
+    expect(find.text('R\$ 50,00'), findsNothing);
+    expect(find.text('R\$ 70,00'), findsNothing);
+    expect(find.text('600,00'), findsWidgets);
+  });
+
   testWidgets('filtro de Crédito conta só o crédito', (tester) async {
     await _pump(tester, filtro: kOrigemCredito);
-    expect(find.text('R\$ 200,00'), findsWidgets); // compartilhado
+    expect(find.text('R\$ 200,00'), findsWidgets); // compartilhado e tabela
     expect(find.text('R\$ 100,00'), findsOneWidget); // /2
     expect(find.text('COMPARTILHADO CRÉDITO'), findsOneWidget);
   });

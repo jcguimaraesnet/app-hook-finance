@@ -897,8 +897,12 @@ class _ComparativeCard extends ConsumerWidget {
         color: BloomColors.sky,
         value: cur.debito,
         delta: deltas.debito,
-        onTap: () => context.push(
-            '/debito?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
+        // Mesmo fluxo da coluna Crédito: aba Categoria com o tile de origem
+        // marcado. A tela /debito foi removida em 2026-10-01.
+        onTap: () {
+          ref.read(compartOrigemFilterProvider.notifier).state = kOrigemDebito;
+          ref.read(activeTabProvider.notifier).state = BloomTab.compart;
+        },
       ),
       _Col(
         label: 'Pessoal',

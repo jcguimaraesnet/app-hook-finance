@@ -2,6 +2,7 @@
 // Spec: docs/specs/api/endpoints.md
 
 import 'origem.dart';
+import 'rateio.dart';
 
 class ExpenseRow {
   final String data;
@@ -35,7 +36,7 @@ class ExpenseRow {
         valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
         origem: normalizeOrigem((j['origem'] ?? '') as String),
         categoria: (j['categoria'] ?? '') as String,
-        rateio: (j['rateio'] ?? '') as String,
+        rateio: normalizeRateio((j['rateio'] ?? '') as String),
         banco: (j['banco'] ?? '') as String,
         parcela: (j['parcela'] ?? '') as String,
         acerto: (j['acerto'] ?? '') as String,
@@ -67,7 +68,7 @@ class Entry extends ExpenseRow {
         valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
         origem: normalizeOrigem((j['origem'] ?? '') as String),
         categoria: (j['categoria'] ?? '') as String,
-        rateio: (j['rateio'] ?? '') as String,
+        rateio: normalizeRateio((j['rateio'] ?? '') as String),
         banco: (j['banco'] ?? '') as String,
         parcela: (j['parcela'] ?? '') as String,
         acerto: (j['acerto'] ?? '') as String,
@@ -382,7 +383,7 @@ class FixedExpense {
         valor: (j['valor'] as num?)?.toDouble() ?? 0.0,
         origem: normalizeOrigem((j['origem'] ?? '') as String),
         categoria: (j['categoria'] ?? '') as String,
-        rateio: (j['rateio'] ?? '') as String,
+        rateio: normalizeRateio((j['rateio'] ?? '') as String),
         acerto: (j['acerto'] ?? '') as String,
         parcelasRestantes: (j['parcelasRestantes'] as num?)?.toInt() ?? 0,
         invalid: (j['invalid'] ?? '') as String,

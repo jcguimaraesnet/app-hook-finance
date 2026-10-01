@@ -34,7 +34,7 @@ buckets = {
 
 Onde:
 - [bucketKey](bucket-key.md) classifica a linha em `compart`/`pessoal`/`debito`.
-- [splitForPerson](split-for-person.md) retorna o valor que cabe à pessoa (cheio quando `rateio == person`, metade quando `Metade`, 0 quando da outra pessoa).
+- [splitForPerson](split-for-person.md) retorna o valor que cabe à pessoa (cheio quando `rateio == person`, metade quando `Compartilhado`, 0 quando da outra pessoa).
 
 ### Cálculo do delta
 
@@ -74,17 +74,17 @@ O corte é **por rateio primeiro, origem depois**:
 
 | Fatia | Regra | Label na UI |
 |---|---|---|
-| `credito` | `origem === "Crédito"` E `rateio === "Metade"` | **Crédito** |
-| `debito` | `origem === "Débito"` E `rateio === "Metade"` | **Débito** |
+| `credito` | `origem === "Crédito"` E `rateio === "Compartilhado"` | **Crédito** |
+| `debito` | `origem === "Débito"` E `rateio === "Compartilhado"` | **Débito** |
 | `pessoal` | `rateio === <pessoa>`, em **qualquer** origem | **Pessoal** |
 
-Valor somado é sempre `splitForPerson` (metade nas linhas `Metade`, cheio nas da pessoa). As três continuam particionando o total: toda linha com `splitForPerson != 0` cai em exatamente uma.
+Valor somado é sempre `splitForPerson` (metade nas linhas `Compartilhado`, cheio nas da pessoa). As três continuam particionando o total: toda linha com `splitForPerson != 0` cai em exatamente uma.
 
 **Antes** o corte era por origem primeiro: `Débito` ia inteiro para a fatia de débito, mesmo com rateio individual, e `pessoal` só tinha Crédito. O campo chamava-se `compart`.
 
-**Efeito medido na fatura 06/11/2026:** nenhuma linha de Débito tinha rateio `Metade` (9 Dani, 11 Julio), então a fatia Débito foi de 72% para **0%** e Pessoal de 18% para **90%** (Dani). O total não muda, só a distribuição. A fatia volta a aparecer no mês em que houver um débito dividido.
+**Efeito medido na fatura 06/11/2026:** nenhuma linha de Débito tinha rateio `Compartilhado` (9 Dani, 11 Julio), então a fatia Débito foi de 72% para **0%** e Pessoal de 18% para **90%** (Dani). O total não muda, só a distribuição. A fatia volta a aparecer no mês em que houver um débito dividido.
 
-**As três fatias fecham com a tela que abrem** (conferido em 06/11/2026 para as duas pessoas): Crédito → aba Categoria (`COMPARTILHADO / 2`); Pessoal → [Despesas pessoais](../pages/detalhe.md), que passou a listar Crédito **e** Débito da pessoa; Débito → [Débito compartilhado](../pages/debito.md), que passou a listar só `Metade`. As duas telas foram alinhadas em 2026-10-01, logo após a mudança das fatias.
+**As três fatias fecham com a tela que abrem** (conferido em 06/11/2026 para as duas pessoas): Crédito → aba Categoria (`COMPARTILHADO / 2`); Pessoal → [Despesas pessoais](../pages/detalhe.md), que passou a listar Crédito **e** Débito da pessoa; Débito → aba [Categoria](../pages/compart.md) com o tile `TOTAL DÉBITO` marcado (a tela `/debito` foi removida em 2026-10-01 — ver [../pages/debito.md](../pages/debito.md)).
 
 ## Edge cases
 

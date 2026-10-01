@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/acerto_total.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _r({
@@ -25,10 +26,10 @@ ExpenseRow _r({
 
 void main() {
   final rows = [
-    _r(origem: kOrigemCredito, rateio: 'Metade', valor: 200, descricao: 'cred compart'),
+    _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 200, descricao: 'cred compart'),
     _r(origem: kOrigemCredito, rateio: 'Julio', valor: 80, descricao: 'cred julio'),
     _r(origem: kOrigemCredito, rateio: 'Dani', valor: 60, descricao: 'cred dani'),
-    _r(origem: kOrigemDebito, rateio: 'Metade', valor: 400, acerto: 'Sim', descricao: 'deb compart'),
+    _r(origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400, acerto: 'Sim', descricao: 'deb compart'),
     _r(origem: kOrigemDebito, rateio: 'Julio', valor: 100, acerto: 'Sim', descricao: 'deb julio marcado'),
     _r(origem: kOrigemDebito, rateio: 'Julio', valor: 30, descricao: 'deb julio sem marca'),
     _r(origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'deb dani sem marca'),

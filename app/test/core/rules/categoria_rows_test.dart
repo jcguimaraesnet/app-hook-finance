@@ -1,12 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/categoria_rows.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _r({
   String origem = kOrigemCredito,
   String categoria = 'Alimentação',
-  String rateio = 'Metade',
+  String rateio = kRateioCompartilhado,
   double valor = 100,
   String descricao = 'x',
 }) =>
@@ -65,11 +66,11 @@ void main() {
   // totais precisam bater exatamente com a linha clicada.
   group('reconciliação com a tabela do Compart', () {
     final rows = [
-      _r(categoria: 'Casa', rateio: 'Metade', valor: 200),
+      _r(categoria: 'Casa', rateio: kRateioCompartilhado, valor: 200),
       _r(categoria: 'Casa', rateio: 'Julio', valor: 50),
       _r(categoria: 'Casa', rateio: '', valor: 30),
-      _r(categoria: 'Casa', origem: kOrigemDebito, rateio: 'Metade', valor: 999),
-      _r(categoria: 'Alimentação', rateio: 'Metade', valor: 80),
+      _r(categoria: 'Casa', origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 999),
+      _r(categoria: 'Alimentação', rateio: kRateioCompartilhado, valor: 80),
     ];
 
     test('total é o cheio, compart é metade só das linhas Metade', () {

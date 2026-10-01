@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/format/money.dart';
+import '../../core/rateio.dart';
 import '../../core/origem.dart';
 import '../../core/rules/categoria_rows.dart';
 import '../../core/types.dart';
@@ -26,13 +27,23 @@ class CompartPage extends ConsumerWidget {
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final cards = rows.where((r) => r.origem == kOrigemCredito).toList();
+    // Filtro dos tiles de cima: null = sem seleção, e aí o compartilhado soma
+    // as duas origens. Spec: docs/specs/pages/compart.md
+    final filtro = ref.watch(compartOrigemFilterProvider);
+
+    // Só o que é dividido: categoria com rateio individual não entra na tabela
+    // (pós-2026-10-01). E o recorte de origem segue o tile marcado em cima.
+    final cards = rows
+        .where((r) =>
+            r.rateio == kRateioCompartilhado &&
+            (filtro == null || r.origem == filtro))
+        .toList();
     final byCat = <String, _CatAgg>{};
     for (final r in cards) {
       final key = categoriaLabel(r);
       final agg = byCat.putIfAbsent(key, () => _CatAgg());
       agg.total += r.valor;
-      if (r.rateio == 'Metade') agg.compart += r.valor / 2;
+      if (r.rateio == kRateioCompartilhado) agg.compart += r.valor / 2;
     }
     final categories = byCat.entries
         .map((e) => _CatRow(
@@ -44,12 +55,9 @@ class CompartPage extends ConsumerWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final grandTotal = categories.fold<double>(0, (s, c) => s + c.value);
-    // Filtro dos tiles de cima: null = sem seleção, e aí o compartilhado soma
-    // as duas origens. Spec: docs/specs/pages/compart.md
-    final filtro = ref.watch(compartOrigemFilterProvider);
     final compartFull = rows
         .where((r) =>
-            r.rateio == 'Metade' && (filtro == null || r.origem == filtro))
+            r.rateio == kRateioCompartilhado && (filtro == null || r.origem == filtro))
         .fold<double>(0, (s, r) => s + r.valor);
     final compartHalf = compartFull / 2;
 

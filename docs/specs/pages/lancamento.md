@@ -38,7 +38,7 @@ Apenas no Flutter:
   - **Estabelecimento** (TextField, obrigatório).
   - **Categoria** (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
   - **Forma** (segmented `Crédito`/`Débito` → envia o valor literal da col E). Até 2026-09-20 era `Cartão`/`Pix`, mapeando `Pix` → `"Pix (contas)"`.
-  - **Divisão** (segmented `Metade`/`Júlio`/`Dani`/`Alzira` → envia como `rateio`).
+  - **Divisão** (segmented `Compartilhado`/`Júlio`/`Dani`/`Alzira` → envia como `rateio`).
   - **Parcela** (stepper 1..99 — só renderiza se Forma=`Crédito`). Default 1 (à vista).
   - **Banco** (segmented `Santander`/`Revolut`, só se Forma=`Crédito`). **Sem default** — obrigatório escolher; validação local "Selecione o banco." se vazio ao salvar. Envia `banco`. Substituiu o TextField "Cartão (4 dígitos)" em 2026-09-12.
   - **Marcar para Acerto Final** (Switch, só se Forma=`Pix`; envia `acerto: "Sim"`).
@@ -105,7 +105,7 @@ Ordem dos campos no modal, de cima pra baixo:
 4. Descrição (TextField).
 5. Valor (R$, decimal).
 6. Categoria (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
-7. **Rateio** (col G) — Dropdown com `""` (exibido `(vazio)`), `Julio`, `Dani`, `Metade` (exibido `Metade (compartilhado)`), `Alzira`. Valor fora do enum (legado digitado direto na planilha) entra como item extra prefixado `(?) <valor>` — mesmo padrão de Origem e Banco. Sem isso o `DropdownButtonFormField` falha o assert de "exatamente um item com esse valor" e o modal **não abre**, deixando a linha ineditável justamente no app que serviria para corrigi-la (pós-2026-09-20).
+7. **Rateio** (col G) — Dropdown com `""` (exibido `(vazio)`), `Julio`, `Dani`, `Compartilhado` (exibido `Compartilhado`), `Alzira`. Valor fora do enum (legado digitado direto na planilha) entra como item extra prefixado `(?) <valor>` — mesmo padrão de Origem e Banco. Sem isso o `DropdownButtonFormField` falha o assert de "exatamente um item com esse valor" e o modal **não abre**, deixando a linha ineditável justamente no app que serviria para corrigi-la (pós-2026-09-20).
 8. **Banco** (col H) — `DropdownButtonFormField<String>` com `""` (vazio), `Santander`, `Revolut`. Só renderiza quando `_origem == "Cartão"`. Se `entry.banco` vier fora do enum (legado numérico, ex. `"784"`), é adicionado como item extra prefixado `(?) 784` para correção sem perda — mesmo padrão do campo Origem. Send: `banco` (`""` quando Origem ≠ Cartão). Pós-2026-09-12.
 9. Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md)). O "Total da compra" divide a linha com o stepper e **encolhe** (`FittedBox.scaleDown`, `maxLines: 1`, `softWrap: false`) em vez de quebrar em duas linhas — não cabia em tela de celular.
 

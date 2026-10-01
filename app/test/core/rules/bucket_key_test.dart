@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/bucket_key.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({String origem = kOrigemCredito, String rateio = ''}) => ExpenseRow(
@@ -19,7 +20,7 @@ ExpenseRow _row({String origem = kOrigemCredito, String rateio = ''}) => Expense
 void main() {
   group('bucketKey', () {
     test('Crédito + Metade => Crédito (compartilhado)', () {
-      expect(bucketKey(_row(origem: kOrigemCredito, rateio: 'Metade')),
+      expect(bucketKey(_row(origem: kOrigemCredito, rateio: kRateioCompartilhado)),
           'Crédito (compartilhado)');
     });
 
@@ -38,7 +39,7 @@ void main() {
     });
 
     test('Débito passa literal, seja qual for o rateio', () {
-      for (final rateio in ['Julio', 'Dani', 'Metade', 'Alzira', '']) {
+      for (final rateio in ['Julio', 'Dani', kRateioCompartilhado, 'Alzira', '']) {
         expect(bucketKey(_row(origem: kOrigemDebito, rateio: rateio)),
             kOrigemDebito);
       }
@@ -53,7 +54,7 @@ void main() {
     });
 
     test('origem vazia retorna vazia', () {
-      expect(bucketKey(_row(origem: '', rateio: 'Metade')), '');
+      expect(bucketKey(_row(origem: '', rateio: kRateioCompartilhado)), '');
     });
   });
 }

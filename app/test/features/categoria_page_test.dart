@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/categoria_rows.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/categoria/categoria_page.dart';
 import 'package:hook_finance/state/data_providers.dart';
@@ -11,7 +12,7 @@ import 'package:hook_finance/theme/theme.dart';
 Entry _e({
   required int row,
   String categoria = 'Casa',
-  String rateio = 'Metade',
+  String rateio = kRateioCompartilhado,
   double valor = 100,
   String descricao = 'MERCADO',
   String origem = kOrigemCredito,
@@ -56,7 +57,7 @@ void main() {
   // A tela passou a ter dois grupos (Crédito e Débito) em 2026-10-01.
   testWidgets('separa os dois grupos e soma cada um', (tester) async {
     await _pump(tester, [
-      _e(row: 2, categoria: 'Casa', rateio: 'Metade', valor: 200, descricao: 'LUZ'),
+      _e(row: 2, categoria: 'Casa', rateio: kRateioCompartilhado, valor: 200, descricao: 'LUZ'),
       _e(row: 3, categoria: 'Casa', rateio: 'Julio', valor: 50, descricao: 'FURADEIRA'),
       _e(row: 4, categoria: 'Casa', origem: kOrigemDebito, rateio: 'Julio', valor: 300, descricao: 'CONTA LUZ'),
       _e(row: 5, categoria: 'Alimentação', valor: 900, descricao: 'MERCADO'),

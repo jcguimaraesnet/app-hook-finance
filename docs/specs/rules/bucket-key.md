@@ -16,7 +16,7 @@ Cards como [PersonCard](../cards/person-card.md) e [AcertoCard](../cards/acerto-
 `bucketKey(row) → string`:
 
 1. Se `row.origem === "Crédito"`:
-   - Se `row.rateio === "Metade"`, retorna `"Crédito (compartilhado)"`.
+   - Se `row.rateio === "Compartilhado"`, retorna `"Crédito (compartilhado)"`.
    - Caso contrário (qualquer outro rateio, inclusive vazio), retorna `"Crédito (pessoal)"`.
 2. Caso contrário, retorna `row.origem` literalmente — hoje só `"Débito"`, já que o enum da col E tem dois valores desde 2026-09-20 (ver [../data/despesas-sheet.md](../data/despesas-sheet.md)). A regra segue genérica para aguentar linha legada não migrada.
 
@@ -49,7 +49,7 @@ Buckets fora dessa lista vão ao final, em ordem de inserção. Implementações
 // Reference impl
 export function bucketKey(row: Row): string {
   if (row.origem === "Crédito") {
-    return row.rateio === "Metade"
+    return row.rateio === "Compartilhado"
       ? "Crédito (compartilhado)"
       : "Crédito (pessoal)";
   }

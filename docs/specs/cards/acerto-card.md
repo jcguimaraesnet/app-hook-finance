@@ -23,7 +23,7 @@ Página dedicada (Acerto). Mostra os pares (Júlio + Dani) lado a lado. Diferent
 
 ### Cartão (compartilhado)
 
-- Filtra `r.origem === "Cartão"` E `r.rateio === "Metade"`.
+- Filtra `r.origem === "Cartão"` E `r.rateio === "Compartilhado"`.
 - Soma `splitForPerson(r, person)` para cada linha.
 - Resultado: linha "Cartão (compartilhado)" com esse total.
 

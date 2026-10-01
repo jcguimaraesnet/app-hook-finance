@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/bucket_deltas.dart';
 import 'package:hook_finance/core/origem.dart';
+import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _row({
@@ -29,8 +30,8 @@ void main() {
   group('bucketsForPerson', () {
     test('credito = Crédito com Metade, pela metade do valor', () {
       final rows = [
-        _row(valor: 200, origem: kOrigemCredito, rateio: 'Metade'),
-        _row(valor: 100, origem: kOrigemCredito, rateio: 'Metade'),
+        _row(valor: 200, origem: kOrigemCredito, rateio: kRateioCompartilhado),
+        _row(valor: 100, origem: kOrigemCredito, rateio: kRateioCompartilhado),
       ];
       final b = bucketsForPerson(rows, Person.julio);
       expect(b.credito, 150); // 100 + 50
@@ -39,7 +40,7 @@ void main() {
     });
 
     test('debito = Débito com Metade, pela metade do valor', () {
-      final rows = [_row(valor: 40, origem: kOrigemDebito, rateio: 'Metade')];
+      final rows = [_row(valor: 40, origem: kOrigemDebito, rateio: kRateioCompartilhado)];
       final b = bucketsForPerson(rows, Person.julio);
       expect(b.debito, 20);
       expect(b.credito, 0);
@@ -83,8 +84,8 @@ void main() {
 
     test('as três fatias continuam particionando o total', () {
       final rows = [
-        _row(valor: 200, origem: kOrigemCredito, rateio: 'Metade'),
-        _row(valor: 100, origem: kOrigemDebito, rateio: 'Metade'),
+        _row(valor: 200, origem: kOrigemCredito, rateio: kRateioCompartilhado),
+        _row(valor: 100, origem: kOrigemDebito, rateio: kRateioCompartilhado),
         _row(valor: 80, origem: kOrigemCredito, rateio: 'Julio'),
         _row(valor: 30, origem: kOrigemDebito, rateio: 'Julio'),
         _row(valor: 999, origem: kOrigemCredito, rateio: 'Dani'),
