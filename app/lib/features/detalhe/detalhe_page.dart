@@ -44,11 +44,22 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
     final rows = monthAsync.value?.rows ?? const <Entry>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final pessoalRows = rows
-        .where((r) => r.origem == kOrigemCredito && r.rateio == _person.name)
+    int maisRecentePrimeiro(Entry a, Entry b) =>
+        parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef));
+
+    // Dois grupos desde 2026-10-01: a fatia "Pessoal" da Início passou a somar
+    // o rateio da pessoa em qualquer origem, então a lista daqui precisava
+    // incluir o Débito individual — antes mostrava um subconjunto do próprio
+    // tile TOTAL PESSOAL. Spec: docs/specs/pages/detalhe.md
+    final daPessoa = rows.where((r) => r.rateio == _person.name);
+    final creditoRows = daPessoa
+        .where((r) => r.origem == kOrigemCredito)
         .toList()
-      ..sort((a, b) =>
-          parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
+      ..sort(maisRecentePrimeiro);
+    final debitoRows = daPessoa
+        .where((r) => r.origem == kOrigemDebito)
+        .toList()
+      ..sort(maisRecentePrimeiro);
 
     final summary = personalSummaryForPerson(rows, _person);
 
@@ -142,53 +153,108 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                       ],
                     ),
             ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Text(
-                'Lançamentos pessoais (${pessoalRows.length})',
-                style: BloomTypography.display(fontSize: 14),
-              ),
+            const SizedBox(height: 18),
+            _Grupo(
+              titulo: 'Crédito',
+              rows: creditoRows,
+              loading: loading,
+              vazio: 'Sem lançamentos de crédito este mês.',
+              onEdit: openEdit,
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: BloomCard(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 4),
-                child: pessoalRows.isEmpty && !loading
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        child: Center(
-                          child: Text(
-                            'Sem lançamentos pessoais este mês.',
-                            style: BloomTypography.geist(
-                              fontSize: 12,
-                              color: BloomColors.muted,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (var i = 0; i < pessoalRows.length; i++)
-                            RecentEntryRow(
-                              entry: pessoalRows[i],
-                              showDivider: i > 0,
-                              hideCategory: true,
-                              // Sem row válido (backend antigo) não há o que
-                              // editar: o save falharia com invalid_row.
-                              onTap: pessoalRows[i].row >= 2
-                                  ? () => openEdit(pessoalRows[i])
-                                  : null,
-                            ),
-                        ],
-                      ),
-              ),
+            const SizedBox(height: 18),
+            _Grupo(
+              titulo: 'Débito',
+              rows: debitoRows,
+              loading: loading,
+              vazio: 'Sem lançamentos de débito este mês.',
+              onEdit: openEdit,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Grupo extends StatelessWidget {
+  final String titulo;
+  final List<Entry> rows;
+  final bool loading;
+  final String vazio;
+  final Future<void> Function(Entry) onEdit;
+
+  const _Grupo({
+    required this.titulo,
+    required this.rows,
+    required this.loading,
+    required this.vazio,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = rows.fold<double>(0, (s, r) => s + r.valor);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  '$titulo (${rows.length})',
+                  style: BloomTypography.display(fontSize: 14),
+                ),
+              ),
+              if (rows.isNotEmpty)
+                Text(
+                  'R\$ ${formatMoney(total)}',
+                  style: BloomTypography.mono(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: BloomCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: rows.isEmpty && !loading
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    child: Center(
+                      child: Text(
+                        vazio,
+                        textAlign: TextAlign.center,
+                        style: BloomTypography.geist(
+                          fontSize: 12,
+                          color: BloomColors.muted,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < rows.length; i++)
+                        RecentEntryRow(
+                          entry: rows[i],
+                          showDivider: i > 0,
+                          hideCategory: true,
+                          // Sem row válido (backend antigo) não há o que
+                          // editar: o save falharia com invalid_row.
+                          onTap: rows[i].row >= 2 ? () => onEdit(rows[i]) : null,
+                        ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

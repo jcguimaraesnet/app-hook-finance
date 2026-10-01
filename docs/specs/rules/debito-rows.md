@@ -17,11 +17,11 @@ Esta função é a fonte única: `bucketsForPerson(...).contas` e a lista da pá
 
 `debitoRowsForPerson(rows, person) → Row[]`:
 
-1. Mantém a linha se `row.origem === "Débito"`. Antes da migração de Origem (2026-09-20) o filtro era `origem !== "Cartão"`, cobrindo `Pix (contas)`, `Contas`, `Empregados` e `Pessoal` — ver [../data/despesas-sheet.md](../data/despesas-sheet.md).
+1. Mantém a linha se `row.origem === "Débito"` **e** `row.rateio === "Metade"`. Antes da migração de Origem (2026-09-20) o filtro era `origem !== "Cartão"`, cobrindo `Pix (contas)`, `Contas`, `Empregados` e `Pessoal` — ver [../data/despesas-sheet.md](../data/despesas-sheet.md).
 2. **E** se `splitForPerson(row, person) !== 0` — ver [split-for-person.md](split-for-person.md).
 3. Preserva a ordem de entrada. Não ordena, não deduplica, não soma.
 
-**Invariante de reconciliação** — ⚠️ **válida só até 2026-10-01**. A nova regra das fatias manda o Débito de rateio individual para `pessoal`, então o bucket `debito` deixou de ser igual a esta soma. A relação atual (`lista = bucket debito + débito individual da pessoa`) está fixada em `debito_rows_test.dart`. Texto original abaixo, mantido para contexto:
+**Invariante de reconciliação** (garantida por teste). Em 2026-10-01 a regra passou a filtrar `rateio === "Metade"` junto com a origem, acompanhando a fatia — o débito de rateio individual saiu daqui e foi para `pessoal` (e para a tela de [Despesas pessoais](../pages/detalhe.md)):
 
 ```
 Σ splitForPerson(r, person) para r em debitoRowsForPerson(rows, person)

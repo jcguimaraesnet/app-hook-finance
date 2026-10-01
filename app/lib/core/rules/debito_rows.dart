@@ -5,9 +5,12 @@ import '../origem.dart';
 import '../types.dart';
 import 'split_for_person.dart';
 
-/// Linhas do bucket "Débito" de uma pessoa: origem Débito e rateio que toca a
-/// pessoa. Mesma dupla de filtros que `bucketsForPerson` usa para somar a coluna
-/// Débito do Comparativo — é o que faz a lista fechar com o total.
+/// Linhas da fatia "Débito": origem Débito com rateio `Metade`.
+///
+/// Desde 2026-10-01 a fatia conta só o que está dividido — o débito de rateio
+/// individual passou a somar em "Pessoal" e aparece na tela de Despesas
+/// pessoais. Esta lista acompanha a fatia, senão a tela mostraria um total
+/// diferente do número que foi clicado.
 ///
 /// Genérica em `T` para preservar `Entry` (e o `row` que o editar precisa).
 List<T> debitoRowsForPerson<T extends ExpenseRow>(
@@ -15,7 +18,10 @@ List<T> debitoRowsForPerson<T extends ExpenseRow>(
   Person person,
 ) {
   return rows
-      .where((r) => r.origem == kOrigemDebito && splitForPerson(r, person) != 0)
+      .where((r) =>
+          r.origem == kOrigemDebito &&
+          r.rateio == 'Metade' &&
+          splitForPerson(r, person) != 0)
       .toList();
 }
 

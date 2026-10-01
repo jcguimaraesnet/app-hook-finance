@@ -3,9 +3,11 @@ status: stable
 last_updated: 2026-09-20
 ---
 
-# Débito — lançamentos de débito por pessoa
+# Débito compartilhado — débito dividido, por pessoa
 
-Drill-down da coluna "Débito" do card Comparativo da [Início](inicio.md). Lista os lançamentos com `origem === "Débito"` que tocam a pessoa selecionada.
+Drill-down da coluna "Débito" do card Comparativo da [Início](inicio.md). Lista os lançamentos com `origem === "Débito"` **e `rateio === "Metade"`** — o débito que as duas pessoas dividem.
+
+Desde 2026-10-01 o débito de rateio individual **não** aparece aqui: ele soma na fatia "Pessoal" e é listado em [Despesas pessoais](detalhe.md). Mês sem nada dividido deixa esta tela vazia, e isso é verdade, não bug — o vazio aponta para onde o dinheiro está.
 
 Só existe no Flutter (Bloom). A PWA legada em `web/` não tem essa tela e não vai ter — codebase congelado.
 
@@ -33,7 +35,7 @@ Lê `monthData(currentMonth)`. Não chama outros endpoints.
 
 | Tile | Valor |
 |---|---|
-| **SUA PARTE** | `Σ splitForPerson(r, person)` de **todo** o débito que toca a pessoa. ⚠️ Desde 2026-10-01 **não é mais** o número da coluna Débito do Comparativo: aquela fatia passou a contar só `rateio === "Metade"` — ver [../rules/bucket-deltas.md](../rules/bucket-deltas.md). Divergência pendente de decisão. |
+| **SUA PARTE** | `Σ splitForPerson(r, person)` — metade de cada linha, e **o mesmo número da coluna Débito do Comparativo**. |
 | **TOTAL CHEIO** | `Σ r.valor` das linhas listadas. Maior que "sua parte" sempre que houver linha `Metade`. |
 
 O segundo tile **só renderiza quando os dois valores diferem** (≥ R$ 0,005). Sem linha `Metade` no débito do mês — o caso comum: em out/2026 todo o débito tinha rateio individual — os dois números seriam idênticos e dois tiles iguais lado a lado parecem bug. Quando some, o tile restante é rotulado **TOTAL** em vez de "SUA PARTE", porque aí não há divisão nenhuma.

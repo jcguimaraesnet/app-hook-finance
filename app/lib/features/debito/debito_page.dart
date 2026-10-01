@@ -48,8 +48,10 @@ class _DebitoPageState extends ConsumerState<DebitoPage> {
       ..sort((a, b) =>
           parseBrRefDate(b.dataRef).compareTo(parseBrRefDate(a.dataRef)));
 
-    // "Sua parte" tem que bater com a coluna Débito do Comparativo, que é de
-    // onde se chega aqui — mesma regra, ver docs/specs/rules/debito-rows.md.
+    // "Sua parte" bate com a coluna Débito do Comparativo, que é de onde se
+    // chega aqui — mesma regra, ver docs/specs/rules/debito-rows.md. Desde
+    // 2026-10-01 a fatia (e esta tela) é só o débito dividido; o débito de
+    // rateio individual está em Despesas pessoais.
     double suaParte = 0;
     double totalCheio = 0;
     for (final r in debitoRows) {
@@ -81,7 +83,7 @@ class _DebitoPageState extends ConsumerState<DebitoPage> {
           children: [
             ScreenHeader(
               showBack: true,
-              kicker: 'Débito',
+              kicker: 'Débito compartilhado',
               title: _person.displayName,
               trailing: const MonthSelector(),
             ),
@@ -134,7 +136,7 @@ class _DebitoPageState extends ConsumerState<DebitoPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Text(
-                'Lançamentos de débito (${debitoRows.length})',
+                'Lançamentos divididos (${debitoRows.length})',
                 style: BloomTypography.display(fontSize: 14),
               ),
             ),
@@ -149,7 +151,9 @@ class _DebitoPageState extends ConsumerState<DebitoPage> {
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
-                            'Sem lançamentos de débito neste mês.',
+                            'Sem débito dividido neste mês. Débito com rateio '
+                            'individual aparece em Despesas pessoais.',
+                            textAlign: TextAlign.center,
                             style: BloomTypography.geist(
                               fontSize: 12,
                               color: BloomColors.muted,

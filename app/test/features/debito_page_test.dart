@@ -51,70 +51,62 @@ Future<void> _pump(WidgetTester tester, List<Entry> rows) async {
 }
 
 void main() {
-  testWidgets('lista só débito da pessoa e reconcilia com o total', (
-    tester,
-  ) async {
+  // Pós-2026-10-01 a tela acompanha a fatia Débito do Comparativo: só o débito
+  // DIVIDIDO (rateio Metade). O de rateio individual soma em "Pessoal" e
+  // aparece em Despesas pessoais.
+  testWidgets('lista só o débito dividido e reconcilia com a fatia',
+      (tester) async {
     await _pump(tester, [
       _e(row: 2, origem: kOrigemCredito, rateio: 'Julio', valor: 500, descricao: 'CARTAO JULIO'),
-      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
-      _e(row: 4, origem: kOrigemDebito, rateio: 'Metade', valor: 200, descricao: 'LUZ METADE'),
+      _e(row: 3, origem: kOrigemDebito, rateio: 'Metade', valor: 200, descricao: 'LUZ DIVIDIDA'),
+      _e(row: 4, origem: kOrigemDebito, rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
       _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'CONTA DANI'),
       _e(row: 6, origem: kOrigemDebito, rateio: '', valor: 999, descricao: 'SEM RATEIO'),
     ]);
 
     expect(tester.takeException(), isNull);
 
-    // Entram: PIX JULIO (120) + LUZ METADE (200). Fora: cartão, Dani, sem rateio.
-    expect(find.text('PIX JULIO'), findsOneWidget);
-    expect(find.text('LUZ METADE'), findsOneWidget);
+    expect(find.text('LUZ DIVIDIDA'), findsOneWidget);
+    // Fora: cartão, o débito individual (dele e dela) e o sem rateio.
     expect(find.text('CARTAO JULIO'), findsNothing);
+    expect(find.text('PIX JULIO'), findsNothing);
     expect(find.text('CONTA DANI'), findsNothing);
     expect(find.text('SEM RATEIO'), findsNothing);
-    expect(find.text('Lançamentos de débito (2)'), findsOneWidget);
+    expect(find.text('Lançamentos divididos (1)'), findsOneWidget);
 
-    // Sua parte = 120 + 200/2 = 220. Total cheio = 320.
+    // Sua parte = 200/2 = 100; total cheio = 200.
     expect(find.text('SUA PARTE'), findsOneWidget);
-    expect(find.text('R\$ 220,00'), findsOneWidget);
+    expect(find.text('R\$ 100,00'), findsOneWidget);
     expect(find.text('TOTAL CHEIO'), findsOneWidget);
-    expect(find.text('R\$ 320,00'), findsOneWidget);
+    // Aparece duas vezes: no tile e na própria linha do lançamento.
+    expect(find.text('R\$ 200,00'), findsNWidgets(2));
   });
 
-  testWidgets('sem linha Metade mostra um tile só, rotulado TOTAL', (
-    tester,
-  ) async {
+  testWidgets('ordena por dataRef descendente, com o ano contando',
+      (tester) async {
+    await _pump(tester, [
+      _e(row: 2, origem: kOrigemDebito, rateio: 'Metade', valor: 10, descricao: 'DEZEMBRO', dataRef: '20/12/2025 10:00'),
+      _e(row: 3, origem: kOrigemDebito, rateio: 'Metade', valor: 10, descricao: 'JANEIRO', dataRef: '05/01/2026 09:00'),
+    ]);
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getTopLeft(find.text('JANEIRO')).dy,
+      lessThan(tester.getTopLeft(find.text('DEZEMBRO')).dy),
+    );
+  });
+
+  // O caso comum na planilha: nenhum débito é dividido, então a tela fica
+  // vazia — e isso é verdade, não bug. O vazio aponta para onde o dinheiro está.
+  testWidgets('mês só com débito individual mostra o vazio explicativo',
+      (tester) async {
     await _pump(tester, [
       _e(row: 2, origem: kOrigemDebito, rateio: 'Julio', valor: 120, descricao: 'PIX JULIO'),
-      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 80, descricao: 'LUZ JULIO'),
     ]);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('TOTAL'), findsOneWidget);
-    expect(find.text('SUA PARTE'), findsNothing);
-    expect(find.text('TOTAL CHEIO'), findsNothing);
-    expect(find.text('R\$ 200,00'), findsOneWidget);
-  });
-
-  testWidgets('ordena por dataRef descendente, com o ano contando', (
-    tester,
-  ) async {
-    await _pump(tester, [
-      _e(row: 2, origem: kOrigemDebito, rateio: 'Julio', valor: 10, descricao: 'DEZEMBRO', dataRef: '20/12/2025 10:00'),
-      _e(row: 3, origem: kOrigemDebito, rateio: 'Julio', valor: 10, descricao: 'JANEIRO', dataRef: '05/01/2026 09:00'),
-    ]);
-
-    expect(tester.takeException(), isNull);
-    final janeiro = tester.getTopLeft(find.text('JANEIRO')).dy;
-    final dezembro = tester.getTopLeft(find.text('DEZEMBRO')).dy;
-    expect(janeiro, lessThan(dezembro));
-  });
-
-  testWidgets('mês sem débito mostra o vazio', (tester) async {
-    await _pump(tester, [
-      _e(row: 2, origem: kOrigemCredito, rateio: 'Julio', valor: 500, descricao: 'SO CARTAO'),
-    ]);
-
-    expect(tester.takeException(), isNull);
-    expect(find.text('Sem lançamentos de débito neste mês.'), findsOneWidget);
-    expect(find.text('Lançamentos de débito (0)'), findsOneWidget);
+    expect(find.text('Lançamentos divididos (0)'), findsOneWidget);
+    expect(find.textContaining('Despesas pessoais'), findsOneWidget);
+    expect(find.text('PIX JULIO'), findsNothing);
   });
 }

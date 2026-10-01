@@ -84,7 +84,7 @@ Valor somado é sempre `splitForPerson` (metade nas linhas `Metade`, cheio nas d
 
 **Efeito medido na fatura 06/11/2026:** nenhuma linha de Débito tinha rateio `Metade` (9 Dani, 11 Julio), então a fatia Débito foi de 72% para **0%** e Pessoal de 18% para **90%** (Dani). O total não muda, só a distribuição. A fatia volta a aparecer no mês em que houver um débito dividido.
 
-**Divergência conhecida:** a coluna Débito do Comparativo é clicável e abre a tela de [Débito](../pages/debito.md), que lista **todo** o débito que toca a pessoa — não só o `Metade`. Desde esta mudança os dois números não batem. Fixado em teste (`debito_rows_test.dart`) para não passar por acidente; pendente de decisão de produto.
+**As três fatias fecham com a tela que abrem** (conferido em 06/11/2026 para as duas pessoas): Crédito → aba Categoria (`COMPARTILHADO / 2`); Pessoal → [Despesas pessoais](../pages/detalhe.md), que passou a listar Crédito **e** Débito da pessoa; Débito → [Débito compartilhado](../pages/debito.md), que passou a listar só `Metade`. As duas telas foram alinhadas em 2026-10-01, logo após a mudança das fatias.
 
 ## Edge cases
 

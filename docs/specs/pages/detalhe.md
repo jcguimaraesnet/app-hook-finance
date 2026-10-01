@@ -22,8 +22,10 @@ Lê `monthData(currentMonth)`. Não chama outros endpoints.
 
 ### Filtragem da lista de lançamentos
 
-- `r.origem === "Crédito"` (só Crédito).
-- `r.rateio !== ""` E `r.rateio !== "Metade"` (exclui sem rateio e compartilhado).
+- `r.rateio === <pessoa>` — **qualquer origem** (pós-2026-10-01; antes era só `Crédito`).
+- A lista é partida em **dois grupos**, Crédito e Débito, cada um com contagem e subtotal.
+
+O motivo da mudança: a fatia "Pessoal" da [Início](inicio.md) passou a somar o rateio da pessoa em qualquer origem, e esta tela é o drill-down dela. Antes, a lista mostrava um subconjunto do próprio tile `TOTAL PESSOAL` — que sempre contou as duas origens.
 
 ### Agregação dos tiles superiores (Flutter)
 
@@ -61,7 +63,7 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
   - **Cartão pessoal** — `summary.cartaoPessoal`.
   - **Parcelado atual** — `summary.parceladoAtual`.
   - **Parcelado Próx** — `summary.parceladoProx` (projeção do próximo mês).
-- Lista de lançamentos `RecentEntryRow` filtrada (mais recente primeiro) ou mensagem "Sem lançamentos pessoais este mês". Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
+- **Dois grupos** (Crédito e Débito), cada um com cabeçalho `<nome> (N)` + subtotal e seu próprio vazio. O grupo de Crédito soma o tile `CRÉDITO PESSOAL`; os dois juntos somam `TOTAL PESSOAL`. Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
 - **Tap edita o lançamento** (pós-2026-09-18): abre o mesmo `EditDialog` da [lancamento.md](lancamento.md), incluindo o excluir do header. Ao salvar ou excluir, invalida `monthDataProvider` **e** `lastEntriesProvider` (a linha editada também aparece em Lançamentos). Requer o `row` que `monthData` passou a devolver — ver [../api/endpoints.md](../api/endpoints.md).
   - Linha sem `row` válido (`< 2`, backend antigo) fica sem `onTap`: `RecentEntryRow` esconde o chevron e a linha não responde ao toque, em vez de abrir um modal que falharia com `invalid_row` no save.
 
