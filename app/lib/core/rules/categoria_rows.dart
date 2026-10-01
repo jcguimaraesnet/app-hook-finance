@@ -1,7 +1,6 @@
 // Spec: docs/specs/rules/categoria-rows.md
 // Mudanças aqui DEVEM começar pela spec.
 
-import '../origem.dart';
 import '../types.dart';
 
 /// Label usada quando a linha não tem categoria. É o que aparece na tabela do
