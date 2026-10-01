@@ -48,10 +48,14 @@ Future<void> _open(WidgetTester tester, Entry e) async {
 // do dropdown. Com fonte real cabe (medido em 2026-09-18), então o overflow é
 // artefato do ambiente de teste — qualquer outra exceção é real.
 void _semErroReal(WidgetTester tester) {
-  final err = tester.takeException();
-  if (err == null) return;
-  if (err.toString().contains('RenderFlex overflowed')) return;
-  fail('exceção inesperada: $err');
+  // Drena todas: em tela estreita o dropdown estoura em mais de um frame, e
+  // takeException devolve uma por vez — sobrando alguma, o teste falha no fim.
+  while (true) {
+    final err = tester.takeException();
+    if (err == null) return;
+    if (err.toString().contains('RenderFlex overflowed')) continue;
+    fail('exceção inesperada: $err');
+  }
 }
 
 void main() {
@@ -75,5 +79,31 @@ void main() {
     await _open(tester, _entry(origem: 'Boleto'));
     _semErroReal(tester);
     expect(find.text('(?) Boleto'), findsOneWidget);
+  });
+
+  // O rótulo divide a linha com o stepper de parcela e quebrava em duas linhas
+  // em tela de celular. Quem impede isso são estas três propriedades — e elas
+  // valem em qualquer largura, então o teste não depende da viewport (nem briga
+  // com o overflow que a fonte do flutter_test provoca no dropdown).
+  testWidgets('"Total da compra" encolhe em vez de quebrar linha',
+      (tester) async {
+    await _open(tester, _entry());
+    _semErroReal(tester);
+
+    final finder = find.byWidgetPredicate(
+      (w) =>
+          w is Text &&
+          (w.textSpan?.toPlainText() ?? '').startsWith('Total da compra: '),
+    );
+    expect(finder, findsOneWidget);
+
+    final texto = tester.widget<Text>(finder);
+    expect(texto.maxLines, 1);
+    expect(texto.softWrap, isFalse);
+
+    final fitted = tester.widget<FittedBox>(
+      find.ancestor(of: finder, matching: find.byType(FittedBox)).first,
+    );
+    expect(fitted.fit, BoxFit.scaleDown);
   });
 }

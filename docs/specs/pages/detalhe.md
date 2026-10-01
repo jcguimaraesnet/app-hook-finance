@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-09-20
+last_updated: 2026-10-01
 ---
 
 # Detalhe — despesas pessoais por pessoa
@@ -57,7 +57,7 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 **Flutter (Bloom):** página single-person (a passada via `?person=`):
 
 - Header `ScreenHeader` com kicker "Despesas pessoais" + título "<Person> · <mês>" + `MonthSelector`.
-- Person pills Júlio/Dani — tap troca a query e re-renderiza. Cor da pill ativa = `BloomColors.forPerson(p)` (Júlio=menta, Dani=lilás — ver [inicio.md](inicio.md)).
+- **Sem seletor de pessoa** (pós-2026-10-01): a pessoa vem da rota e quem escolhe é a tela anterior (donut ou coluna Pessoal do Comparativo da [Início](inicio.md)). O toggle Júlio/Dani era uma segunda forma de escolher a mesma coisa.
 - **Grid 2×2 de tiles** (mesmo padrão visual de [compart.md](compart.md) — Cards `BloomCard` com kicker uppercase + valor `R$`, sem badge de %):
   - **Total pessoal** — `summary.totalPessoal`.
   - **Cartão pessoal** — `summary.cartaoPessoal`.

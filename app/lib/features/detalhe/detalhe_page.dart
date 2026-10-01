@@ -15,7 +15,6 @@ import '../../theme/bloom_typography.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/bloom_screen.dart';
 import '../../widgets/bloom/month_selector.dart';
-import '../../widgets/bloom/person_toggle.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
 import '../lancamento/edit_dialog.dart';
@@ -29,13 +28,9 @@ class DetalhePage extends ConsumerStatefulWidget {
 }
 
 class _DetalhePageState extends ConsumerState<DetalhePage> {
-  late Person _person;
-
-  @override
-  void initState() {
-    super.initState();
-    _person = widget.initialPerson ?? Person.julio;
-  }
+  // A pessoa vem da rota e não muda aqui: quem escolhe é a tela anterior
+  // (donut/Comparativo da Início). O toggle Júlio/Dani saiu em 2026-10-01.
+  Person get _person => widget.initialPerson ?? Person.julio;
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +85,6 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
               kicker: 'Despesas pessoais',
               title: _person.displayName,
               trailing: const MonthSelector(),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: PersonToggle(
-                selected: _person,
-                onChanged: (p) => setState(() => _person = p),
-              ),
             ),
             const SizedBox(height: 14),
             Padding(

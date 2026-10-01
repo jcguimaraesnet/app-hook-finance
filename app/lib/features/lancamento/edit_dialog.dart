@@ -531,26 +531,32 @@ class _ParcelaField extends StatelessWidget {
               child: const Text('+', style: TextStyle(fontSize: 18)),
             ),
             const SizedBox(width: 12),
+            // scaleDown em vez de quebrar em duas linhas: em tela de celular o
+            // rótulo não cabia ao lado do stepper e ia para a segunda linha.
             Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Total da compra: ',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Total da compra: ',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    TextSpan(
-                      text: 'R\$ ${formatMoney(originalTotal)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      TextSpan(
+                        text: 'R\$ ${formatMoney(originalTotal)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
                 ),
-                textAlign: TextAlign.end,
-                maxLines: 2,
               ),
             ),
           ],
