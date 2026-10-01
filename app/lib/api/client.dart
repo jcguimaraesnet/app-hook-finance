@@ -51,10 +51,14 @@ class ApiClient {
     return _decode(r.data);
   }
 
+  /// `receiveTimeout` por chamada: o default de 60s do BaseOptions não serve
+  /// para `newInvoice`, que lê a planilha inteira, insere ~37 linhas, formata,
+  /// pinta e ainda mexe na aba de config — tudo dentro de um lock.
   Future<Map<String, dynamic>> post(
     String action,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    Duration? receiveTimeout,
+  }) async {
     // text/plain evita preflight CORS no Apps Script direto.
     final payload = {
       'action': action,
@@ -67,6 +71,7 @@ class ApiClient {
       options: Options(
         headers: {'Content-Type': 'text/plain'},
         responseType: ResponseType.plain,
+        receiveTimeout: receiveTimeout,
       ),
     );
     return _decode(r.data);

@@ -67,6 +67,23 @@ Helper `rolloverParcelaRow_(rowValues, newClosing)`:
 - **Skip** (retorna `null`) se: regex não bate, OU col I vazia, OU `X >= Y` (parcela final ou inválida).
 - Caso contrário: retorna array 10-col com `[newClosing, ...col B..H original..., (X+1)/Y, col J original]`.
 
+### Timeout não é falha (pós-2026-10-01)
+
+É a chamada mais lenta da API: lê a col A inteira (~5.900 linhas), rola parcelas, carrega as fixas, insere ~37 linhas com formatação e pintura, e ainda decrementa a aba de config — tudo dentro do `LockService`. O Apps Script tem 6 min, mas o cliente e o proxy Azure desistem antes.
+
+Em 06/11/2026 isso aconteceu de verdade: a fatura **foi criada** e o app exibiu "Falha ao criar fatura". O usuário só descobriu reabrindo o app.
+
+Regras do cliente:
+
+1. `newInvoice()` usa `receiveTimeout` de 150s (o default de 60s do `BaseOptions` é curto para esta ação). Reduz o falso negativo, mas não elimina — o teto do proxy é menor.
+2. Em **qualquer** exceção de rede, a Início chama `faturaFoiCriada(closing)` (= `monthData(closing)` com `rows` não vazio) antes de concluir qualquer coisa:
+   - existe → trata como sucesso, com aviso de que a resposta demorou;
+   - não existe → erro de verdade;
+   - a verificação também falhou → mensagem de incerteza ("não deu para confirmar"), nunca "falhou".
+3. O dedup por `invoice_already_exists` continua sendo a rede de segurança se o usuário reexecutar.
+
+**Latência do decremento:** `decrementFixedParcelas_` recebe o `Spreadsheet` já aberto (`sheet.getParent()`) em vez de chamar `openById` outra vez, e remove linhas contíguas num `deleteRows` só. Roda no fim de uma seção com lock — cada round-trip ali conta.
+
 ## Erros
 
 | `error` | Significado |

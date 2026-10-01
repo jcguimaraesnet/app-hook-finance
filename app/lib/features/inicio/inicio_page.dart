@@ -201,7 +201,29 @@ class _InicioPageState extends ConsumerState<InicioPage> {
           }
         }
       } catch (e) {
-        errorMsg = 'Falha ao criar fatura: $e';
+        // Timeout não é prova de falha: o Apps Script continua rodando depois
+        // que o cliente desiste. Em 06/11/2026 a fatura foi criada e a tela
+        // disse que falhou — o usuário só descobriu reabrindo o app. Antes de
+        // acusar erro, confere na planilha.
+        bool? criada;
+        try {
+          criada = await ref.read(apiProvider).faturaFoiCriada(closing);
+        } catch (_) {
+          criada = null; // nem a verificação respondeu
+        }
+        if (criada == true) {
+          ref.invalidate(monthDataProvider);
+          ref.invalidate(previousMonthDataProvider);
+          ref.invalidate(historicalSummaryProvider);
+          ref.invalidate(lastEntriesProvider);
+          successMsg = 'Fatura $closing criada — a resposta demorou mais que o '
+              'esperado, confira os totais';
+        } else if (criada == false) {
+          errorMsg = 'Falha ao criar fatura: $e';
+        } else {
+          errorMsg = 'Não deu para confirmar se a fatura $closing foi criada. '
+              'Atualize e confira antes de tentar de novo.';
+        }
       }
       if (!mounted) return;
       setState(() => _creatingInvoice = false);

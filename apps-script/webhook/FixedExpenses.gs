@@ -165,31 +165,42 @@ function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
 // cima para baixo invalidaria as linhas seguintes já calculadas.
 //
 // Spec: docs/specs/rules/fixed-expenses.md
-function decrementFixedParcelas_(fixed) {
+function decrementFixedParcelas_(fixed, ss) {
   const finitas = (fixed || []).filter(
     (e) => typeof e.parcelasRestantes === "number" && e.parcelasRestantes > 0,
   );
   if (finitas.length === 0) return { decremented: 0, removed: 0 };
 
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(FIXED_SHEET_NAME);
+  // Recebe o Spreadsheet já aberto: openById de novo custa segundos e isto roda
+  // dentro do lock, no fim de uma chamada que já é a mais lenta da API.
+  const planilha = ss || SpreadsheetApp.openById(SHEET_ID);
+  const sheet = planilha.getSheetByName(FIXED_SHEET_NAME);
   if (!sheet) return { decremented: 0, removed: 0 };
 
   const aRemover = [];
-  let decremented = 0;
+  const aGravar = [];
   for (const e of finitas) {
     const restantes = e.parcelasRestantes - 1;
-    if (restantes <= 0) {
-      aRemover.push(e.row);
-    } else {
-      sheet.getRange(e.row, 8).setValue(restantes);
-    }
-    decremented++;
+    if (restantes <= 0) aRemover.push(e.row);
+    else aGravar.push({ row: e.row, valor: restantes });
   }
 
-  aRemover.sort((a, b) => b - a);
-  for (const row of aRemover) sheet.deleteRow(row);
+  for (const g of aGravar) sheet.getRange(g.row, 8).setValue(g.valor);
 
-  return { decremented: decremented, removed: aRemover.length };
+  // Decrescente: deleteRow desloca tudo abaixo, então apagar de cima para baixo
+  // invalidaria as linhas seguintes já calculadas. Linhas contíguas saem num
+  // deleteRows só — menos round-trips no trecho mais lento da chamada.
+  aRemover.sort((a, b) => b - a);
+  let i = 0;
+  while (i < aRemover.length) {
+    let fim = i;
+    while (fim + 1 < aRemover.length && aRemover[fim + 1] === aRemover[fim] - 1) fim++;
+    const inicio = aRemover[fim];
+    sheet.deleteRows(inicio, fim - i + 1);
+    i = fim + 1;
+  }
+
+  return { decremented: finitas.length, removed: aRemover.length };
 }
 
 function applyInvoiceBlock_(sheet, block) {
@@ -257,7 +268,7 @@ function newInvoice_(token) {
     // Depois do insert, nunca antes: se o apply falhar, o contador não pode ter
     // andado. A aba de config é outra sheet, fora do lock da Despesas — aceitável
     // porque só a Nova fatura escreve nela nesse fluxo.
-    const parcelas = decrementFixedParcelas_(fixedList);
+    const parcelas = decrementFixedParcelas_(fixedList, sheet.getParent());
 
     return {
       ok: true,

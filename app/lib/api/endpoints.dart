@@ -71,9 +71,24 @@ class ApiEndpoints {
     return MutationResponse.fromJson(r);
   }
 
+  /// A chamada mais lenta da API. O timeout generoso reduz o falso negativo,
+  /// mas não o elimina: o teto do proxy Azure é menor. Quem trata o timeout
+  /// como "não sei" é a Início — ver `faturaFoiCriada`.
   Future<NewInvoiceResponse> newInvoice() async {
-    final r = await _client.post('newInvoice', const {});
+    final r = await _client.post(
+      'newInvoice',
+      const {},
+      receiveTimeout: const Duration(seconds: 150),
+    );
     return NewInvoiceResponse.fromJson(r);
+  }
+
+  /// Confirma se a fatura `closing` existe na planilha. Usado depois de um erro
+  /// de rede em `newInvoice`: o Apps Script segue rodando depois que o cliente
+  /// desiste, então timeout não é prova de falha.
+  Future<bool> faturaFoiCriada(String closing) async {
+    final r = await getMonthData(month: closing);
+    return r.ok && r.rows.isNotEmpty;
   }
 
   /// Preview read-only da data que `newInvoice()` criaria agora (última fatura
