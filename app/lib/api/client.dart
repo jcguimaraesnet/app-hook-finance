@@ -80,11 +80,28 @@ class ApiClient {
   Map<String, dynamic> _decode(Object? raw) {
     if (raw is Map<String, dynamic>) return raw;
     if (raw is String) {
+      // O Apps Script às vezes responde uma página HTML em vez de JSON — erro
+      // de deploy/permissão, ou limite de chamadas em sequência. jsonDecode
+      // nisso lança FormatException com o HTML inteiro na mensagem, que vaza
+      // para a SnackBar e não diz nada ao usuário.
+      final inicio = raw.trimLeft();
+      if (inicio.startsWith('<')) {
+        throw const FormatException(
+          'O servidor respondeu uma página HTML em vez de dados. '
+          'Pode ser limite de chamadas ou problema no deploy do Apps Script — '
+          'tente de novo em alguns segundos.',
+        );
+      }
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) return decoded;
     }
-    throw FormatException('Unexpected response payload: $raw');
+    throw FormatException('Resposta inesperada do servidor: $raw');
   }
+
+  /// Visível para teste: o decode é o ponto onde uma resposta não-JSON do Apps
+  /// Script vira mensagem de erro do app.
+  @visibleForTesting
+  Map<String, dynamic> decodeForTest(Object? raw) => _decode(raw);
 }
 
 /// Valida URL+token tentando lastEntries(n=1). Retorna mensagem específica
