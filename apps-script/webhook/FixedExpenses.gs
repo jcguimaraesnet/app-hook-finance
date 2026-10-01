@@ -5,7 +5,7 @@
 // Regras de validação da aba, em um lugar só: a leitura do webhook e os
 // endpoints de edição compartilham daqui. Retorna {ok, value} ou {ok, error}.
 // Spec: docs/specs/data/despesas-fixas-sheet.md
-const FIXED_RATEIOS = ["Julio", "Dani", "Metade", "Alzira"];
+const FIXED_RATEIOS = ["Julio", "Dani", RATEIO_COMPARTILHADO, RATEIO_COMPARTILHADO_LEGADO, "Alzira"];
 
 // A..H. Col H (Parcelas restantes) entrou em 2026-09-20.
 const FIXED_COLS = 8;
@@ -37,7 +37,7 @@ function validateFixedExpense_(f) {
   const categoria = String(f.categoria === undefined ? "" : f.categoria).trim();
   if (!categoria) return { ok: false, error: "categoria vazia" };
 
-  const rateio = String(f.rateio === undefined ? "" : f.rateio).trim();
+  const rateio = normalizeRateio_(f.rateio);
   if (FIXED_RATEIOS.indexOf(rateio) < 0) {
     return { ok: false, error: `rateio inválido (${f.rateio})` };
   }

@@ -91,3 +91,48 @@ function migrateOrigem(token) {
     return { ok: false, error: String((err && err.message) || err) };
   }
 }
+
+// Troca "Metade" por "Compartilhado" na col G de Despesas e na col F de
+// despesas-fixas. Escreve a célula direto, sem passar pela validação dos
+// endpoints. Idempotente.
+// Spec: docs/specs/data/despesas-sheet.md (col G)
+function migrateRateio(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    return {
+      ok: true,
+      despesas: migrateRateioColumn_(ss.getSheetByName(SHEET_NAME), 7, SHEET_NAME),
+      fixas: migrateRateioColumn_(ss.getSheetByName(FIXED_SHEET_NAME), 6, FIXED_SHEET_NAME),
+    };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+}
+
+function migrateRateioColumn_(sheet, col, label) {
+  if (!sheet) throw new Error(`aba "${label}" não existe`);
+  const last = sheet.getLastRow();
+  const out = { changed: 0, kept: 0, blank: 0 };
+  if (last < 2) return out;
+
+  const range = sheet.getRange(2, col, last - 1, 1);
+  const values = range.getValues();
+  const novos = values.map((r) => {
+    const raw = String(r[0] === null || r[0] === undefined ? "" : r[0]).trim();
+    if (!raw) {
+      out.blank++;
+      return [r[0]];
+    }
+    if (raw !== RATEIO_COMPARTILHADO_LEGADO) {
+      out.kept++;
+      return [raw];
+    }
+    out.changed++;
+    return [RATEIO_COMPARTILHADO];
+  });
+
+  if (out.changed > 0) range.setValues(novos);
+  return out;
+}

@@ -43,6 +43,8 @@ function doPost(e) {
       return jsonResponse_(ensureHeader(body.token));
     case "migrateOrigem":
       return jsonResponse_(migrateOrigem(body.token));
+    case "migrateRateio":
+      return jsonResponse_(migrateRateio(body.token));
     case "addFixedExpense":
       return jsonResponse_(addFixedExpense(body.token, body.fields));
     case "updateFixedExpense":
@@ -333,7 +335,17 @@ function normalizeOrigem_(raw) {
   if (LEGACY_ORIGEM_DEBITO.indexOf(v) >= 0) return ORIGEM_DEBITO;
   return v; // desconhecido: segue para a validação, que rejeita
 }
-const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
+// "Metade" virou "Compartilhado" em 2026-10-01. Os dois são aceitos no write
+// durante a transição; a planilha foi migrada por migrateRateio.
+// Spec: docs/specs/data/despesas-sheet.md
+const RATEIO_COMPARTILHADO = "Compartilhado";
+const RATEIO_COMPARTILHADO_LEGADO = "Metade";
+const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", RATEIO_COMPARTILHADO, RATEIO_COMPARTILHADO_LEGADO, "Alzira"];
+
+function normalizeRateio_(raw) {
+  const v = String(raw === undefined || raw === null ? "" : raw).trim();
+  return v === RATEIO_COMPARTILHADO_LEGADO ? RATEIO_COMPARTILHADO : v;
+}
 const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
 const BR_DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/;
 
@@ -377,7 +389,7 @@ function addEntry(token, fields) {
   if (!origem) return { ok: false, error: "missing_origem" };
   if (addEntryOrigens_().indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
 
-  const rateio = String(fields.rateio || "").trim();
+  const rateio = normalizeRateio_(fields.rateio);
   if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
 
   const banco = String(fields.banco || "").trim();
@@ -463,7 +475,7 @@ function updateEntry(token, row, fields) {
   // rateio, parcela e valor sem checar: rateio aceitava string livre (foi assim
   // que "Júlio" acentuado entrou na col G e ficou invisível para splitForPerson),
   // parcela aceitava qualquer texto, e valor não-numérico virava 0 silenciosamente.
-  const rateio = String(fields.rateio || "").trim();
+  const rateio = normalizeRateio_(fields.rateio);
   if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
 
   const parcela = String(fields.parcela || "").trim();
