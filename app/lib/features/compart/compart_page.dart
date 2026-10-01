@@ -9,6 +9,7 @@ import '../../core/origem.dart';
 import '../../core/rules/categoria_rows.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
+import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
 import '../../widgets/bloom/bloom_card.dart';
@@ -43,10 +44,19 @@ class CompartPage extends ConsumerWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final grandTotal = categories.fold<double>(0, (s, c) => s + c.value);
+    // Filtro dos tiles de cima: null = sem seleção, e aí o compartilhado soma
+    // as duas origens. Spec: docs/specs/pages/compart.md
+    final filtro = ref.watch(compartOrigemFilterProvider);
     final compartFull = rows
-        .where((r) => r.origem == kOrigemCredito && r.rateio == 'Metade')
+        .where((r) =>
+            r.rateio == 'Metade' && (filtro == null || r.origem == filtro))
         .fold<double>(0, (s, r) => s + r.valor);
     final compartHalf = compartFull / 2;
+
+    void alternar(String origem) {
+      ref.read(compartOrigemFilterProvider.notifier).state =
+          filtro == origem ? null : origem;
+    }
     // Pós-2026-10-01 os tiles de cima são TOTAL CRÉDITO / TOTAL DÉBITO /
     // COMPARTILHADO / COMPARTILHADO / 2. O parcelado saiu desta tela (segue na
     // Início). Os dois de compartilhado continuam contando só Crédito+Metade:
@@ -92,6 +102,8 @@ class CompartPage extends ConsumerWidget {
                         child: _Tile(
                           label: 'TOTAL CRÉDITO',
                           value: grandTotal,
+                          selected: filtro == kOrigemCredito,
+                          onTap: () => alternar(kOrigemCredito),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -99,6 +111,8 @@ class CompartPage extends ConsumerWidget {
                         child: _Tile(
                           label: 'TOTAL DÉBITO',
                           value: totalDebito,
+                          selected: filtro == kOrigemDebito,
+                          onTap: () => alternar(kOrigemDebito),
                         ),
                       ),
                     ],
@@ -108,7 +122,9 @@ class CompartPage extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: _Tile(
-                          label: 'COMPARTILHADO',
+                          label: filtro == null
+                              ? 'COMPARTILHADO'
+                              : 'COMPARTILHADO ${filtro.toUpperCase()}',
                           value: compartFull,
                           highlighted: true,
                         ),
@@ -210,10 +226,15 @@ class _Tile extends StatelessWidget {
   final String label;
   final double value;
   final bool highlighted;
+  final bool selected;
+  final VoidCallback? onTap;
+
   const _Tile({
     required this.label,
     required this.value,
     this.highlighted = false,
+    this.selected = false,
+    this.onTap,
   });
 
   @override
@@ -226,13 +247,25 @@ class _Tile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: BloomTypography.kicker(
-            color: highlighted ? BloomColors.violet : null,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: BloomTypography.kicker(
+                  color:
+                      highlighted || selected ? BloomColors.violet : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (selected) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.check_circle,
+                  size: 13, color: BloomColors.violet),
+            ],
+          ],
         ),
         const SizedBox(height: 2),
         FittedBox(
@@ -271,10 +304,22 @@ class _Tile extends StatelessWidget {
         child: body,
       );
     }
-    return BloomCard(
-      padding: padding,
-      borderRadius: radius,
-      child: body,
+    final card = selected
+        ? Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: BloomColors.violet.withValues(alpha: 0.10),
+              border: Border.all(color: BloomColors.violet, width: 1.4),
+              borderRadius: radius,
+            ),
+            child: body,
+          )
+        : BloomCard(padding: padding, borderRadius: radius, child: body);
+
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onTap, borderRadius: radius, child: card),
     );
   }
 }

@@ -27,8 +27,19 @@ A despesa de cartão é categorizada (Mercado, Restaurante, Pessoal, etc.). Para
 2. **Grid 2×2 de tiles** (pós-2026-10-01):
    - `TOTAL CRÉDITO` — `Σ valor` onde `origem == "Crédito"`. Rotulado `TOTAL CARTÃO` até 2026-10-01; mesmo número.
    - `TOTAL DÉBITO` — `Σ valor` onde `origem == "Débito"`. Entrou no lugar do tile `PARCELADO`, que saiu desta tela (segue na [Início](inicio.md)).
-   - `COMPARTILHADO` — `Σ valor` das linhas `Crédito` + `Metade`. **Não inclui Débito**: a tabela abaixo é de Cartão e são esses números que ela detalha. Tile destacado.
+   - `COMPARTILHADO` — `Σ valor` das linhas `Metade`, **recortado pelo filtro de origem** (ver abaixo). Sem filtro, soma as duas origens. Tile destacado.
    - `COMPARTILHADO / 2` — o anterior dividido por dois. Tile destacado.
+
+### Filtro de origem (pós-2026-10-01)
+
+Os dois tiles de cima (`TOTAL CRÉDITO` e `TOTAL DÉBITO`) são **selecionáveis**. Estado em `compartOrigemFilterProvider` (sessão), `null` = sem seleção.
+
+1. Tocar num tile marca; tocar nele de novo desmarca; marcar um desmarca o outro.
+2. Os **dois tiles de baixo** passam a contar só a origem marcada, e o rótulo vira `COMPARTILHADO CRÉDITO` / `COMPARTILHADO DÉBITO`. Sem seleção, somam as duas origens.
+3. **Chegando pela [Início](inicio.md)** (coluna do Comparativo), o tile correspondente já vem marcado — é o que faz o número da coluna fechar com o `COMPARTILHADO / 2` desta tela.
+4. **Chegando pela barra inferior**, o filtro é limpo: navegação sem contexto não marca nada.
+
+A **tabela de categorias não é afetada** pelo filtro — segue listando Crédito por categoria. Decisão pendente de confirmação do usuário.
 3. **Tabela de categorias** dentro de um `BloomCard`:
    - Cabeçalho 3-col: `Categoria | Valor | %`.
    - Cada linha:

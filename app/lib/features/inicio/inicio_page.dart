@@ -1084,10 +1084,14 @@ class _ComparativeCard extends ConsumerWidget {
         color: BloomColors.violet,
         value: cur.credito,
         delta: deltas.credito,
-        // Aba Categoria: o "Total compartilhado" de lá é Σ valor/2 das linhas
-        // Crédito+Metade — a mesma conta desta fatia, então os dois fecham.
-        onTap: () =>
-            ref.read(activeTabProvider.notifier).state = BloomTab.compart,
+        // Aba Categoria com o tile de Crédito já marcado: o COMPARTILHADO / 2
+        // de lá passa a ser Σ valor/2 das linhas Crédito+Metade — a mesma conta
+        // desta fatia, então os dois fecham.
+        onTap: () {
+          ref.read(compartOrigemFilterProvider.notifier).state =
+              kOrigemCredito;
+          ref.read(activeTabProvider.notifier).state = BloomTab.compart;
+        },
       ),
       _Col(
         label: 'Débito',

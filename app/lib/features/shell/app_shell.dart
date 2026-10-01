@@ -69,7 +69,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     return BloomScreen(
       bottomNav: BloomBottomNav(
         active: tab,
-        onChange: (t) => ref.read(activeTabProvider.notifier).state = t,
+        onChange: (t) {
+          // Entrar na Categoria pela barra inferior é navegação sem contexto:
+          // nenhum tile de origem vem marcado. Quem marca é a Início.
+          if (t == BloomTab.compart) {
+            ref.read(compartOrigemFilterProvider.notifier).state = null;
+          }
+          ref.read(activeTabProvider.notifier).state = t;
+        },
       ),
       child: IndexedStack(index: index, children: _pages),
     );
