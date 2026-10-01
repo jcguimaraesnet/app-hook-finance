@@ -5,7 +5,7 @@ last_updated: 2026-10-01
 
 # RecentEntryRow — linha de lançamento no app
 
-Widget compartilhado usado em todas as listas de lançamentos do Flutter app: [Início](../pages/inicio.md) (últimos 3), [Lançamento](../pages/lancamento.md) (até 100) e [Detalhe](../pages/detalhe.md) (pessoais do mês).
+Widget compartilhado usado em todas as listas de lançamentos do Flutter app: [Início](../pages/inicio.md) (últimos 4), [Lançamento](../pages/lancamento.md) (até 100) e [Detalhe](../pages/detalhe.md) (pessoais do mês).
 
 ## Duas variantes
 

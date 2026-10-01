@@ -18,7 +18,7 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 ### Inputs
 
 - `monthData(currentMonth)` — fatura atual.
-- `lastEntries(3)` — para a seção "Últimos lançamentos".
+- `lastEntries(4)` — para a seção "Últimos lançamentos".
 - **Não** usa mais `monthData(previousMonth)`: o comparativo saiu da tela no redesenho de 2026-10-01.
 
 ### Layout (top-to-bottom)
@@ -37,12 +37,12 @@ Redesenhado em 2026-10-01 a partir do canvas de design "Hook Finance — Tela in
    1. **Seletor de pessoa em trilho único** (segmented control): trilho `track`, raio 22, duas abas de 44px; a marcada é branca com elevação (`surfaceTintColor: transparent`, senão o M3 a deixa mais escura que a não-marcada), avatar quadrado de 24px na cor da pessoa. **Sem valores** — o total agora é um só, logo abaixo, e é o da pessoa marcada. Substituiu dois tiles que repetiam o total de cada um.
    2. **"Gastos de &lt;pessoa&gt; no mês"** + valor display 32px (prefixo `R$` em 17px) à esquerda; **donut de 92px** à direita, sem texto no centro (o nome já está no título).
    3. **Legenda** de duas linhas abaixo do valor: bullet + rótulo + percentual. Tocar numa linha ou num arco destaca a fatia e apaga a outra.
-   4. **Atalho "Crédito (pessoal)"** — linha `soft` com chip de ícone, valor e chevron → `/detalhe?person=<atual>`.
+   4. ~~Atalho "Crédito (pessoal)"~~ — **removido**. O canvas o desenhava logo abaixo do donut, repetindo o valor do quadrante `Crédito pessoal` a poucos pixels de distância; o quadrante leva ao mesmo `/detalhe`.
 3. **Card de totais**:
-   1. Linha larga **"Total cartão de crédito"** — `origemTotals(rows).credito`, ou seja o crédito do **casal**, não o da pessoa. Ver [origem-totals.md](../rules/origem-totals.md).
-   2. **2×2 de quadrantes** da pessoa marcada: `Crédito compartilhado` · `Débito compartilhado` · `Crédito pessoal` · `Débito pessoal`. Vêm de `PersonBuckets` e **somam exatamente o total do card acima** — teste trava a partição. Compartilhado em tint lilás, pessoal em tint menta.
-   3. Os quatro são clicáveis (os dois de cima → aba [Categoria](compart.md) com a origem marcada; os dois de baixo → `/detalhe`). O design os desenha estáticos; manter o toque preserva a navegação que existia no card Comparação, sem mudar nada visualmente.
-4. **Seção "Últimos lançamentos"**: título 17px + link **"Ver todos →"**; card raio 24 com **3** itens (`lastEntries(3)`) na variante larga de [RecentEntryRow](../cards/recent-entry-row.md) — avatar sólido de 40px, descrição 14,5px e a data **dentro** da meta (`Casa · 29/09`). **Tap edita** no mesmo `EditDialog` das outras listas; ao salvar invalida `monthData`, `previousMonthData`, `historicalSummary` e `lastEntries`.
+   1. **2×2 de quadrantes** da pessoa marcada: `Crédito compartilhado` · `Débito compartilhado` · `Crédito pessoal` · `Débito pessoal`. Vêm de `PersonBuckets` e **somam exatamente o total do card de pessoa** — teste trava a partição. Compartilhado em tint lilás, pessoal em tint menta.
+   2. Linha larga **"Total cartão de crédito"**, **abaixo** dos quatro (o canvas a punha acima) — `origemTotals(rows).credito`, ou seja o crédito do **casal**, não o da pessoa. Ver [origem-totals.md](../rules/origem-totals.md).
+   3. Os quatro quadrantes são clicáveis (os dois de cima → aba [Categoria](compart.md) com a origem marcada; os dois de baixo → `/detalhe`). O design os desenha estáticos; manter o toque preserva a navegação que existia no card Comparação, sem mudar nada visualmente.
+4. **Seção "Últimos lançamentos"**: título 17px + link **"Ver todos →"**; card raio 24 com **4** itens (`lastEntries(4)`) na variante larga de [RecentEntryRow](../cards/recent-entry-row.md) — avatar sólido de 40px, descrição 14,5px e a data **dentro** da meta (`Casa · 29/09`). **Tap edita** no mesmo `EditDialog` das outras listas; ao salvar invalida `monthData`, `previousMonthData`, `historicalSummary` e `lastEntries`.
 5. **Bottom-nav** de 5 abas — vem do shell, não mudou.
 
 ### O que saiu no redesenho

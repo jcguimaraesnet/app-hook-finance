@@ -41,7 +41,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final person = ref.watch(selectedPersonProvider);
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
-    final lastAsync = ref.watch(lastEntriesProvider(3));
+    final lastAsync = ref.watch(lastEntriesProvider(4));
 
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final cur = bucketsForPerson(rows, person);
@@ -60,7 +60,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       try {
         await Future.wait<void>([
           ref.read(monthDataProvider(currentMonth).future),
-          ref.read(lastEntriesProvider(3).future),
+          ref.read(lastEntriesProvider(4).future),
         ]);
       } catch (e) {
         error = '$e';
@@ -607,12 +607,6 @@ class _HeroCard extends ConsumerWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 14),
-            _AtalhoPessoal(
-              valor: buckets.pessoalCredito,
-              onTap: () => context.push(
-                  '/detalhe?person=${person.name.toLowerCase()}'),
-            ),
           ],
         ),
       ),
@@ -783,63 +777,6 @@ class _LegendLine extends StatelessWidget {
   }
 }
 
-/// Atalho para as despesas pessoais da pessoa, dentro do card.
-class _AtalhoPessoal extends StatelessWidget {
-  final double valor;
-  final VoidCallback onTap;
-
-  const _AtalhoPessoal({required this.valor, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: BloomColors.soft,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              const _IconChip(
-                icon: Icons.credit_card,
-                bg: BloomColors.violetTint,
-                fg: BloomColors.violetDeep,
-                size: 40,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Crédito (pessoal)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: BloomTypography.geist(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'R\$ ${formatMoney(valor)}',
-                style: BloomTypography.mono(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: BloomColors.inkSoft,
-                ),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.chevron_right,
-                  size: 18, color: BloomColors.muted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _IconChip extends StatelessWidget {
   final IconData icon;
   final Color bg;
@@ -890,41 +827,6 @@ class _TotaisSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BloomCard(
-            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-            borderRadius: BorderRadius.circular(20),
-            child: Row(
-              children: [
-                const _IconChip(
-                  icon: Icons.credit_card,
-                  bg: BloomColors.track,
-                  fg: BloomColors.ink,
-                  size: 40,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Total cartão de crédito',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: BloomTypography.geist(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'R\$ ${formatMoney(totalCredito)}',
-                  style: BloomTypography.mono(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -979,6 +881,41 @@ class _TotaisSection extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          BloomCard(
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+            borderRadius: BorderRadius.circular(20),
+            child: Row(
+              children: [
+                const _IconChip(
+                  icon: Icons.credit_card,
+                  bg: BloomColors.track,
+                  fg: BloomColors.ink,
+                  size: 40,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Total cartão de crédito',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: BloomTypography.geist(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'R\$ ${formatMoney(totalCredito)}',
+                  style: BloomTypography.mono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1099,7 +1036,7 @@ class _RecentEntriesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = asyncLast.value?.entries ?? const <Entry>[];
-    final shown = entries.take(3).toList();
+    final shown = entries.take(4).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
