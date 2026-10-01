@@ -24,9 +24,11 @@ A despesa de cartão é categorizada (Mercado, Restaurante, Pessoal, etc.). Para
 ### Layout
 
 1. **Header** `ScreenHeader` com kicker "Cartão compartilhado" + título "Por categoria" + `MonthSelector`.
-2. **2 tiles 2-col topo**:
-   - `Total cartão` (Σ valores onde `origem == "Cartão"`).
-   - `Total compartilhado` (Σ `splitForPerson` aplicado para `Metade`/`""` que vão para acerto). Tile com fundo gradient `violet15→sky15`.
+2. **Grid 2×2 de tiles** (pós-2026-10-01):
+   - `TOTAL CRÉDITO` — `Σ valor` onde `origem == "Crédito"`. Rotulado `TOTAL CARTÃO` até 2026-10-01; mesmo número.
+   - `TOTAL DÉBITO` — `Σ valor` onde `origem == "Débito"`. Entrou no lugar do tile `PARCELADO`, que saiu desta tela (segue na [Início](inicio.md)).
+   - `COMPARTILHADO` — `Σ valor` das linhas `Crédito` + `Metade`. **Não inclui Débito**: a tabela abaixo é de Cartão e são esses números que ela detalha. Tile destacado.
+   - `COMPARTILHADO / 2` — o anterior dividido por dois. Tile destacado.
 3. **Tabela de categorias** dentro de um `BloomCard`:
    - Cabeçalho 3-col: `Categoria | Valor | %`.
    - Cada linha:

@@ -47,14 +47,13 @@ class CompartPage extends ConsumerWidget {
         .where((r) => r.origem == kOrigemCredito && r.rateio == 'Metade')
         .fold<double>(0, (s, r) => s + r.valor);
     final compartHalf = compartFull / 2;
-    final totalParcelado = rows.where((r) {
-      final p = r.parcela;
-      if (p.isEmpty) return false;
-      final parts = p.split('/');
-      if (parts.length != 2) return false;
-      final t = int.tryParse(parts[1]) ?? 1;
-      return t > 1;
-    }).fold<double>(0, (s, r) => s + r.valor);
+    // Pós-2026-10-01 os tiles de cima são TOTAL CRÉDITO / TOTAL DÉBITO /
+    // COMPARTILHADO / COMPARTILHADO / 2. O parcelado saiu desta tela (segue na
+    // Início). Os dois de compartilhado continuam contando só Crédito+Metade:
+    // a tabela abaixo é de Cartão, e são esses números que ela detalha.
+    final totalDebito = rows
+        .where((r) => r.origem == kOrigemDebito)
+        .fold<double>(0, (s, r) => s + r.valor);
     final maxValue = categories.isEmpty
         ? 0.0
         : categories.map((c) => c.value).reduce((a, b) => a > b ? a : b);
@@ -91,15 +90,15 @@ class CompartPage extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: _Tile(
-                          label: 'TOTAL CARTÃO',
+                          label: 'TOTAL CRÉDITO',
                           value: grandTotal,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _Tile(
-                          label: 'PARCELADO',
-                          value: totalParcelado,
+                          label: 'TOTAL DÉBITO',
+                          value: totalDebito,
                         ),
                       ),
                     ],
