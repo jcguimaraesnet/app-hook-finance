@@ -290,6 +290,12 @@ class NewInvoiceResponse {
   final int? fixedCount;
   final int? parcelaCount;
 
+  /// Quantas despesas fixas finitas tiveram o contador decrementado, e quantas
+  /// chegaram a zero e **saíram do template**. A remoção apaga configuração do
+  /// usuário: tem que aparecer na tela, não só na resposta.
+  final int? fixedDecremented;
+  final int? fixedRemoved;
+
   const NewInvoiceResponse({
     required this.ok,
     this.error,
@@ -297,6 +303,8 @@ class NewInvoiceResponse {
     this.invoiceClosing,
     this.fixedCount,
     this.parcelaCount,
+    this.fixedDecremented,
+    this.fixedRemoved,
   });
 
   factory NewInvoiceResponse.fromJson(Map<String, dynamic> j) => NewInvoiceResponse(
@@ -306,6 +314,8 @@ class NewInvoiceResponse {
         invoiceClosing: j['invoiceClosing'] as String?,
         fixedCount: (j['fixedCount'] as num?)?.toInt(),
         parcelaCount: (j['parcelaCount'] as num?)?.toInt(),
+        fixedDecremented: (j['fixedDecremented'] as num?)?.toInt(),
+        fixedRemoved: (j['fixedRemoved'] as num?)?.toInt(),
       );
 }
 

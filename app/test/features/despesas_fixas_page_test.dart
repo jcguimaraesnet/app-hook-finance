@@ -165,4 +165,31 @@ void main() {
       );
     });
   });
+
+  group('descricaoTemParcelaManual', () {
+    test('pega os formatos que o usuário usava à mão', () {
+      for (final d in [
+        'Retiro Viva Leblon 5x',
+        'Festa aniversário Fernanda 6x',
+        'Festa aniversário Fernanda 4/6x',
+        'Algo 10 X',
+      ]) {
+        expect(descricaoTemParcelaManual(d), isTrue, reason: d);
+      }
+    });
+
+    test('não acusa descrição legítima', () {
+      // Casos reais da aba: "1/2" aqui quer dizer metade, não parcela, e essas
+      // linhas são recorrentes (sem contador) — o aviso nem é avaliado nelas.
+      for (final d in [
+        'Condomínio 1/2',
+        'Mensalidade creche 1/2',
+        'Diarista',
+        'Plano de Saúde (Julio)',
+        'Energia (débito automático)',
+      ]) {
+        expect(descricaoTemParcelaManual(d), isFalse, reason: d);
+      }
+    });
+  });
 }

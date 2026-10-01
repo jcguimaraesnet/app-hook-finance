@@ -10,6 +10,15 @@ import '../../core/types.dart';
 // vira lançamento de verdade na Nova fatura e ficaria sem dono.
 const List<String> _rateioOptions = ['Julio', 'Dani', 'Metade', 'Alzira'];
 
+/// Descrição que ainda carrega a parcela escrita à mão ("Retiro 5x",
+/// "Festa 3/6x"). Com o contador ativo esse texto não é atualizado por ninguém
+/// e vai parar na planilha igual todo mês — foi o que aconteceu com a fatura
+/// 06/11/2026. Só avisa; não bloqueia nem reescreve texto do usuário.
+final RegExp _marcaParcelaManual = RegExp(r'\d+\s*(/\s*\d+)?\s*x$', caseSensitive: false);
+
+bool descricaoTemParcelaManual(String descricao) =>
+    _marcaParcelaManual.hasMatch(descricao.trim());
+
 /// Valor a enviar no save. Campo intocado devolve o valor original em vez do
 /// texto reparseado: a aba tem dízimas (parcela 6x = 379.1666666666667) e o
 /// campo mostra 2 casas, então abrir e salvar sem mexer no valor arredondaria
@@ -269,6 +278,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                       controller: _descricaoCtrl,
                       decoration: const InputDecoration(labelText: 'Descrição'),
                       autocorrect: false,
+                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 10),
                     TextField(
@@ -304,6 +314,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                     TextField(
                       controller: _parcelasCtrl,
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
                         labelText: 'Parcelas restantes',
                         helperText:
@@ -311,6 +322,30 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                         helperMaxLines: 2,
                       ),
                     ),
+                    if (_parcelasCtrl.text.trim().isNotEmpty &&
+                        descricaoTemParcelaManual(_descricaoCtrl.text)) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 15, color: theme.colorScheme.error),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'A descrição ainda tem a parcela escrita à mão. '
+                              'Quem controla agora é o contador acima — esse texto '
+                              'vai para a planilha igual em toda fatura.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.35,
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 4),
                     SwitchListTile(
                       value: _acerto,

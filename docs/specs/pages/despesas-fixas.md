@@ -61,6 +61,7 @@ Tap abre o modal; o botão **Nova despesa fixa** abre o mesmo modal vazio.
 
 Origem fica **antes** da descrição, não no meio dos campos — é a posição que ela ocupa no outro modal. Há teste comparando a posição vertical dos rótulos nos dois.
 
+- **Aviso de parcela na descrição:** com o contador preenchido, se a descrição terminar em marcador manual (`5x`, `4/6x`), o modal mostra um alerta — ninguém atualiza esse texto e ele vai para a planilha igual todo mês. Só avisa; não bloqueia nem reescreve. `Condomínio 1/2` não dispara (o `1/2` ali é metade, não parcela, e a linha é recorrente).
 - **Rateio não aceita vazio** aqui, diferente da col G da aba Despesas: a linha vira lançamento de verdade na fatura e ficaria sem dono. O dropdown só oferece `Julio`, `Dani`, `Metade`, `Alzira`.
 - Defaults do modal de criação: Categoria `Contas`, Origem `Débito`, Rateio `Metade` — o perfil das 20 linhas existentes.
 - Validação local dá a mensagem imediata; a do servidor é a autoritativa. Quando o backend recusa, a tela mostra o campo `detail` (ex.: `dia inválido (32)`) e não o código `invalid_fields`.

@@ -174,6 +174,14 @@ class _InicioPageState extends ConsumerState<InicioPage> {
           ref.invalidate(lastEntriesProvider);
           successMsg = 'Fatura ${resp.invoiceClosing ?? closing} criada — '
               '${resp.fixedCount ?? 0} fixas + ${resp.parcelaCount ?? 0} parcelas';
+          // Linha removida do template é configuração apagada: silenciar seria
+          // o usuário descobrir pela ausência, na fatura seguinte.
+          final encerradas = resp.fixedRemoved ?? 0;
+          if (encerradas > 0) {
+            successMsg = '$successMsg · $encerradas '
+                '${encerradas == 1 ? "fixa encerrada" : "fixas encerradas"} '
+                '(última parcela)';
+          }
         } else {
           switch (resp.error) {
             case 'invoice_already_exists':

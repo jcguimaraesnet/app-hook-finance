@@ -33,7 +33,9 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 8. **Apply:** `applyInvoiceBlock_(sheet, block)` faz `insertRowsBefore(2, N)`, força `setNumberFormat("@")` na col I do bloco inteiro, escreve valores, pinta linha azul (`#cfe2f3`) na penúltima.
 8b. **Decremento das despesas fixas finitas:** `decrementFixedParcelas_` baixa em 1 a col H da aba `despesas-fixas` e remove as que zeraram. Roda **depois** do apply — ver [fixed-expenses.md](fixed-expenses.md). Reflete em `fixedDecremented` / `fixedRemoved` na resposta.
 9. Lock release no `finally`.
-10. Retorna `{ ok: true, invoiceClosing, fixedCount, parcelaCount }`.
+10. Retorna `{ ok: true, invoiceClosing, fixedCount, parcelaCount, fixedDecremented, fixedRemoved }`.
+
+> `fixedRemoved` > 0 significa que a rotina **apagou linhas do template do usuário**. A SnackBar do app precisa dizer isso (`· N fixas encerradas`): até 2026-10-01 os campos vinham na resposta e ninguém os lia, então na fatura 06/11/2026 duas despesas fixas sumiram em silêncio.
 
 ### Layout do bloco inserido
 
