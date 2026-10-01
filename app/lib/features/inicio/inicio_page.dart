@@ -42,7 +42,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
     final prevAsync = ref.watch(previousMonthDataProvider);
-    final lastAsync = ref.watch(lastEntriesProvider(3));
+    final lastAsync = ref.watch(lastEntriesProvider(4));
 
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final prevRows =
@@ -68,7 +68,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       try {
         await Future.wait<void>([
           ref.read(monthDataProvider(currentMonth).future),
-          ref.read(lastEntriesProvider(3).future),
+          ref.read(lastEntriesProvider(4).future),
         ]);
       } catch (e) {
         error = '$e';
@@ -280,14 +280,6 @@ class _InicioPageState extends ConsumerState<InicioPage> {
               selectedIdx: _selectedSegment,
               onSelect: (i) => setState(() => _selectedSegment = i),
               loading: loading && rows.isEmpty,
-            ),
-            const SizedBox(height: 14),
-            _QuickLinks(
-              onPersonalTap: () => context
-                  .push('/detalhe?person=${person.name.toLowerCase()}'),
-              onCompartTap: () => ref
-                  .read(activeTabProvider.notifier)
-                  .state = BloomTab.compart,
             ),
             const SizedBox(height: 14),
             _ComparativeCard(
@@ -748,95 +740,6 @@ class _PersonSelector extends StatelessWidget {
   }
 }
 
-class _QuickLinks extends StatelessWidget {
-  final VoidCallback onPersonalTap;
-  final VoidCallback onCompartTap;
-  const _QuickLinks({
-    required this.onPersonalTap,
-    required this.onCompartTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Row(
-        children: [
-          Expanded(
-            child: _LinkPill(
-              icon: Icons.person_outline,
-              label: 'Ver pessoal',
-              onTap: onPersonalTap,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _LinkPill(
-              icon: Icons.credit_card_outlined,
-              label: 'Ver compartilhado',
-              onTap: onCompartTap,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LinkPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _LinkPill({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: BloomColors.card,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: BloomColors.border, width: 1),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 14, color: BloomColors.violet),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: BloomTypography.geist(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: BloomColors.violet,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward,
-                size: 12,
-                color: BloomColors.violet,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PersonTile extends StatelessWidget {
   final Person person;
   final double total;
@@ -1014,36 +917,6 @@ class _ComparativeCard extends ConsumerWidget {
                   style: BloomTypography.display(fontSize: 14),
                 ),
               ),
-              if (hasPrev)
-                InkWell(
-                  onTap: () => ref
-                      .read(activeTabProvider.notifier)
-                      .state = BloomTab.historico,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Ver histórico',
-                          style: BloomTypography.geist(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: BloomColors.violet,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(
-                          Icons.arrow_forward,
-                          size: 12,
-                          color: BloomColors.violet,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1231,7 +1104,7 @@ class _RecentEntriesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = asyncLast.value?.entries ?? const <Entry>[];
-    final shown = entries.take(3).toList();
+    final shown = entries.take(4).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
