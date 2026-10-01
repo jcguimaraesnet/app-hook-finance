@@ -46,7 +46,7 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 
 ### Donut interativo
 
-- 3 arcos credito/debito/pessoal com cores `violet`/`sky`/`mint` (escala fixa, não Person-derived).
+- 3 arcos credito/debito/pessoal com cores `violet`/`sky`/`mint` (escala fixa, não Person-derived). As cores vão do `_HeroCard` para o `BloomDonut` pelo parâmetro `colors` — **uma lista só** para arco e legenda. Até 2026-10-01 o donut tinha a lista fixa por dentro, na ordem antiga, e reordenar as fatias pintou Pessoal de azul e Débito de verde.
 - Tap em arco → segmento expande (`stroke + 4`), demais ficam 35% opacos. Centro mostra label do bucket + valor + `pct%`.
 - Tap fora dos arcos / segundo tap → desselecciona.
 - Cálculo dos buckets: ver [bucket-key.md](../rules/bucket-key.md) e [split-for-person.md](../rules/split-for-person.md).

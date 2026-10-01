@@ -18,6 +18,7 @@ class BloomDonut extends StatelessWidget {
   final List<DonutBucket> buckets;
   final double total;
   final String person;
+  final List<Color>? colors;
   final int? selectedIdx;
   final ValueChanged<int?> onSelect;
   final double size;
@@ -28,16 +29,21 @@ class BloomDonut extends StatelessWidget {
     required this.buckets,
     required this.total,
     required this.person,
+    this.colors,
     required this.selectedIdx,
     required this.onSelect,
     this.size = 170,
     this.stroke = 18,
   });
 
-  static const _colors = [
-    BloomColors.violet, // compart
-    BloomColors.mint,   // pessoal
-    BloomColors.sky,    // contas
+  /// Cores dos arcos, na ordem de `buckets`. Vem de quem monta os buckets — a
+  /// legenda ao lado usa a mesma lista. Quando esta lista era fixa aqui dentro,
+  /// reordenar as fatias pintou Pessoal de azul e Débito de verde, com a
+  /// legenda mostrando o contrário.
+  static const _coresPadrao = [
+    BloomColors.violet,
+    BloomColors.mint,
+    BloomColors.sky,
   ];
 
   @override
@@ -58,7 +64,7 @@ class BloomDonut extends StatelessWidget {
               size: Size.square(size),
               painter: _DonutPainter(
                 buckets: buckets,
-                colors: _colors,
+                colors: colors ?? _coresPadrao,
                 stroke: stroke,
                 selectedIdx: selectedIdx,
               ),

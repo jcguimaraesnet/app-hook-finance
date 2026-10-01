@@ -621,6 +621,7 @@ class _HeroCard extends StatelessWidget {
                     buckets: donutBuckets,
                     total: buckets.total,
                     person: person.displayName,
+                    colors: colors,
                     selectedIdx: selectedIdx,
                     onSelect: onSelect,
                     size: 140,
