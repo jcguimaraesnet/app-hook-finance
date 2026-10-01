@@ -87,7 +87,6 @@ class CompartPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const ScreenHeader(
-              kicker: 'Cartão compartilhado',
               title: 'Por categoria',
               trailing: MonthSelector(),
             ),
@@ -393,21 +392,30 @@ class _CategoryLine extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        row.label,
-                        style: BloomTypography.geist(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    // Um único slot flexível para rótulo + chevron. Com
+                    // Flexible e Spacer separados, os dois dividiam o espaço
+                    // livre (flex 1 cada) e a coluna de valor mudava de posição
+                    // conforme o tamanho do rótulo — tabela desalinhada.
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              row.label,
+                              style: BloomTypography.geist(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (onTap != null)
+                            const Icon(Icons.chevron_right,
+                                size: 14, color: BloomColors.violet),
+                        ],
                       ),
                     ),
-                    if (onTap != null)
-                      const Icon(Icons.chevron_right,
-                          size: 14, color: BloomColors.violet),
-                    const Spacer(),
                     SizedBox(
                       width: 70,
                       child: Text(

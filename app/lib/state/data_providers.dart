@@ -13,10 +13,6 @@ final currentMonthProvider = StateProvider<String?>((_) => null);
 /// Lista de meses disponíveis (descendente). Recarregado a cada sessão.
 final allMonthsProvider = StateProvider<List<String>>((_) => const []);
 
-/// Toggle do Pix do Júlio em Acerto. Quando true, expande mostrando todas as
-/// Pix dele (não filtra por `acerto == 'Sim'`). Sessão.
-final acertoPixJulioProvider = StateProvider<bool>((_) => false);
-
 /// monthData(month) — equivale a queryKey ["monthData", month].
 final monthDataProvider =
     FutureProvider.family<MonthDataResponse, String?>((ref, month) async {

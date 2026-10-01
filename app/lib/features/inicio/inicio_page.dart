@@ -1114,22 +1114,28 @@ class _Col extends StatelessWidget {
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  label.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: BloomTypography.kicker(),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: BloomTypography.kicker(),
+                      ),
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 13,
+                        color: BloomColors.violet,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (onTap != null) ...[
-                const SizedBox(width: 2),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 13,
-                  color: BloomColors.violet,
-                ),
-              ],
             ],
           ),
           const SizedBox(height: 3),

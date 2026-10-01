@@ -23,7 +23,7 @@ A despesa de cartão é categorizada (Mercado, Restaurante, Pessoal, etc.). Para
 
 ### Layout
 
-1. **Header** `ScreenHeader` com kicker "Cartão compartilhado" + título "Por categoria" + `MonthSelector`.
+1. **Header** `ScreenHeader` com título "Por categoria" + `MonthSelector`. O kicker fixo "Cartão compartilhado" saiu em 2026-10-01 — a tela deixou de ser só de cartão quando ganhou o tile de débito.
 2. **Grid 2×2 de tiles** (pós-2026-10-01):
    - `TOTAL CRÉDITO` — `Σ valor` onde `origem == "Crédito"`. Rotulado `TOTAL CARTÃO` até 2026-10-01; mesmo número.
    - `TOTAL DÉBITO` — `Σ valor` onde `origem == "Débito"`. Entrou no lugar do tile `PARCELADO`, que saiu desta tela (segue na [Início](inicio.md)).
@@ -48,6 +48,7 @@ A **tabela de categorias não é afetada** pelo filtro — segue listando Crédi
      - Percentual sobre `total`.
      - Linha secundária abaixo: `Compart: R$ X` (mint se >0, dimmed senão).
      - Bar inline (atrás do conteúdo) com largura proporcional a `valor / max`.
+     - Rótulo e chevron ficam num **único slot flexível** (`Expanded` com `Flexible` dentro). `Flexible` e `Spacer` lado a lado dividiriam o espaço livre entre si (flex 1 cada) e as colunas de valor/% mudariam de posição conforme o tamanho do rótulo.
      - **Tap abre o detalhamento** da categoria em `/categoria?nome=<label>` (chevron lilás ao lado do rótulo) — ver [categoria.md](categoria.md). Pós-2026-09-20.
    - Última linha: `Total | R$ X | 100,00%` (border-top destacado).
 

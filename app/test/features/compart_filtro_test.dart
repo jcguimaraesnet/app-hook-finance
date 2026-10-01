@@ -102,4 +102,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(compartOrigemFilterProvider), kOrigemCredito);
   });
+
+  // Rótulos de tamanhos diferentes não podem deslocar as colunas da direita.
+  // Regressão: Flexible + Spacer dividiam o espaço livre (flex 1 cada) e cada
+  // linha alinhava num ponto diferente.
+  testWidgets('valores e percentuais alinham entre categorias', (tester) async {
+    tester.view.physicalSize = const Size(412, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final rows = [
+      _e(row: 2, categoria: 'Pessoal', valor: 1802.74),
+      _e(row: 3, categoria: 'Transporte e mobilidade', valor: 164.81),
+      _e(row: 4, categoria: 'Casa', valor: 1288.13),
+    ];
+
+    final container = ProviderContainer(overrides: [
+      monthDataProvider.overrideWith((ref, month) async =>
+          MonthDataResponse(ok: true, month: '06/11/2026', rows: rows)),
+    ]);
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(theme: buildAppTheme(), home: const CompartPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double bordaDireita(String texto) =>
+        tester.getRect(find.text(texto).first).right;
+
+    final valores = ['1.802,74', '164,81', '1.288,13'].map(bordaDireita).toList();
+    for (final v in valores) {
+      expect(v, closeTo(valores.first, 0.5),
+          reason: 'valores desalinhados: $valores');
+    }
+  });
 }

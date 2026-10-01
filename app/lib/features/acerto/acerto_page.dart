@@ -164,7 +164,7 @@ class _Hero extends StatelessWidget {
   }
 }
 
-class _PersonAcertoCard extends ConsumerWidget {
+class _PersonAcertoCard extends ConsumerStatefulWidget {
   final Person person;
   final List<ExpenseRow> rows;
   final VoidCallback onSwap;
@@ -176,10 +176,21 @@ class _PersonAcertoCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PersonAcertoCard> createState() => _PersonAcertoCardState();
+}
+
+class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
+  // Uma expansão por linha de débito, para as duas pessoas. Abertas por padrão,
+  // que é como a tela sempre mostrou os filhos.
+  bool _compartAberto = true;
+  bool _pessoalAberto = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final person = widget.person;
+    final rows = widget.rows;
+    final onSwap = widget.onSwap;
     final personColor = BloomColors.forPerson(person);
-    final isJulio = person == Person.julio;
-    final pixExpanded = ref.watch(acertoPixJulioProvider) && isJulio;
 
     final cartao = rows.where((r) => r.origem == kOrigemCredito);
     final cartaoCompart = cartao
@@ -189,17 +200,22 @@ class _PersonAcertoCard extends ConsumerWidget {
         .where((r) => r.rateio == person.name)
         .fold<double>(0, (s, r) => s + splitForPerson(r, person));
 
-    // Para Júlio com toggle expandido, mostra todas as Pix dele (sem filtro
-    // por `acerto == 'Sim'`). Mantém o comportamento legado do PWA.
-    final pixRows = rows
-        .where((r) =>
-            r.origem == kOrigemDebito &&
-            r.rateio == person.name &&
-            (pixExpanded || r.acerto == 'Sim'))
-        .toList();
-    final pixSubtotal =
-        pixRows.fold<double>(0, (s, r) => s + r.valor);
-    final total = cartaoCompart + cartaoPessoal + pixSubtotal;
+    // Débito dividido e débito da pessoa, em duas linhas — paralelo às duas de
+    // Crédito. Ambas contam só o que está marcado para acerto.
+    // Spec: docs/specs/pages/acerto.md
+    final debito = rows.where(
+        (r) => r.origem == kOrigemDebito && r.acerto == 'Sim');
+    final debitoCompartRows =
+        debito.where((r) => r.rateio == 'Metade').toList();
+    final debitoCompart = debitoCompartRows.fold<double>(
+        0, (s, r) => s + splitForPerson(r, person));
+    final debitoPessoalRows =
+        debito.where((r) => r.rateio == person.name).toList();
+    final debitoPessoal =
+        debitoPessoalRows.fold<double>(0, (s, r) => s + r.valor);
+
+    final total =
+        cartaoCompart + cartaoPessoal + debitoCompart + debitoPessoal;
 
     final diff = diffCalculation(rows, person).abs();
 
@@ -357,88 +373,28 @@ class _PersonAcertoCard extends ConsumerWidget {
             value: cartaoPessoal,
             total: total,
           ),
-          // Linha "Débito" — mesma identidade visual de Crédito (compart/pessoal),
-          // mostrando o subtotal de débito. Para Júlio, clicável (toggle expandir).
-          InkWell(
-            onTap: isJulio
-                ? () => ref
-                    .read(acertoPixJulioProvider.notifier)
-                    .state = !pixExpanded
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 9),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Text(
-                          'Débito',
-                          style: BloomTypography.geist(
-                            fontSize: 12.5,
-                            color: BloomColors.ink,
-                          ),
-                        ),
-                        if (isJulio) ...[
-                          const SizedBox(width: 2),
-                          Icon(
-                            pixExpanded
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                            size: 16,
-                            color: BloomColors.muted,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: 80,
-                    child: Text(
-                      formatMoney(pixSubtotal),
-                      textAlign: TextAlign.right,
-                      style: BloomTypography.mono(
-                        fontSize: 12,
-                        color: BloomColors.ink,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 50,
-                    child: Text(
-                      '${(total == 0 ? 0 : pixSubtotal / total * 100).toStringAsFixed(1).replaceAll('.', ',')}%',
-                      textAlign: TextAlign.right,
-                      style: BloomTypography.mono(
-                        fontSize: 10.5,
-                        color: BloomColors.muted,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _DebitoGrupo(
+            label: 'Débito (compartilhado)',
+            subtotal: debitoCompart,
+            total: total,
+            rows: debitoCompartRows,
+            person: person,
+            dividirPelaMetade: true,
+            aberto: _compartAberto,
+            onToggle: () => setState(() => _compartAberto = !_compartAberto),
+            vazio: 'Sem débito dividido no acerto.',
           ),
-          if (pixRows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(38, 6, 18, 12),
-              child: Text(
-                'Sem Pix de acerto.',
-                style: BloomTypography.geist(
-                  fontSize: 12,
-                  color: BloomColors.muted,
-                ),
-              ),
-            )
-          else
-            for (final r in pixRows)
-              _DataRow(
-                label: r.descricao.isEmpty ? '—' : r.descricao,
-                value: r.valor,
-                total: pixSubtotal,
-                small: true,
-                indent: 20,
-              ),
+          _DebitoGrupo(
+            label: 'Débito (pessoal)',
+            subtotal: debitoPessoal,
+            total: total,
+            rows: debitoPessoalRows,
+            person: person,
+            dividirPelaMetade: false,
+            aberto: _pessoalAberto,
+            onToggle: () => setState(() => _pessoalAberto = !_pessoalAberto),
+            vazio: 'Sem débito pessoal no acerto.',
+          ),
           const SizedBox(height: 6),
           // Total Pessoal
           Container(
@@ -495,6 +451,129 @@ class _PersonAcertoCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Linha de débito do acerto, com expandir/recolher e os lançamentos que a
+/// compõem. Duas por card: a dividida e a da pessoa.
+///
+/// Até 2026-10-01 havia uma linha só, e o toggle (exclusivo do Júlio) mudava a
+/// COMPOSIÇÃO — incluía lançamentos fora do acerto e o subtotal mudava junto.
+/// Agora expandir só mostra ou esconde; o subtotal é sempre o que entra no
+/// acerto. Spec: docs/specs/pages/acerto.md
+class _DebitoGrupo extends StatelessWidget {
+  final String label;
+  final double subtotal;
+  final double total;
+  final List<ExpenseRow> rows;
+  final Person person;
+
+  /// Na linha dividida, cada filho mostra a parte da pessoa — senão os filhos
+  /// não somariam o subtotal exibido no cabeçalho.
+  final bool dividirPelaMetade;
+
+  final bool aberto;
+  final VoidCallback onToggle;
+  final String vazio;
+
+  const _DebitoGrupo({
+    required this.label,
+    required this.subtotal,
+    required this.total,
+    required this.rows,
+    required this.person,
+    required this.dividirPelaMetade,
+    required this.aberto,
+    required this.onToggle,
+    required this.vazio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = total == 0 ? 0.0 : subtotal / total * 100;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: BloomTypography.geist(
+                            fontSize: 12.5,
+                            color: BloomColors.ink,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        aberto ? Icons.expand_less : Icons.expand_more,
+                        size: 16,
+                        color: BloomColors.muted,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    formatMoney(subtotal),
+                    textAlign: TextAlign.right,
+                    style: BloomTypography.mono(
+                      fontSize: 12,
+                      color: BloomColors.ink,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    '${pct.toStringAsFixed(1).replaceAll('.', ',')}%',
+                    textAlign: TextAlign.right,
+                    style: BloomTypography.mono(
+                      fontSize: 10.5,
+                      color: BloomColors.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (aberto)
+          if (rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(38, 0, 18, 10),
+              child: Text(
+                vazio,
+                style: BloomTypography.geist(
+                  fontSize: 12,
+                  color: BloomColors.muted,
+                ),
+              ),
+            )
+          else
+            for (final r in rows)
+              _DataRow(
+                label: r.descricao.isEmpty ? '—' : r.descricao,
+                value: dividirPelaMetade
+                    ? splitForPerson(r, person)
+                    : r.valor,
+                total: subtotal,
+                small: true,
+                indent: 20,
+              ),
+      ],
     );
   }
 }
