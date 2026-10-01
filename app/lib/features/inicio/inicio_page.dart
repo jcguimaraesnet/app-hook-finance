@@ -262,16 +262,9 @@ class _InicioPageState extends ConsumerState<InicioPage> {
             const SizedBox(height: 6),
             _Greeting(person: person),
             const SizedBox(height: 14),
-            _HeroCard(
-              person: person,
-              buckets: cur,
-              selectedIdx: _selectedSegment,
-              onSelect: (i) => setState(() => _selectedSegment = i),
-              loading: loading && rows.isEmpty,
-            ),
-            const SizedBox(height: 14),
-            _SmallTiles(
-              rows: rows,
+            // Seletor acima do donut: é ele que define de quem são os números
+            // do card logo abaixo.
+            _PersonSelector(
               selectedPerson: person,
               julioTotal: juCur.total,
               daniTotal: daCur.total,
@@ -280,6 +273,16 @@ class _InicioPageState extends ConsumerState<InicioPage> {
                 setState(() => _selectedSegment = null);
               },
             ),
+            const SizedBox(height: 12),
+            _HeroCard(
+              person: person,
+              buckets: cur,
+              selectedIdx: _selectedSegment,
+              onSelect: (i) => setState(() => _selectedSegment = i),
+              loading: loading && rows.isEmpty,
+            ),
+            const SizedBox(height: 14),
+            _SmallTiles(rows: rows),
             const SizedBox(height: 12),
             _QuickLinks(
               onPersonalTap: () => context
@@ -554,47 +557,27 @@ class _HeroCard extends StatelessWidget {
     required this.loading,
   });
 
+  // Ordem das fatias: Crédito, Débito, Pessoal (2026-10-01). Donut, legenda e
+  // o card Comparativo seguem a mesma.
   static const _summaryColors = [
     BloomColors.violet, // crédito (Metade)
+    BloomColors.sky,    // débito (Metade)
     BloomColors.mint,   // pessoal
-    BloomColors.sky,    // contas
   ];
 
+  // Sem o bloco "TOTAL PESSOAL + valor" desde 2026-10-01: o hero virou visão de
+  // proporção. Os valores absolutos estão logo abaixo, nos tiles e no
+  // Comparativo. O tap numa fatia segue destacando o arco e apagando as outras.
   Widget _buildSummary({
     required List<DonutBucket> donutBuckets,
     required List<Color> colors,
   }) {
     final sel = selectedIdx;
-    final kicker = sel == null
-        ? 'TOTAL PESSOAL'
-        : donutBuckets[sel].label.toUpperCase().replaceAll('.', '');
-    final value = sel == null ? buckets.total : donutBuckets[sel].value;
-    final valueColor =
-        sel == null ? BloomColors.ink : _summaryColors[sel];
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          kicker,
-          style: BloomTypography.kicker(
-            color: sel == null ? null : valueColor,
-          ),
-        ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'R\$ ${formatMoney(value)}',
-            maxLines: 1,
-            style: BloomTypography.display(
-              fontSize: 22,
-              letterSpacing: -0.5,
-              color: valueColor,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
         for (var i = 0; i < donutBuckets.length; i++)
           _BucketLine(
             color: colors[i],
@@ -616,21 +599,17 @@ class _HeroCard extends StatelessWidget {
         pct: buckets.total == 0 ? 0 : buckets.credito / buckets.total * 100,
       ),
       DonutBucket(
-        label: 'Pessoal',
-        value: buckets.pessoal,
-        pct: buckets.total == 0 ? 0 : buckets.pessoal / buckets.total * 100,
-      ),
-      DonutBucket(
         label: 'Débito',
         value: buckets.debito,
         pct: buckets.total == 0 ? 0 : buckets.debito / buckets.total * 100,
       ),
+      DonutBucket(
+        label: 'Pessoal',
+        value: buckets.pessoal,
+        pct: buckets.total == 0 ? 0 : buckets.pessoal / buckets.total * 100,
+      ),
     ];
-    final colors = [
-      BloomColors.violet,
-      BloomColors.mint,
-      BloomColors.sky,
-    ];
+    const colors = _summaryColors;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -693,7 +672,7 @@ class _BucketLine extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.symmetric(vertical: 5),
           child: Row(
             children: [
               Container(
@@ -709,7 +688,7 @@ class _BucketLine extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: BloomTypography.geist(
-                    fontSize: 11.5,
+                    fontSize: 14.5,
                     color: BloomColors.inkSoft,
                   ),
                 ),
@@ -717,7 +696,7 @@ class _BucketLine extends StatelessWidget {
               Text(
                 '${pct.toStringAsFixed(0)}%',
                 style: BloomTypography.mono(
-                  fontSize: 11.5,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -729,20 +708,52 @@ class _BucketLine extends StatelessWidget {
   }
 }
 
-class _SmallTiles extends StatelessWidget {
-  final List<ExpenseRow> rows;
+class _PersonSelector extends StatelessWidget {
   final Person selectedPerson;
   final double julioTotal;
   final double daniTotal;
   final ValueChanged<Person> onSelectPerson;
 
-  const _SmallTiles({
-    required this.rows,
+  const _PersonSelector({
     required this.selectedPerson,
     required this.julioTotal,
     required this.daniTotal,
     required this.onSelectPerson,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Row(
+        children: [
+          Expanded(
+            child: _PersonTile(
+              person: Person.julio,
+              total: julioTotal,
+              selected: selectedPerson == Person.julio,
+              onTap: () => onSelectPerson(Person.julio),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _PersonTile(
+              person: Person.dani,
+              total: daniTotal,
+              selected: selectedPerson == Person.dani,
+              onTap: () => onSelectPerson(Person.dani),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallTiles extends StatelessWidget {
+  final List<ExpenseRow> rows;
+
+  const _SmallTiles({required this.rows});
 
   @override
   Widget build(BuildContext context) {
@@ -765,28 +776,6 @@ class _SmallTiles extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _PersonTile(
-                  person: Person.julio,
-                  total: julioTotal,
-                  selected: selectedPerson == Person.julio,
-                  onTap: () => onSelectPerson(Person.julio),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _PersonTile(
-                  person: Person.dani,
-                  total: daniTotal,
-                  selected: selectedPerson == Person.dani,
-                  onTap: () => onSelectPerson(Person.dani),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -1101,22 +1090,20 @@ class _ComparativeCard extends ConsumerWidget {
             ref.read(activeTabProvider.notifier).state = BloomTab.compart,
       ),
       _Col(
+        label: 'Débito',
+        color: BloomColors.sky,
+        value: cur.debito,
+        delta: deltas.debito,
+        onTap: () => context.push(
+            '/debito?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
+      ),
+      _Col(
         label: 'Pessoal',
         color: BloomColors.mint,
         value: cur.pessoal,
         delta: deltas.pessoal,
         onTap: () => context.push(
             '/detalhe?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
-      ),
-      _Col(
-        label: 'Débito',
-        color: BloomColors.sky,
-        value: cur.debito,
-        delta: deltas.debito,
-        // Compart já tem aba própria e Pessoal tem o "Ver pessoal →" do hero;
-        // Débito era o único bucket sem drill-down. Spec: pages/debito.md.
-        onTap: () => context.push(
-            '/debito?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
       ),
     ];
 

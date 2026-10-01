@@ -30,14 +30,14 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
    - **Configurações** — `context.push('/settings')`. Mostra também a versão do binário no rodapé (`PackageInfo`, não hardcoded).
    - **Sair** — `signOut()` no auth provider.
 2. **Saudação** "Olá, Júlio" + título display "Junho, 2026" + `MonthSelector` à direita.
-3. **Card hero**: `BloomDonut` à esquerda + bloco com:
-   - Kicker "TOTAL PESSOAL" + valor display completo (sem `compact`).
-   - Pílula de delta vs. mês anterior (`good`/`bad` cor) sobre `Σ buckets` da pessoa.
-   - 3 linhas (1 por bucket) com cor + label + percentual; tap reflete no donut. Labels **Crédito · Pessoal · Débito** (pós-2026-10-01; a primeira era "Compartilhado") — regras em [bucket-deltas.md](../rules/bucket-deltas.md).
+3. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`. **Acima do card hero** desde 2026-10-01: é o seletor que define de quem são os números do card logo abaixo.
+4. **Card hero**: `BloomDonut` à esquerda + 3 linhas (1 por bucket) com cor + label + percentual; tap destaca o arco e apaga os outros.
+   - Ordem das fatias: **Crédito · Débito · Pessoal** (pós-2026-10-01). A mesma do card Comparativo. Regras em [bucket-deltas.md](../rules/bucket-deltas.md).
+   - **Sem o bloco "TOTAL PESSOAL" + valor** (pós-2026-10-01): o hero virou visão de proporção. Os valores absolutos estão nos tiles abaixo e no Comparativo. Efeito colateral aceito: tocar numa fatia já não mostra o valor dela — o retorno é visual (arco + dim).
+   - Labels e percentuais em 14,5px (eram 11,5).
    - Link "Ver pessoal →" que navega para `/detalhe?person=<atual>`.
-4. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`.
 5. **Tiles 2-col**: `Total crédito` + `Parcelado` (totais brutos do mês). Rotulado `TOTAL CARTÃO` até a migração de Origem (2026-09-20).
-6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Crédito/Pessoal/Débito), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
+6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Crédito/Débito/Pessoal, mesma ordem do hero), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
    - **As três colunas são clicáveis** (pós-2026-10-01):
      - **Crédito** → aba Categoria (antes rotulada "Compart"). O "Total compartilhado" de lá é `Σ valor/2` das linhas Crédito+Metade — a mesma conta da fatia, então os dois fecham (conferido: R$ 1.101,47 nas duas telas em 06/11/2026).
      - **Pessoal** → `/detalhe?person=<atual>`. O tile "TOTAL PESSOAL" de lá é `Σ valor` onde `rateio == pessoa`, idêntico à fatia. ⚠️ A **lista** daquela tela é só de Crédito, então ela mostra um subconjunto do próprio tile — pendência anterior à mudança.
@@ -46,7 +46,7 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 
 ### Donut interativo
 
-- 3 arcos compart/pessoal/debito com cores `violet`/`mint`/`sky` (escala fixa, não Person-derived).
+- 3 arcos credito/debito/pessoal com cores `violet`/`sky`/`mint` (escala fixa, não Person-derived).
 - Tap em arco → segmento expande (`stroke + 4`), demais ficam 35% opacos. Centro mostra label do bucket + valor + `pct%`.
 - Tap fora dos arcos / segundo tap → desselecciona.
 - Cálculo dos buckets: ver [bucket-key.md](../rules/bucket-key.md) e [split-for-person.md](../rules/split-for-person.md).
