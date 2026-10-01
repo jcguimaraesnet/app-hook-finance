@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/acerto_total.dart';
+import 'package:hook_finance/core/rules/diff_calculation.dart';
 import 'package:hook_finance/core/rateio.dart';
 import 'package:hook_finance/core/types.dart';
 import 'package:hook_finance/features/acerto/acerto_page.dart';
@@ -39,6 +40,8 @@ final _rows = [
   _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'SEM MARCA'),
   _e(row: 6, origem: kOrigemDebito, rateio: 'Dani', valor: 30, acerto: 'Sim', descricao: 'COM MARCA'),
   _e(row: 7, origem: kOrigemDebito, rateio: 'Dani', valor: 40, categoria: 'Pessoal', descricao: 'DIZIMO'),
+  _e(row: 8, origem: kOrigemDebito, rateio: 'Julio', valor: 60, descricao: 'CONDOMINIO'),
+  _e(row: 9, origem: kOrigemDebito, rateio: 'Julio', valor: 500, categoria: 'Pessoal', descricao: 'PREVIDENCIA'),
 ];
 
 /// A fonte do flutter_test desenha cada glifo como um quadrado e estoura a
@@ -140,5 +143,34 @@ void main() {
 
     expect(find.text('SEM MARCA'), findsOneWidget);
     expect(find.text('COM MARCA'), findsOneWidget);
+  });
+
+  // Pedido de 2026-10-01: o pill passou a ser a subtração de dois números que
+  // estão na própria tela, para dar para conferir de onde vem.
+  testWidgets('a Diferença é o Débito (outros) de um menos o do outro',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          monthDataProvider.overrideWith((ref, month) async =>
+              MonthDataResponse(ok: true, month: '06/11/2026', rows: _rows)),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: AcertoPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
+
+    // Dani (card default): outros = 70 + 30 = 100. Júlio: outros = 60.
+    // As de categoria Pessoal (40 e 500) ficam fora.
+    expect(diffCalculation(_rows, Person.dani), 40);
+    expect(find.text('R\$ 40,00'), findsOneWidget); // pill do header
   });
 }

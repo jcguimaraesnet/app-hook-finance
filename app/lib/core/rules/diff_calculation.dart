@@ -1,25 +1,23 @@
 // Spec: docs/specs/rules/diff-calculation.md
 // Mudanças aqui DEVEM começar pela spec.
 
-import '../origem.dart';
 import '../types.dart';
-import 'split_for_person.dart';
+import 'acerto_total.dart';
 
-/// Quanto a pessoa pagou a mais (ou a menos) que a outra em Débito no mês.
+/// Quanto a pessoa pagou a mais (ou a menos) que a outra em **Débito (outros)**
+/// no mês — a linha do card de Acerto com origem Débito, rateio da pessoa e
+/// categoria diferente de `Pessoal`.
 ///
-/// Até a migração de Origem (2026-09-20) havia dois ramos: se o mês tivesse
-/// "Pix (contas)" somava só Pix, senão somava "Contas" + "Empregados". Os três
-/// viraram Débito. O número não mudou em nenhum dos 12 meses da planilha, e não
-/// por acaso: os dois conjuntos nunca coexistiram num mesmo mês — o ramo era, na
-/// prática, um seletor de era.
+/// Desde 2026-10-01 é exatamente a diferença entre as duas linhas `Débito
+/// (outros)` que a tela mostra, uma de cada pessoa. Antes somava **todo** o
+/// Débito que tocava cada um: as linhas da categoria `Pessoal` (Dízimo,
+/// Previdência) entravam na conta, embora não sejam despesa da casa que um
+/// pagou pelo outro, e o número do pill não aparecia em lugar nenhum da tabela.
+///
+/// Linhas `Compartilhado` não entram: já são metade de cada um e se cancelariam.
 double diffCalculation(List<ExpenseRow> rows, Person person) {
-  final other = person.other;
-  double meu = 0;
-  double outro = 0;
-  for (final r in rows) {
-    if (r.origem != kOrigemDebito) continue;
-    meu += splitForPerson(r, person);
-    outro += splitForPerson(r, other);
-  }
-  return meu - outro;
+  double outros(Person p) =>
+      acertoDebitoRows(rows, p).outros.fold<double>(0, (s, r) => s + r.valor);
+
+  return outros(person) - outros(person.other);
 }

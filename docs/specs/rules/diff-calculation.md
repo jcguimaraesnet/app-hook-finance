@@ -1,11 +1,11 @@
 ---
 status: stable
-last_updated: 2026-09-20
+last_updated: 2026-10-01
 ---
 
 # diffCalculation — diferença entre pessoas no mês
 
-Calcula quanto uma pessoa pagou a mais (ou a menos) que a outra em despesas que entram no acerto: as linhas de **Débito** do mês.
+Calcula quanto uma pessoa pagou a mais (ou a menos) que a outra na linha **Débito (outros)** do card de Acerto.
 
 ## Contexto
 
@@ -16,11 +16,24 @@ Aparece como o "Δ" colorido nos cards de pessoa em **Consulta/Pessoal** ([Perso
 `diffCalculation(rows, person) → number`:
 
 1. Sejam `me = person`, `other = (person === "Julio" ? "Dani" : "Julio")`.
-2. `meu = Σ splitForPerson(r, me)` para `r` com `origem === "Débito"`.
-3. `outro = Σ splitForPerson(r, other)` para `r` com `origem === "Débito"`.
+2. `meu = Σ valor` de `acertoDebitoRows(rows, me).outros`.
+3. `outro = Σ valor` de `acertoDebitoRows(rows, other).outros`.
 4. Retorna `meu - outro` (pode ser negativo).
 
-A regra **considera todas** as linhas de Débito do mês — inclusive as **sem `acerto = "Sim"`**. Razão: o número precisa bater entre Consulta e Acerto, e Consulta exibe todas as linhas de Débito do mês (ela não filtra por Acerto).
+Ou seja: a diferença entre as duas linhas **`Débito (outros)`** que a tela de Acerto mostra, uma de cada pessoa — `origem === "Débito"` E `rateio === <pessoa>` E `categoria !== "Pessoal"`. Ver [../pages/acerto.md](../pages/acerto.md).
+
+A regra **não filtra** por `acerto = "Sim"` (col J), coerente com o resto da tela.
+
+### O que mudou em 2026-10-01
+
+Antes somava `splitForPerson` sobre **todo** o Débito que tocava cada pessoa. Duas consequências que o usuário pediu para remover:
+
+- as linhas de categoria `Pessoal` (Dízimo, Previdência) entravam na conta, embora não sejam despesa da casa que um pagou pelo outro;
+- o número do pill não correspondia a nenhuma linha visível da tabela, então não dava para conferir de onde vinha.
+
+Agora o pill é a subtração de dois números que estão na própria tela. Efeito na fatura 06/11/2026: de **R$ 194,42** para **R$ 155,58** (2.100,00 da Dani − 1.944,42 do Júlio).
+
+As linhas `Compartilhado` continuam fora: já são metade de cada um e se cancelariam.
 
 ### Por que o ramo `monthHasPix` sumiu (2026-09-20)
 
@@ -40,10 +53,11 @@ O valor exibido é sempre `Math.abs(diff)`, prefixado com o sinal e `R$ `. Cor e
 ## Edge cases
 
 - **Mês completamente vazio:** `meu = outro = 0`, diff = 0, sinal `"+"`, exibe `+ R$ 0,00`.
-- **Mês com Débito mas só de uma pessoa:** `outro = 0`. Diff = `meu`. (Ex.: novo mês onde só inseriram `"Plano de Saúde (Julio)"`.)
+- **Mês com `Débito (outros)` de só uma pessoa:** `outro = 0`. Diff = `meu`.
+- **Mês em que todo o Débito individual é de categoria `Pessoal`:** diff = 0, mesmo havendo débito dos dois. Esperado: nenhum dos dois pagou despesa da casa pelo outro.
 - **Toggle do diff:** controle de visibilidade vive em `sessionStorage` (`hook-finance-diff-${person}`). Default `true`. Implementação em cada card, não nesta regra. Ver [../state/persistence.md](../state/persistence.md).
 - **`splitForPerson` retorna 0** para linhas com `rateio` não pertinente: contribuição zero, regra não muda.
-- **`origem = "Débito"` mas `rateio = "Compartilhado"`:** acontece raramente; `splitForPerson` divide ao meio para ambos, então `meu - outro = 0` para essa linha. Esperado.
+- **`origem = "Débito"` mas `rateio = "Compartilhado"`:** a linha não entra em `outros` (que exige `rateio === <pessoa>`), então não afeta o diff. Antes entrava e se cancelava — mesmo resultado, por outro caminho.
 
 ## Implementações
 
@@ -53,22 +67,18 @@ O valor exibido é sempre `Math.abs(diff)`, prefixado com o sinal e `R$ `. Cor e
 - **Após Onda 2:** `web/src/core/rules/diffCalculation.ts` (única fonte; ambos os arquivos importam).
 - **Flutter:** `app/lib/core/rules/diff_calculation.dart` (Onda 4).
 
-```ts
-// Reference impl (após a migração de Origem)
-export function diffCalculation(rows: Row[], person: Person): number {
-  const other: Person = person === "Julio" ? "Dani" : "Julio";
-  let meu = 0;
-  let outro = 0;
-  for (const r of rows) {
-    if (r.origem !== "Débito") continue;
-    meu += splitForPerson(r, person);
-    outro += splitForPerson(r, other);
-  }
-  return meu - outro;
+```dart
+// Reference impl (pós-2026-10-01)
+double diffCalculation(List<ExpenseRow> rows, Person person) {
+  double outros(Person p) =>
+      acertoDebitoRows(rows, p).outros.fold<double>(0, (s, r) => s + r.valor);
+
+  return outros(person) - outros(person.other);
 }
 ```
 ## Specs relacionadas
 
+- [../pages/acerto.md](../pages/acerto.md) — de onde sai `Débito (outros)`
 - [split-for-person.md](split-for-person.md)
 - [../cards/person-card.md](../cards/person-card.md)
 - [../cards/acerto-card.md](../cards/acerto-card.md)

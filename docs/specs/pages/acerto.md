@@ -56,7 +56,9 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 ### Δ (diff)
 
-Mesma regra de [diff-calculation.md](../rules/diff-calculation.md). Toggle Δ é per-card (sessionStorage por pessoa). Compartilha o mesmo flag com PersonCard de Consulta.
+Pílula "Diferença R$ X" no header de cada card. Desde 2026-10-01 é simplesmente a **diferença entre as duas linhas `Débito (outros)`** da tela — a do card aberto menos a da outra pessoa, em módulo. Regra em [diff-calculation.md](../rules/diff-calculation.md).
+
+Antes somava todo o Débito que tocava cada pessoa, incluindo a categoria `Pessoal`, e o número não batia com nenhuma linha visível. Na fatura 06/11/2026 foi de R$ 194,42 para R$ 155,58. Toggle Δ é per-card (sessionStorage por pessoa). Compartilha o mesmo flag com PersonCard de Consulta.
 
 ## Edge cases
 

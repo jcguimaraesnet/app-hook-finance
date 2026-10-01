@@ -9,6 +9,7 @@ ExpenseRow _row({
   String origem = kOrigemCredito,
   String rateio = '',
   String acerto = '',
+  String categoria = 'Casa',
 }) =>
     ExpenseRow(
       data: '06/05/2026',
@@ -16,7 +17,7 @@ ExpenseRow _row({
       descricao: 'TEST',
       valor: valor,
       origem: origem,
-      categoria: '',
+      categoria: categoria,
       rateio: rateio,
       banco: '',
       parcela: '',
@@ -25,7 +26,7 @@ ExpenseRow _row({
 
 void main() {
   group('diffCalculation', () {
-    test('soma Débito das duas pessoas e devolve a diferença', () {
+    test('soma Débito (outros) das duas pessoas e devolve a diferença', () {
       final rows = [
         _row(origem: kOrigemDebito, rateio: 'Julio', valor: 500),
         _row(origem: kOrigemDebito, rateio: 'Dani', valor: 100),
@@ -50,10 +51,33 @@ void main() {
       expect(diffCalculation(rows, Person.julio), 100);
     });
 
-    test('Metade não desequilibra (cancela entre as duas)', () {
+    test('Compartilhado não entra (já é metade de cada um)', () {
       final rows = [_row(origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400)];
       expect(diffCalculation(rows, Person.julio), 0);
       expect(diffCalculation(rows, Person.dani), 0);
+    });
+
+    // O pedido de 2026-10-01: o pill passou a ser a diferença entre as duas
+    // linhas "Débito (outros)" da tela, então a categoria Pessoal fica fora.
+    test('categoria Pessoal não entra', () {
+      final rows = [
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 500),
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 900, categoria: 'Pessoal'),
+        _row(origem: kOrigemDebito, rateio: 'Dani', valor: 100),
+        _row(origem: kOrigemDebito, rateio: 'Dani', valor: 400, categoria: 'Pessoal'),
+      ];
+      expect(diffCalculation(rows, Person.julio), 400); // 500 - 100
+    });
+
+    // A tela mostra o mesmo pill nos dois cards; o sinal é que muda.
+    test('é simétrico entre as duas pessoas', () {
+      final rows = [
+        _row(origem: kOrigemDebito, rateio: 'Julio', valor: 1944.42),
+        _row(origem: kOrigemDebito, rateio: 'Dani', valor: 2100),
+      ];
+      expect(diffCalculation(rows, Person.julio),
+          -diffCalculation(rows, Person.dani));
+      expect(diffCalculation(rows, Person.julio).abs(), closeTo(155.58, 0.001));
     });
 
     test('rateio que não toca ninguém não entra', () {
