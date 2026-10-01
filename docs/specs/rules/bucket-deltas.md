@@ -68,6 +68,24 @@ Retorno: `null` em qualquer dos campos significa "sem comparativo" (mês anterio
 formato inválido → null
 ```
 
+## Fatias (pós-2026-10-01)
+
+O corte é **por rateio primeiro, origem depois**:
+
+| Fatia | Regra | Label na UI |
+|---|---|---|
+| `credito` | `origem === "Crédito"` E `rateio === "Metade"` | **Crédito** |
+| `debito` | `origem === "Débito"` E `rateio === "Metade"` | **Débito** |
+| `pessoal` | `rateio === <pessoa>`, em **qualquer** origem | **Pessoal** |
+
+Valor somado é sempre `splitForPerson` (metade nas linhas `Metade`, cheio nas da pessoa). As três continuam particionando o total: toda linha com `splitForPerson != 0` cai em exatamente uma.
+
+**Antes** o corte era por origem primeiro: `Débito` ia inteiro para a fatia de débito, mesmo com rateio individual, e `pessoal` só tinha Crédito. O campo chamava-se `compart`.
+
+**Efeito medido na fatura 06/11/2026:** nenhuma linha de Débito tinha rateio `Metade` (9 Dani, 11 Julio), então a fatia Débito foi de 72% para **0%** e Pessoal de 18% para **90%** (Dani). O total não muda, só a distribuição. A fatia volta a aparecer no mês em que houver um débito dividido.
+
+**Divergência conhecida:** a coluna Débito do Comparativo é clicável e abre a tela de [Débito](../pages/debito.md), que lista **todo** o débito que toca a pessoa — não só o `Metade`. Desde esta mudança os dois números não batem. Fixado em teste (`debito_rows_test.dart`) para não passar por acidente; pendente de decisão de produto.
+
 ## Edge cases
 
 - **`previousMonth == null`** (primeiro mês de dados ou parse falhou): callers tratam como "sem comparativo" — cards omitem pílulas de delta.

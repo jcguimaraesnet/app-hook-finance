@@ -33,11 +33,11 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 3. **Card hero**: `BloomDonut` à esquerda + bloco com:
    - Kicker "TOTAL PESSOAL" + valor display completo (sem `compact`).
    - Pílula de delta vs. mês anterior (`good`/`bad` cor) sobre `Σ buckets` da pessoa.
-   - 3 linhas (1 por bucket) com cor + label + percentual; tap reflete no donut.
+   - 3 linhas (1 por bucket) com cor + label + percentual; tap reflete no donut. Labels **Crédito · Pessoal · Débito** (pós-2026-10-01; a primeira era "Compartilhado") — regras em [bucket-deltas.md](../rules/bucket-deltas.md).
    - Link "Ver pessoal →" que navega para `/detalhe?person=<atual>`.
 4. **Person pills** (Júlio/Dani) — toggle ativo via fundo `ink`.
 5. **Tiles 2-col**: `Total crédito` + `Parcelado` (totais brutos do mês). Rotulado `TOTAL CARTÃO` até a migração de Origem (2026-09-20).
-6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Compart/Pessoal/Débito), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
+6. **Card "Comparativo vs. <mês anterior>"** com 3 colunas (Crédito/Pessoal/Débito), separadas por divisor vertical. Cada coluna: bullet de cor + kicker + valor compact + pílula `↗` (bad) ou `↘` (good) com `prevDelta %`.
    - **Coluna Débito é clicável** (pós-2026-09-19): navega para `/debito?person=<atual>` — ver [debito.md](debito.md). As outras duas não são: Compartilhado já tem a aba Compart e Pessoal já tem o "Ver pessoal →" do hero.
 7. **Seção "Últimos lançamentos"**: 2 itens via `lastEntries(2)` + link "Ver mais →" para `/lancamento`.
 
@@ -59,7 +59,7 @@ Selectiona a pessoa cuja visão pessoal é exibida (afeta donut + tiles + compar
 
 Aplicadas via `BloomColors.forPerson(p)` — usadas no avatar do `_PersonTile`, donut central, pill ativa de troca e em qualquer linha de lançamento cujo `rateio` aponte para essa pessoa (ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md)).
 
-**Importante:** cores dos buckets (`Compartilhado=violet`, `Pessoal=mint`, `Débito=sky`) no `_HeroCard` são independentes da pessoa e não trocam.
+**Importante:** cores dos buckets (`Crédito=violet`, `Pessoal=mint`, `Débito=sky`) no `_HeroCard` são independentes da pessoa e não trocam.
 
 ## Edge cases
 

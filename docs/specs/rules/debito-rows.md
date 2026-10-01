@@ -21,7 +21,7 @@ Esta função é a fonte única: `bucketsForPerson(...).contas` e a lista da pá
 2. **E** se `splitForPerson(row, person) !== 0` — ver [split-for-person.md](split-for-person.md).
 3. Preserva a ordem de entrada. Não ordena, não deduplica, não soma.
 
-**Invariante de reconciliação** (garantida por teste):
+**Invariante de reconciliação** — ⚠️ **válida só até 2026-10-01**. A nova regra das fatias manda o Débito de rateio individual para `pessoal`, então o bucket `debito` deixou de ser igual a esta soma. A relação atual (`lista = bucket debito + débito individual da pessoa`) está fixada em `debito_rows_test.dart`. Texto original abaixo, mantido para contexto:
 
 ```
 Σ splitForPerson(r, person) para r em debitoRowsForPerson(rows, person)

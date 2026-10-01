@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/bucket_deltas.dart';
 import 'package:hook_finance/core/origem.dart';
 import 'package:hook_finance/core/rules/debito_rows.dart';
+import 'package:hook_finance/core/rules/split_for_person.dart';
 import 'package:hook_finance/core/types.dart';
 
 ExpenseRow _r({
@@ -88,35 +89,55 @@ void main() {
     });
   });
 
-  // O motivo da regra existir: a tela Débito é aberta a partir de um número do
-  // card Comparativo, então a lista precisa somar exatamente aquele número.
-  group('reconciliação com o card Comparativo', () {
+  // ATENÇÃO — a invariante mudou em 2026-10-01.
+  //
+  // Até então, a soma desta lista era exatamente o bucket `debito` do card
+  // Comparativo. A nova regra das fatias (ver bucket-deltas.md) manda o Débito
+  // com rateio individual para `pessoal`, e deixa em `debito` apenas o que tem
+  // rateio Metade. Esta lista continua sendo "todo o débito que toca a pessoa",
+  // porque é isso que a tela de Débito serve para mostrar.
+  //
+  // Resultado: a coluna Débito do Comparativo NÃO soma mais o que esta tela
+  // lista. Divergência conhecida e pendente de decisão do usuário — fixada aqui
+  // para não passar por acidente.
+  group('relação com as fatias do Comparativo', () {
     final rows = [
       _r(origem: kOrigemCredito, rateio: 'Julio', valor: 500),
       _r(origem: kOrigemCredito, rateio: 'Metade', valor: 300),
       _r(origem: kOrigemDebito, rateio: 'Julio', valor: 120),
       _r(origem: kOrigemDebito, rateio: 'Metade', valor: 200),
       _r(origem: kOrigemDebito, rateio: 'Dani', valor: 70),
-      _r(origem: kOrigemDebito, rateio: 'Metade', valor: 90),
       _r(origem: kOrigemDebito, rateio: '', valor: 999),
       _r(origem: kOrigemDebito, rateio: 'Alzira', valor: 777),
     ];
 
     for (final person in Person.values) {
-      test('soma da lista == bucket debito (${person.name})', () {
+      test('bucket debito = só o Débito com Metade (${person.name})', () {
+        final metadeSo = rows
+            .where((r) => r.origem == kOrigemDebito && r.rateio == 'Metade')
+            .fold<double>(0, (s, r) => s + splitForPerson(r, person));
+        expect(bucketsForPerson(rows, person).debito, metadeSo);
+      });
+
+      test('lista da tela = bucket debito + o Débito individual da pessoa '
+          '(${person.name})', () {
+        final b = bucketsForPerson(rows, person);
+        final debitoIndividual = rows
+            .where((r) => r.origem == kOrigemDebito && r.rateio == person.name)
+            .fold<double>(0, (s, r) => s + splitForPerson(r, person));
         expect(
           debitoShareForPerson(rows, person),
-          bucketsForPerson(rows, person).debito,
+          closeTo(b.debito + debitoIndividual, 0.0001),
         );
       });
     }
 
-    test('linhas ignoradas pelo bucket também somem da lista', () {
+    test('linhas ignoradas pelas fatias também somem da lista', () {
       final descricoes =
           debitoRowsForPerson(rows, Person.julio).map((r) => r.descricao);
       expect(descricoes, everyElement('x'));
-      // 120 (Julio) + 200/2 (Metade) + 90/2 (Metade) = 265
-      expect(debitoShareForPerson(rows, Person.julio), 265);
+      // 120 (Julio) + 200/2 (Metade) = 220
+      expect(debitoShareForPerson(rows, Person.julio), 220);
     });
   });
 }

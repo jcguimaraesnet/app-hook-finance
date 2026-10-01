@@ -33,7 +33,7 @@ Lê `monthData(currentMonth)`. Não chama outros endpoints.
 
 | Tile | Valor |
 |---|---|
-| **SUA PARTE** | `Σ splitForPerson(r, person)` — **o mesmo número da coluna Débito do card Comparativo**. É o que reconcilia a tela com a origem do clique. |
+| **SUA PARTE** | `Σ splitForPerson(r, person)` de **todo** o débito que toca a pessoa. ⚠️ Desde 2026-10-01 **não é mais** o número da coluna Débito do Comparativo: aquela fatia passou a contar só `rateio === "Metade"` — ver [../rules/bucket-deltas.md](../rules/bucket-deltas.md). Divergência pendente de decisão. |
 | **TOTAL CHEIO** | `Σ r.valor` das linhas listadas. Maior que "sua parte" sempre que houver linha `Metade`. |
 
 O segundo tile **só renderiza quando os dois valores diferem** (≥ R$ 0,005). Sem linha `Metade` no débito do mês — o caso comum: em out/2026 todo o débito tinha rateio individual — os dois números seriam idênticos e dois tiles iguais lado a lado parecem bug. Quando some, o tile restante é rotulado **TOTAL** em vez de "SUA PARTE", porque aí não há divisão nenhuma.

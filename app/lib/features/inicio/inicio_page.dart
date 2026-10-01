@@ -554,7 +554,7 @@ class _HeroCard extends StatelessWidget {
   });
 
   static const _summaryColors = [
-    BloomColors.violet, // compart
+    BloomColors.violet, // crédito (Metade)
     BloomColors.mint,   // pessoal
     BloomColors.sky,    // contas
   ];
@@ -610,9 +610,9 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final donutBuckets = [
       DonutBucket(
-        label: 'Compartilhado',
-        value: buckets.compart,
-        pct: buckets.total == 0 ? 0 : buckets.compart / buckets.total * 100,
+        label: 'Crédito',
+        value: buckets.credito,
+        pct: buckets.total == 0 ? 0 : buckets.credito / buckets.total * 100,
       ),
       DonutBucket(
         label: 'Pessoal',
@@ -1090,10 +1090,10 @@ class _ComparativeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cols = [
       _Col(
-        label: 'Compartilhado',
+        label: 'Crédito',
         color: BloomColors.violet,
-        value: cur.compart,
-        delta: deltas.compart,
+        value: cur.credito,
+        delta: deltas.credito,
       ),
       _Col(
         label: 'Pessoal',
