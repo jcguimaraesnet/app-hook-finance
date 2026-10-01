@@ -628,10 +628,18 @@ class _HeroCard extends StatelessWidget {
                     stroke: 15,
                   ),
                   const SizedBox(width: 16),
+                  // IntrinsicWidth deixa a legenda com a largura do seu item
+                  // mais largo, em vez de esticar até a borda do card: antes o
+                  // rótulo ficava na esquerda e o percentual na direita, com um
+                  // vão enorme no meio. Centrada no espaço que sobra do donut.
                   Expanded(
-                    child: _buildSummary(
-                      donutBuckets: donutBuckets,
-                      colors: colors,
+                    child: Center(
+                      child: IntrinsicWidth(
+                        child: _buildSummary(
+                          donutBuckets: donutBuckets,
+                          colors: colors,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -663,7 +671,7 @@ class _BucketLine extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
               Container(
@@ -672,7 +680,7 @@ class _BucketLine extends StatelessWidget {
                 decoration:
                     BoxDecoration(color: color, shape: BoxShape.circle),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 9),
               Expanded(
                 child: Text(
                   label,
@@ -680,15 +688,20 @@ class _BucketLine extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: BloomTypography.geist(
                     fontSize: 14.5,
-                    color: BloomColors.inkSoft,
+                    fontWeight: FontWeight.w500,
+                    color: BloomColors.ink,
                   ),
                 ),
               ),
+              // Respiro mínimo: com IntrinsicWidth o Expanded acima encosta o
+              // percentual no rótulo mais longo.
+              const SizedBox(width: 22),
               Text(
                 '${pct.toStringAsFixed(0)}%',
                 style: BloomTypography.mono(
                   fontSize: 14.5,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
+                  color: BloomColors.inkSoft,
                 ),
               ),
             ],

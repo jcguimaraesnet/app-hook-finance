@@ -232,7 +232,10 @@ class _Grupo extends StatelessWidget {
                         RecentEntryRow(
                           entry: rows[i],
                           showDivider: i > 0,
-                          hideCategory: true,
+                          // Categoria visível, como em Últimos lançamentos: aqui
+                          // as linhas são de categorias diferentes, diferente da
+                          // tela de Categoria, onde seria repetir a mesma.
+                          hideCategory: false,
                           // Sem row válido (backend antigo) não há o que
                           // editar: o save falharia com invalid_row.
                           onTap: rows[i].row >= 2 ? () => onEdit(rows[i]) : null,

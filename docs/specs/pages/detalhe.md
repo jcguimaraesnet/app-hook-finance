@@ -63,7 +63,8 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
   - **Cartão pessoal** — `summary.cartaoPessoal`.
   - **Parcelado atual** — `summary.parceladoAtual`.
   - **Parcelado Próx** — `summary.parceladoProx` (projeção do próximo mês).
-- **Dois grupos** (Crédito e Débito), cada um com cabeçalho `<nome> (N)` + subtotal e seu próprio vazio. O grupo de Crédito soma o tile `CRÉDITO PESSOAL`; os dois juntos somam `TOTAL PESSOAL`. Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
+- **Dois grupos** (Crédito e Débito), cada um com cabeçalho `<nome> (N)` + subtotal e seu próprio vazio.
+- `hideCategory: false` (pós-2026-10-01): a categoria aparece na meta-linha, como em [lancamento.md](lancamento.md). Aqui as linhas são de categorias diferentes — ao contrário de [categoria.md](categoria.md), onde repetir a mesma não acrescentaria nada. O grupo de Crédito soma o tile `CRÉDITO PESSOAL`; os dois juntos somam `TOTAL PESSOAL`. Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
 - **Tap edita o lançamento** (pós-2026-09-18): abre o mesmo `EditDialog` da [lancamento.md](lancamento.md), incluindo o excluir do header. Ao salvar ou excluir, invalida `monthDataProvider` **e** `lastEntriesProvider` (a linha editada também aparece em Lançamentos). Requer o `row` que `monthData` passou a devolver — ver [../api/endpoints.md](../api/endpoints.md).
   - Linha sem `row` válido (`< 2`, backend antigo) fica sem `onTap`: `RecentEntryRow` esconde o chevron e a linha não responde ao toque, em vez de abrir um modal que falharia com `invalid_row` no save.
 
