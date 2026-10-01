@@ -169,6 +169,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
   // Uma expansão por linha de débito, para as duas pessoas. Abertas por padrão,
   // que é como a tela sempre mostrou os filhos.
   bool _compartAberto = true;
+  bool _outrosAberto = true;
   bool _pessoalAberto = true;
 
   @override
@@ -184,8 +185,10 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
     final cartaoCompart = b.creditoCompart;
     final cartaoPessoal = b.creditoPessoal;
     final debitoCompart = b.debitoCompart;
+    final debitoOutros = b.debitoOutros;
     final debitoPessoal = b.debitoPessoal;
     final debitoCompartRows = linhas.compart;
+    final debitoOutrosRows = linhas.outros;
     final debitoPessoalRows = linhas.pessoal;
     final total = b.total;
 
@@ -358,6 +361,17 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             vazio: 'Sem débito dividido neste mês.',
           ),
           _DebitoGrupo(
+            label: 'Débito (outros)',
+            subtotal: debitoOutros,
+            total: total,
+            rows: debitoOutrosRows,
+            person: person,
+            dividirPelaMetade: false,
+            aberto: _outrosAberto,
+            onToggle: () => setState(() => _outrosAberto = !_outrosAberto),
+            vazio: 'Sem débito de outras categorias neste mês.',
+          ),
+          _DebitoGrupo(
             label: 'Débito (pessoal)',
             subtotal: debitoPessoal,
             total: total,
@@ -366,7 +380,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             dividirPelaMetade: false,
             aberto: _pessoalAberto,
             onToggle: () => setState(() => _pessoalAberto = !_pessoalAberto),
-            vazio: 'Sem débito pessoal neste mês.',
+            vazio: 'Sem débito na categoria Pessoal neste mês.',
           ),
           const SizedBox(height: 6),
           // Total Pessoal
@@ -426,7 +440,8 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
 }
 
 /// Linha de débito do acerto, com expandir/recolher e os lançamentos que a
-/// compõem. Duas por card: a dividida e a da pessoa.
+/// compõem. Três por card: a dividida, a da pessoa fora da categoria Pessoal e
+/// a da categoria Pessoal.
 ///
 /// Até 2026-10-01 havia uma linha só, e o toggle (exclusivo do Júlio) mudava a
 /// COMPOSIÇÃO — incluía lançamentos fora do acerto e o subtotal mudava junto.

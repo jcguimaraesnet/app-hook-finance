@@ -97,9 +97,22 @@ void main() {
       expect(b.total, 260);
     });
 
+    // Os dois agrupamentos da Início desde 2026-10-01.
+    test('compartilhado = crédito + débito, e com pessoal fecha o total', () {
+      final rows = [
+        _row(valor: 200, origem: kOrigemCredito, rateio: kRateioCompartilhado),
+        _row(valor: 100, origem: kOrigemDebito, rateio: kRateioCompartilhado),
+        _row(valor: 80, origem: kOrigemCredito, rateio: 'Julio'),
+      ];
+      final b = bucketsForPerson(rows, Person.julio);
+      expect(b.compartilhado, 150); // 100 + 50
+      expect(b.compartilhado + b.pessoal, b.total);
+    });
+
     test('rows vazias → buckets zero', () {
       final b = bucketsForPerson(const [], Person.julio);
       expect(b.total, 0);
+      expect(b.compartilhado, 0);
     });
   });
 
@@ -111,6 +124,9 @@ void main() {
       expect(d.credito, 10.0);
       expect(d.pessoal, -20.0);
       expect(d.debito, isNull); // previous.debito == 0
+      // 200 vs 100: o Δ do agrupamento sai da soma, não da média dos dois Δ —
+      // aqui um deles é nem calculável.
+      expect(d.compartilhado, 100.0);
     });
 
     test('previous tudo zero → todos os deltas null', () {
@@ -121,6 +137,7 @@ void main() {
       expect(d.credito, isNull);
       expect(d.pessoal, isNull);
       expect(d.debito, isNull);
+      expect(d.compartilhado, isNull);
     });
 
     test('current zero / previous cheio → -100%', () {
@@ -131,6 +148,7 @@ void main() {
       expect(d.credito, -100.0);
       expect(d.pessoal, -100.0);
       expect(d.debito, -100.0);
+      expect(d.compartilhado, -100.0);
     });
   });
 

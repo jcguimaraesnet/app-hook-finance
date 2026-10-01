@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/bucket_deltas.dart';
-import '../../core/origem.dart';
+import '../../core/rules/origem_totals.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -42,7 +42,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
     final prevAsync = ref.watch(previousMonthDataProvider);
-    final lastAsync = ref.watch(lastEntriesProvider(4));
+    final lastAsync = ref.watch(lastEntriesProvider(3));
 
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final prevRows =
@@ -68,7 +68,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       try {
         await Future.wait<void>([
           ref.read(monthDataProvider(currentMonth).future),
-          ref.read(lastEntriesProvider(4).future),
+          ref.read(lastEntriesProvider(3).future),
         ]);
       } catch (e) {
         error = '$e';
@@ -290,6 +290,8 @@ class _InicioPageState extends ConsumerState<InicioPage> {
               currentLabel: currentMonth ?? '',
               previousLabel: ref.watch(previousMonthProvider) ?? '',
             ),
+            const SizedBox(height: 12),
+            _OrigemTotalsRow(totals: origemTotals(rows)),
             const SizedBox(height: 18),
             _RecentEntriesSection(asyncLast: lastAsync),
           ],
@@ -547,11 +549,11 @@ class _HeroCard extends StatelessWidget {
     required this.loading,
   });
 
-  // Ordem das fatias: Crédito, Débito, Pessoal (2026-10-01). Donut, legenda e
-  // o card Comparativo seguem a mesma.
+  // Duas fatias desde 2026-10-01: Compartilhado (crédito + débito divididos) e
+  // Pessoal. Donut, legenda e o card Comparação seguem a mesma ordem. Crédito e
+  // Débito separados vivem nos tiles abaixo do Comparação.
   static const _summaryColors = [
-    BloomColors.violet, // crédito (Metade)
-    BloomColors.sky,    // débito (Metade)
+    BloomColors.violet, // compartilhado
     BloomColors.mint,   // pessoal
   ];
 
@@ -584,14 +586,10 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final donutBuckets = [
       DonutBucket(
-        label: 'Crédito',
-        value: buckets.credito,
-        pct: buckets.total == 0 ? 0 : buckets.credito / buckets.total * 100,
-      ),
-      DonutBucket(
-        label: 'Débito',
-        value: buckets.debito,
-        pct: buckets.total == 0 ? 0 : buckets.debito / buckets.total * 100,
+        label: 'Compartilhado',
+        value: buckets.compartilhado,
+        pct:
+            buckets.total == 0 ? 0 : buckets.compartilhado / buckets.total * 100,
       ),
       DonutBucket(
         label: 'Pessoal',
@@ -754,6 +752,45 @@ class _PersonSelector extends StatelessWidget {
   }
 }
 
+/// Os dois totais por origem, logo abaixo do Comparação. Mesma casca dos tiles
+/// de pessoa — e, de propósito, a mesma largura: os dois somados são o total do
+/// Júlio mais o da Dani, que estão nos tiles de cima.
+class _OrigemTotalsRow extends StatelessWidget {
+  final OrigemTotals totals;
+
+  const _OrigemTotalsRow({required this.totals});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SummaryTile(
+              avatarColor: BloomColors.violet,
+              avatar: const Icon(Icons.credit_card,
+                  size: 16, color: Colors.white),
+              label: 'Total Crédito',
+              total: totals.credito,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _SummaryTile(
+              avatarColor: BloomColors.sky,
+              avatar: const Icon(Icons.account_balance_outlined,
+                  size: 16, color: Colors.white),
+              label: 'Total Débito',
+              total: totals.debito,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PersonTile extends StatelessWidget {
   final Person person;
   final double total;
@@ -769,8 +806,47 @@ class _PersonTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final personColor = BloomColors.forPerson(person);
-    final initial = person == Person.julio ? 'J' : 'D';
+    return _SummaryTile(
+      avatarColor: BloomColors.forPerson(person),
+      avatar: Text(
+        person == Person.julio ? 'J' : 'D',
+        style: BloomTypography.display(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          height: 1,
+        ),
+      ),
+      label: person.displayName,
+      total: total,
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
+/// Casca comum dos tiles do topo da Início: o seletor de pessoa e os totais por
+/// origem. Existe para que os quatro tenham o mesmo tamanho sem copiar paddings
+/// — foi o pedido explícito do usuário em 2026-10-01.
+class _SummaryTile extends StatelessWidget {
+  final Color avatarColor;
+  final Widget avatar;
+  final String label;
+  final double total;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const _SummaryTile({
+    required this.avatarColor,
+    required this.avatar,
+    required this.label,
+    required this.total,
+    this.selected = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final fg = selected ? Colors.white : BloomColors.ink;
     final fgMuted =
         selected ? Colors.white.withValues(alpha: 0.65) : BloomColors.muted;
@@ -805,18 +881,10 @@ class _PersonTile extends StatelessWidget {
                 height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: personColor,
+                  color: avatarColor,
                   shape: BoxShape.circle,
                 ),
-                child: Text(
-                  initial,
-                  style: BloomTypography.display(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    height: 1,
-                  ),
-                ),
+                child: avatar,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -825,7 +893,7 @@ class _PersonTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      person.displayName,
+                      label,
                       style: BloomTypography.geist(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -879,28 +947,16 @@ class _ComparativeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cols = [
       _Col(
-        label: 'Crédito',
+        label: 'Compartilhado',
         color: BloomColors.violet,
-        value: cur.credito,
-        delta: deltas.credito,
-        // Aba Categoria com o tile de Crédito já marcado: o COMPARTILHADO / 2
-        // de lá passa a ser Σ valor/2 das linhas Crédito+Metade — a mesma conta
-        // desta fatia, então os dois fecham.
+        value: cur.compartilhado,
+        delta: deltas.compartilhado,
+        // Aba Categoria **sem** tile de origem marcado: como o agrupamento
+        // cobre as duas origens, o COMPARTILHADO / 2 de lá é Σ valor/2 de todas
+        // as linhas Compartilhado — a mesma conta desta coluna. Marcar uma
+        // origem mostraria só um pedaço do número clicado.
         onTap: () {
-          ref.read(compartOrigemFilterProvider.notifier).state =
-              kOrigemCredito;
-          ref.read(activeTabProvider.notifier).state = BloomTab.compart;
-        },
-      ),
-      _Col(
-        label: 'Débito',
-        color: BloomColors.sky,
-        value: cur.debito,
-        delta: deltas.debito,
-        // Mesmo fluxo da coluna Crédito: aba Categoria com o tile de origem
-        // marcado. A tela /debito foi removida em 2026-10-01.
-        onTap: () {
-          ref.read(compartOrigemFilterProvider.notifier).state = kOrigemDebito;
+          ref.read(compartOrigemFilterProvider.notifier).state = null;
           ref.read(activeTabProvider.notifier).state = BloomTab.compart;
         },
       ),
@@ -1122,7 +1178,7 @@ class _RecentEntriesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = asyncLast.value?.entries ?? const <Entry>[];
-    final shown = entries.take(4).toList();
+    final shown = entries.take(3).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),

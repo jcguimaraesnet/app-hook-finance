@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-10-01
 ---
 
 # Bucket deltas — variação % vs. mês anterior
@@ -9,7 +9,7 @@ Regra que calcula a variação percentual de cada bucket (`compart`/`pessoal`/`c
 
 ## Contexto
 
-A página [Início](../pages/inicio.md) (Flutter, Bloom) tem um card "Comparativo vs. <mês anterior>" com 3 colunas. Cada coluna precisa do delta % daquele bucket. O cálculo só faz sentido client-side — o backend não retorna agregados pré-computados.
+A página [Início](../pages/inicio.md) (Flutter, Bloom) tem um card "Comparação vs. <mês anterior>" com 2 colunas (eram 3 até 2026-10-01). Cada coluna precisa do delta % daquele bucket. O cálculo só faz sentido client-side — o backend não retorna agregados pré-computados.
 
 ## Regras
 
@@ -80,11 +80,24 @@ O corte é **por rateio primeiro, origem depois**:
 
 Valor somado é sempre `splitForPerson` (metade nas linhas `Compartilhado`, cheio nas da pessoa). As três continuam particionando o total: toda linha com `splitForPerson != 0` cai em exatamente uma.
 
+### Os dois agrupamentos da UI (pós-2026-10-01)
+
+O donut e o card Comparação da Início mostram **dois** agrupamentos, derivados das três fatias:
+
+| Agrupamento | Regra | Cor |
+|---|---|---|
+| `compartilhado` | `credito + debito` (getter em `PersonBuckets`) | `violet` |
+| `pessoal` | a fatia `pessoal` | `mint` |
+
+`compartilhado + pessoal == total`, por construção. As fatias `credito` e `debito` continuam existindo: são elas que alimentam os tiles `Total Crédito`/`Total Débito` logo abaixo (ver [origem-totals.md](origem-totals.md), que soma as duas pessoas) e a conta de cada tile da aba [Categoria](../pages/compart.md).
+
+O Δ de `compartilhado` sai de `delta(cur.compartilhado, prev.compartilhado)` — **da soma**, não da média de `delta(credito)` e `delta(debito)`: a média de dois percentuais não é o percentual da soma, e um dos dois pode ser `null`.
+
 **Antes** o corte era por origem primeiro: `Débito` ia inteiro para a fatia de débito, mesmo com rateio individual, e `pessoal` só tinha Crédito. O campo chamava-se `compart`.
 
 **Efeito medido na fatura 06/11/2026:** nenhuma linha de Débito tinha rateio `Compartilhado` (9 Dani, 11 Julio), então a fatia Débito foi de 72% para **0%** e Pessoal de 18% para **90%** (Dani). O total não muda, só a distribuição. A fatia volta a aparecer no mês em que houver um débito dividido.
 
-**As três fatias fecham com a tela que abrem** (conferido em 06/11/2026 para as duas pessoas): Crédito → aba Categoria (`COMPARTILHADO / 2`); Pessoal → [Despesas pessoais](../pages/detalhe.md), que passou a listar Crédito **e** Débito da pessoa; Débito → aba [Categoria](../pages/compart.md) com o tile `TOTAL DÉBITO` marcado (a tela `/debito` foi removida em 2026-10-01 — ver [../pages/debito.md](../pages/debito.md)).
+**Cada agrupamento fecha com a tela que abre:** Compartilhado → aba [Categoria](../pages/compart.md) sem filtro de origem, onde `COMPARTILHADO / 2` é `Σ valor/2` de todas as linhas `Compartilhado`, a mesma conta; Pessoal → [Despesas pessoais](../pages/detalhe.md), que passou a listar Crédito **e** Débito da pessoa. Antes da fusão, as três fatias fechavam uma a uma (conferido em 06/11/2026 para as duas pessoas); a tela `/debito` foi removida em 2026-10-01 — ver [../pages/debito.md](../pages/debito.md).
 
 ## Edge cases
 

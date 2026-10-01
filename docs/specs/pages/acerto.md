@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-10-01
 ---
 
 # Acerto — acerto final do mês entre Júlio e Dani
@@ -37,16 +37,22 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 - `useMonthData(currentMonth)` — mesma query de Consulta. Sem chamadas extras.
 
-### Toggle do Pix do Júlio
+### Linhas de débito
 
-- Estado `acertoPixJulio: boolean` no store global (Zustand, persistido). Default `false`.
-- **Duas linhas de débito** (pós-2026-10-01), ambas expansíveis, nos dois cards:
-  - `Débito (compartilhado)` — `origem === "Débito"` E `rateio === "Compartilhado"` E `acerto === "Sim"`, somando `splitForPerson` (metade). Os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho.
-  - `Débito (pessoal)` — `origem === "Débito"` E `rateio === <pessoa>` E `acerto === "Sim"`, valor cheio. É a antiga linha única `"Débito"` (antes `"Pix (contas)"`).
-  - Expandir **só mostra ou esconde** os lançamentos. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía linhas fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
-  - A linha compartilhada hoje soma zero (não há débito `Compartilhado` na planilha) e **não alterou o acerto**: conferido em 06/11/2026, R$ 6.580,55 (Dani) e R$ 6.099,15 (Julio) antes e depois.
-- Quando `true`: card de Júlio mostra **todas** as Pix dele do mês. Total do card cresce.
-- Card de Dani **não** tem toggle equivalente.
+**Três linhas** (pós-2026-10-01), todas expansíveis, nos dois cards, nesta ordem:
+
+| Linha | Filtro | Valor somado |
+|---|---|---|
+| `Débito (compartilhado)` | `origem === "Débito"` E `rateio === "Compartilhado"` | `splitForPerson` (metade) |
+| `Débito (outros)` | `origem === "Débito"` E `rateio === <pessoa>` E `categoria !== "Pessoal"` | valor cheio |
+| `Débito (pessoal)` | `origem === "Débito"` E `rateio === <pessoa>` E `categoria === "Pessoal"` | valor cheio |
+
+- A comparação de categoria é normalizada (`trim().toLowerCase()`): a col F é texto livre.
+- Na linha compartilhada os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho; nas outras duas, o valor cheio.
+- `outros` + `pessoal` é exatamente o conjunto da antiga linha única `Débito (pessoal)`. A divisão é **de apresentação**: o total transferido não muda (teste em `acerto_total_test.dart`). Motivo: contas de casa que a pessoa paga sozinha (Condomínio, Gás, Diarista) não são gasto pessoal dela e misturavam-se com Dízimo/Previdência.
+- A coluna `Acerto` (col J) **não filtra nada** aqui desde 2026-10-01. Antes só `"Sim"` entrava, e o card mostrava uma despesa onde havia cinco.
+- Expandir **só mostra ou esconde** os lançamentos. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía linhas fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
+- O número grande do topo e o `Total Pessoal` do card são o **mesmo valor** e vêm os dois de `acertoBreakdown` ([app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart)). Já divergiram por estarem calculados em dois lugares.
 
 ### Δ (diff)
 

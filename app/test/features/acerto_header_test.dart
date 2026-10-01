@@ -16,6 +16,7 @@ Entry _e({
   required double valor,
   String acerto = '',
   String descricao = 'X',
+  String categoria = 'Casa',
 }) =>
     Entry(
       row: row,
@@ -24,7 +25,7 @@ Entry _e({
       descricao: descricao,
       valor: valor,
       origem: origem,
-      categoria: 'Casa',
+      categoria: categoria,
       rateio: rateio,
       banco: '',
       parcela: '',
@@ -37,6 +38,7 @@ final _rows = [
   _e(row: 4, origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 400, acerto: 'Sim'),
   _e(row: 5, origem: kOrigemDebito, rateio: 'Dani', valor: 70, descricao: 'SEM MARCA'),
   _e(row: 6, origem: kOrigemDebito, rateio: 'Dani', valor: 30, acerto: 'Sim', descricao: 'COM MARCA'),
+  _e(row: 7, origem: kOrigemDebito, rateio: 'Dani', valor: 40, categoria: 'Pessoal', descricao: 'DIZIMO'),
 ];
 
 /// A fonte do flutter_test desenha cada glifo como um quadrado e estoura a
@@ -74,11 +76,46 @@ void main() {
     await tester.pumpAndSettle();
     _semErroReal(tester);
 
-    // Dani: créd.compart 100 + créd.pess 60 + déb.compart 200 + déb.pess 100.
+    // Dani: créd.compart 100 + créd.pess 60 + déb.compart 200 + déb.outros 100
+    // + déb.pessoal 40.
     final esperado = acertoBreakdown(_rows, Person.dani).total;
-    expect(esperado, 460);
-    expect(find.text('R\$ 460,00'), findsOneWidget); // topo
-    expect(find.text('460,00'), findsOneWidget); // Total Pessoal do card
+    expect(esperado, 500);
+    expect(find.text('R\$ 500,00'), findsOneWidget); // topo
+    expect(find.text('500,00'), findsOneWidget); // Total Pessoal do card
+  });
+
+  // A categoria parte o débito da pessoa em duas linhas; o total não muda.
+  testWidgets('as três linhas de débito, cada uma com seus filhos',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          monthDataProvider.overrideWith((ref, month) async =>
+              MonthDataResponse(ok: true, month: '06/11/2026', rows: _rows)),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: AcertoPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
+
+    expect(find.text('Débito (compartilhado)'), findsOneWidget);
+    expect(find.text('Débito (outros)'), findsOneWidget);
+    expect(find.text('Débito (pessoal)'), findsOneWidget);
+
+    // Outros = 70 + 30 (categoria Casa); pessoal = 40 (Dízimo). Cada subtotal
+    // aparece junto dos seus filhos: 40,00 é o subtotal e a única linha dele.
+    expect(find.text('70,00'), findsOneWidget);
+    expect(find.text('30,00'), findsOneWidget);
+    expect(find.text('DIZIMO'), findsOneWidget);
+    expect(find.text('40,00'), findsNWidgets(2));
   });
 
   testWidgets('débito sem acerto=Sim aparece na lista', (tester) async {

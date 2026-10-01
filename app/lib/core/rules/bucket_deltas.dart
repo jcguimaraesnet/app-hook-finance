@@ -23,6 +23,13 @@ class PersonBuckets {
     required this.debito,
   });
 
+  /// Tudo que é dividido, nas duas origens. É o agrupamento que a Início mostra
+  /// desde 2026-10-01: donut e Comparação passaram de três fatias
+  /// (Crédito · Débito · Pessoal) para duas (Compartilhado · Pessoal). Crédito e
+  /// Débito continuam separados aqui porque os tiles abaixo do Comparação ainda
+  /// mostram os dois, e porque a conta de cada um é a que a aba Categoria usa.
+  double get compartilhado => credito + debito;
+
   double get total => credito + pessoal + debito;
 
   static const zero = PersonBuckets(credito: 0, pessoal: 0, debito: 0);
@@ -57,7 +64,17 @@ class BucketDeltas {
   final double? pessoal;
   final double? debito;
 
-  const BucketDeltas({this.credito, this.pessoal, this.debito});
+  /// Δ do agrupamento `compartilhado`. Calculado sobre a soma, não a partir dos
+  /// Δ de crédito e débito: a média de dois percentuais não é o percentual da
+  /// soma, e um dos dois pode ser `null`.
+  final double? compartilhado;
+
+  const BucketDeltas({
+    this.credito,
+    this.pessoal,
+    this.debito,
+    this.compartilhado,
+  });
 
   static const empty = BucketDeltas();
 }
@@ -75,6 +92,7 @@ BucketDeltas bucketDeltas({
     credito: delta(current.credito, previous.credito),
     pessoal: delta(current.pessoal, previous.pessoal),
     debito: delta(current.debito, previous.debito),
+    compartilhado: delta(current.compartilhado, previous.compartilhado),
   );
 }
 

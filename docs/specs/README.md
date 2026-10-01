@@ -30,6 +30,7 @@ docs/specs/
 │   ├── split-for-person.md         valor que cabe a uma pessoa por linha
 │   ├── bucket-key.md               agrupamento Crédito+rateio → label
 │   ├── bucket-deltas.md            % vs. mês anterior por bucket (Flutter Início)
+│   ├── origem-totals.md             Crédito/Débito do mês somando as duas pessoas
 │   ├── diff-calculation.md         diff de Débito entre pessoas (PersonCard/AcertoCard)
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
 │   ├── personal-summary.md         4 tiles (total/cartão/parcelado atual+próx) por pessoa
