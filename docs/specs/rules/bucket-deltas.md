@@ -3,7 +3,9 @@ status: stable
 last_updated: 2026-10-01
 ---
 
-# Bucket deltas — variação % vs. mês anterior
+# Bucket deltas — os quadrantes de uma pessoa no mês
+
+> **O Δ% saiu em 2026-10-01.** O redesenho da [Início](../pages/inicio.md) removeu o card "Comparação vs. mês anterior", único consumer; `BucketDeltas` e `bucketDeltas()` foram apagados. Ficou `PersonBuckets` (os quadrantes) e `previousMonthOf`. O texto abaixo sobre deltas é histórico — está mantido porque a conta volta igual se a comparação voltar.
 
 Regra que calcula a variação percentual de cada bucket (`compart`/`pessoal`/`contas`) entre o mês corrente e o mês anterior, para uma pessoa específica.
 
@@ -87,7 +89,11 @@ O donut e o card Comparação da Início mostram **dois** agrupamentos, derivado
 | Agrupamento | Regra | Cor |
 |---|---|---|
 | `compartilhado` | `credito + debito` (getter em `PersonBuckets`) | `violet` |
-| `pessoal` | a fatia `pessoal` | `mint` |
+| `pessoal` | `pessoalCredito + pessoalDebito` (getter) | `mint` |
+
+### Os quatro quadrantes
+
+`PersonBuckets` guarda **quatro** campos, não três: `credito` e `debito` (rateio `Compartilhado`, pela metade) mais `pessoalCredito` e `pessoalDebito` (rateio da pessoa, valor cheio). É o 2×2 `(Crédito | Débito) × (compartilhado | pessoal)` do card de totais da Início. Os quatro **particionam** o total — teste trava isso, porque a soma dos tiles tem que bater com o número grande acima deles.
 
 `compartilhado + pessoal == total`, por construção. As fatias `credito` e `debito` continuam existindo: são elas que alimentam os tiles `Total Crédito`/`Total Débito` logo abaixo (ver [origem-totals.md](origem-totals.md), que soma as duas pessoas) e a conta de cada tile da aba [Categoria](../pages/compart.md).
 

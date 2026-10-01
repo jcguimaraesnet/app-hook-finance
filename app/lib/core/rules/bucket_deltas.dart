@@ -7,92 +7,78 @@ import '../types.dart';
 import 'split_for_person.dart';
 
 /// Buckets agregados de uma pessoa para um conjunto de linhas.
+///
+/// São os **quatro quadrantes** `(Crédito | Débito) × (compartilhado | pessoal)`
+/// que o card de totais da Início mostra em 2×2. Eles particionam o total: toda
+/// linha com `splitForPerson != 0` cai em exatamente um.
 class PersonBuckets {
-  /// Dividido no cartão: origem Crédito com rateio `Metade`.
+  /// Dividido no cartão: origem Crédito com rateio `Compartilhado`.
   final double credito;
 
-  /// Tudo que é da pessoa: rateio dela, em **qualquer** origem.
-  final double pessoal;
-
-  /// Dividido fora do cartão: origem Débito com rateio `Metade`.
+  /// Dividido fora do cartão: origem Débito com rateio `Compartilhado`.
   final double debito;
+
+  /// Rateio da pessoa na origem Crédito.
+  final double pessoalCredito;
+
+  /// Rateio da pessoa na origem Débito.
+  final double pessoalDebito;
 
   const PersonBuckets({
     required this.credito,
-    required this.pessoal,
     required this.debito,
+    required this.pessoalCredito,
+    required this.pessoalDebito,
   });
 
-  /// Tudo que é dividido, nas duas origens. É o agrupamento que a Início mostra
-  /// desde 2026-10-01: donut e Comparação passaram de três fatias
-  /// (Crédito · Débito · Pessoal) para duas (Compartilhado · Pessoal). Crédito e
-  /// Débito continuam separados aqui porque os tiles abaixo do Comparação ainda
-  /// mostram os dois, e porque a conta de cada um é a que a aba Categoria usa.
+  /// Tudo que é da pessoa: rateio dela, em **qualquer** origem.
+  double get pessoal => pessoalCredito + pessoalDebito;
+
+  /// Tudo que é dividido, nas duas origens. É uma das duas fatias do donut da
+  /// Início desde 2026-10-01 (a outra é `pessoal`); antes eram três, com
+  /// Crédito e Débito separados no gráfico. Os quatro quadrantes continuam
+  /// separados aqui porque o card de totais os mostra um a um.
   double get compartilhado => credito + debito;
 
-  double get total => credito + pessoal + debito;
+  double get total => compartilhado + pessoal;
 
-  static const zero = PersonBuckets(credito: 0, pessoal: 0, debito: 0);
+  static const zero = PersonBuckets(
+    credito: 0,
+    debito: 0,
+    pessoalCredito: 0,
+    pessoalDebito: 0,
+  );
 }
 
-/// Soma `splitForPerson(r, person)` por bucket.
+/// Soma `splitForPerson(r, person)` por quadrante.
 PersonBuckets bucketsForPerson(List<ExpenseRow> rows, Person person) {
-  double credito = 0, pessoal = 0, debito = 0;
+  double credito = 0, debito = 0, pessoalCredito = 0, pessoalDebito = 0;
   for (final r in rows) {
     final v = splitForPerson(r, person);
     if (v == 0) continue;
     // Pós-2026-10-01 o corte é por rateio primeiro, origem depois: o que é da
-    // pessoa é "pessoal" venha de Crédito ou Débito, e as duas outras fatias
-    // são só o que está dividido (`Metade`). Antes, Débito caía inteiro na
-    // fatia de débito mesmo sendo rateio individual.
+    // pessoa é "pessoal" venha de Crédito ou Débito. Antes, Débito caía inteiro
+    // na fatia de débito mesmo sendo rateio individual.
+    final isCredito = r.origem == kOrigemCredito;
     if (r.rateio == person.name) {
-      pessoal += v;
+      if (isCredito) {
+        pessoalCredito += v;
+      } else {
+        pessoalDebito += v;
+      }
     } else if (r.rateio == kRateioCompartilhado) {
-      if (r.origem == kOrigemCredito) {
+      if (isCredito) {
         credito += v;
       } else {
         debito += v;
       }
     }
   }
-  return PersonBuckets(credito: credito, pessoal: pessoal, debito: debito);
-}
-
-/// Δ% por bucket entre `current` e `previous`. `null` quando previous é 0.
-class BucketDeltas {
-  final double? credito;
-  final double? pessoal;
-  final double? debito;
-
-  /// Δ do agrupamento `compartilhado`. Calculado sobre a soma, não a partir dos
-  /// Δ de crédito e débito: a média de dois percentuais não é o percentual da
-  /// soma, e um dos dois pode ser `null`.
-  final double? compartilhado;
-
-  const BucketDeltas({
-    this.credito,
-    this.pessoal,
-    this.debito,
-    this.compartilhado,
-  });
-
-  static const empty = BucketDeltas();
-}
-
-BucketDeltas bucketDeltas({
-  required PersonBuckets current,
-  required PersonBuckets previous,
-}) {
-  double? delta(double cur, double prev) {
-    if (prev == 0) return null;
-    return (cur - prev) / prev * 100;
-  }
-
-  return BucketDeltas(
-    credito: delta(current.credito, previous.credito),
-    pessoal: delta(current.pessoal, previous.pessoal),
-    debito: delta(current.debito, previous.debito),
-    compartilhado: delta(current.compartilhado, previous.compartilhado),
+  return PersonBuckets(
+    credito: credito,
+    debito: debito,
+    pessoalCredito: pessoalCredito,
+    pessoalDebito: pessoalDebito,
   );
 }
 

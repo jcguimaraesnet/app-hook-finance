@@ -1,11 +1,25 @@
 ---
 status: stable
-last_updated: 2026-05-31
+last_updated: 2026-10-01
 ---
 
 # RecentEntryRow — linha de lançamento no app
 
-Widget compartilhado usado em todas as listas de lançamentos do Flutter app: [Início](../pages/inicio.md) (últimos 2), [Lançamento](../pages/lancamento.md) (até 100) e [Detalhe](../pages/detalhe.md) (pessoais do mês).
+Widget compartilhado usado em todas as listas de lançamentos do Flutter app: [Início](../pages/inicio.md) (últimos 3), [Lançamento](../pages/lancamento.md) (até 100) e [Detalhe](../pages/detalhe.md) (pessoais do mês).
+
+## Duas variantes
+
+| | compacta (default) | larga (`spacious: true`) |
+|---|---|---|
+| Onde | Lançamentos, Despesas pessoais | **Início** |
+| Avatar | 30px, raio 9, fundo com 13% da cor, texto na cor | 40px, raio 13, **fundo sólido**, texto branco |
+| Descrição | 12,5px w500 | 14,5px w600 |
+| Data | à **direita da descrição**, mono 10px | dentro da meta: `Casa · 29/09` |
+| Valor | mono 12px w500 | mono 14px w600 |
+| Chevron | sim, quando clicável | não (a linha inteira é o alvo) |
+| Divisor | borda no topo, da ponta | linha recuada 12px |
+
+A larga veio do canvas de design de 2026-10-01. As outras listas seguem compactas: são telas cheias, onde a linha larga custaria dois itens visíveis. A data na meta **reverte** a mudança de algumas horas antes (data ao lado da descrição), que fica valendo só nas listas compactas.
 
 ## Contexto
 

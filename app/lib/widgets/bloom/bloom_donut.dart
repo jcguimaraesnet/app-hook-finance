@@ -70,17 +70,21 @@ class BloomDonut extends StatelessWidget {
               ),
             ),
           ),
-          IgnorePointer(
-            child: Text(
-              person,
-              style: BloomTypography.display(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-                height: 1,
+          // Centro vazio quando quem chama não manda nome: no redesenho da
+          // Início (2026-10-01) o donut encolheu para 88px ao lado do valor, e
+          // "Júlio" no meio não cabe nem acrescenta — o nome já está no título.
+          if (person.isNotEmpty)
+            IgnorePointer(
+              child: Text(
+                person,
+                style: BloomTypography.display(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  height: 1,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

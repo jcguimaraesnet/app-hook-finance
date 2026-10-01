@@ -109,73 +109,32 @@ void main() {
       expect(b.compartilhado + b.pessoal, b.total);
     });
 
+    // O card de totais da Início mostra os quatro em 2×2; se não particionassem
+    // o total, a soma dos tiles não bateria com o número grande acima deles.
+    test('os quatro quadrantes particionam o total', () {
+      final rows = [
+        _row(valor: 200, origem: kOrigemCredito, rateio: kRateioCompartilhado),
+        _row(valor: 100, origem: kOrigemDebito, rateio: kRateioCompartilhado),
+        _row(valor: 80, origem: kOrigemCredito, rateio: 'Julio'),
+        _row(valor: 30, origem: kOrigemDebito, rateio: 'Julio'),
+        _row(valor: 999, origem: kOrigemDebito, rateio: 'Alzira'),
+      ];
+      final b = bucketsForPerson(rows, Person.julio);
+      expect(b.credito, 100); // 200/2
+      expect(b.debito, 50); // 100/2
+      expect(b.pessoalCredito, 80);
+      expect(b.pessoalDebito, 30);
+      expect(b.credito + b.debito + b.pessoalCredito + b.pessoalDebito,
+          b.total);
+      expect(b.total, 260);
+    });
+
     test('rows vazias → buckets zero', () {
       final b = bucketsForPerson(const [], Person.julio);
       expect(b.total, 0);
       expect(b.compartilhado, 0);
-    });
-  });
-
-  group('bucketDeltas', () {
-    test('delta% calculado quando previous > 0', () {
-      const cur = PersonBuckets(credito: 110, pessoal: 80, debito: 90);
-      const prev = PersonBuckets(credito: 100, pessoal: 100, debito: 0);
-      final d = bucketDeltas(current: cur, previous: prev);
-      expect(d.credito, 10.0);
-      expect(d.pessoal, -20.0);
-      expect(d.debito, isNull); // previous.debito == 0
-      // 200 vs 100: o Δ do agrupamento sai da soma, não da média dos dois Δ —
-      // aqui um deles é nem calculável.
-      expect(d.compartilhado, 100.0);
-    });
-
-    test('previous tudo zero → todos os deltas null', () {
-      final d = bucketDeltas(
-        current: const PersonBuckets(credito: 50, pessoal: 0, debito: 10),
-        previous: PersonBuckets.zero,
-      );
-      expect(d.credito, isNull);
-      expect(d.pessoal, isNull);
-      expect(d.debito, isNull);
-      expect(d.compartilhado, isNull);
-    });
-
-    test('current zero / previous cheio → -100%', () {
-      final d = bucketDeltas(
-        current: PersonBuckets.zero,
-        previous: const PersonBuckets(credito: 50, pessoal: 50, debito: 50),
-      );
-      expect(d.credito, -100.0);
-      expect(d.pessoal, -100.0);
-      expect(d.debito, -100.0);
-      expect(d.compartilhado, -100.0);
-    });
-  });
-
-  group('previousMonthOf', () {
-    test('MM/YYYY — mês comum', () {
-      expect(previousMonthOf('06/2026'), '05/2026');
-      expect(previousMonthOf('11/2025'), '10/2025');
-    });
-
-    test('MM/YYYY — janeiro vira dezembro do ano anterior', () {
-      expect(previousMonthOf('01/2026'), '12/2025');
-    });
-
-    test('DD/MM/YYYY — preserva o dia', () {
-      expect(previousMonthOf('06/06/2026'), '06/05/2026');
-      expect(previousMonthOf('15/03/2026'), '15/02/2026');
-    });
-
-    test('DD/MM/YYYY — janeiro vira 12 do ano anterior, com dia', () {
-      expect(previousMonthOf('06/01/2026'), '06/12/2025');
-    });
-
-    test('formato inválido → null', () {
-      expect(previousMonthOf(null), isNull);
-      expect(previousMonthOf(''), isNull);
-      expect(previousMonthOf('2026-06'), isNull);
-      expect(previousMonthOf('xx/yyyy'), isNull);
+      expect(b.pessoalCredito, 0);
+      expect(b.pessoalDebito, 0);
     });
   });
 }

@@ -36,6 +36,16 @@ class BloomColors {
   static const good = Color(0xFF3FB793);
   static const bad = Color(0xFFE16071);
 
+  // Chips e trilhos do redesenho da Início (2026-10-01). Tints sólidos, não
+  // alpha: sobre o gradient da tela o alpha deixava o fundo vazar e cada card
+  // ficava de um tom.
+  static const violetTint = Color(0xFFECE9FF);
+  static const violetDeep = Color(0xFF4B37C9);
+  static const mintTint = Color(0xFFE2F6EE);
+  static const mintDeep = Color(0xFF16714F);
+  static const track = Color(0xFFF3F1FA);
+  static const soft = Color(0xFFF7F6FC);
+
   // Background gradient da tela inteira (lavanda → off-white → menta).
   static const screenGradient = LinearGradient(
     begin: Alignment.topCenter,

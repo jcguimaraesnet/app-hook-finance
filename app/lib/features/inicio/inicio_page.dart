@@ -6,8 +6,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/origem.dart';
 import '../../core/rules/bucket_deltas.dart';
 import '../../core/rules/origem_totals.dart';
 import '../../core/types.dart';
@@ -41,18 +41,10 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final person = ref.watch(selectedPersonProvider);
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
-    final prevAsync = ref.watch(previousMonthDataProvider);
     final lastAsync = ref.watch(lastEntriesProvider(3));
 
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
-    final prevRows =
-        prevAsync.value?.rows ?? const <ExpenseRow>[];
-
-    final juCur = bucketsForPerson(rows, Person.julio);
-    final daCur = bucketsForPerson(rows, Person.dani);
-    final cur = person == Person.julio ? juCur : daCur;
-    final prev = bucketsForPerson(prevRows, person);
-    final deltas = bucketDeltas(current: cur, previous: prev);
+    final cur = bucketsForPerson(rows, person);
 
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
@@ -259,39 +251,25 @@ class _InicioPageState extends ConsumerState<InicioPage> {
               onNovaFatura: onNovaFatura,
               busy: _refreshing || _creatingInvoice,
             ),
-            const SizedBox(height: 6),
-            _Greeting(person: person),
-            const SizedBox(height: 14),
-            // Seletor acima do donut: é ele que define de quem são os números
-            // do card logo abaixo.
-            _PersonSelector(
-              selectedPerson: person,
-              julioTotal: juCur.total,
-              daniTotal: daCur.total,
-              onSelectPerson: (p) {
-                ref.read(selectedPersonProvider.notifier).state = p;
-                setState(() => _selectedSegment = null);
-              },
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            // Um card só: seletor de pessoa, total do mês com o donut e o
+            // atalho para as despesas pessoais dela.
             _HeroCard(
               person: person,
               buckets: cur,
               selectedIdx: _selectedSegment,
               onSelect: (i) => setState(() => _selectedSegment = i),
+              onSelectPerson: (p) {
+                ref.read(selectedPersonProvider.notifier).state = p;
+                setState(() => _selectedSegment = null);
+              },
               loading: loading && rows.isEmpty,
             ),
             const SizedBox(height: 14),
-            _ComparativeCard(
-              cur: cur,
-              prev: prev,
-              deltas: deltas,
-              hasPrev: prevAsync.hasValue && prevAsync.value != null,
-              currentLabel: currentMonth ?? '',
-              previousLabel: ref.watch(previousMonthProvider) ?? '',
+            _TotaisSection(
+              buckets: cur,
+              totalCredito: origemTotals(rows).credito,
             ),
-            const SizedBox(height: 12),
-            _OrigemTotalsRow(totals: origemTotals(rows)),
             const SizedBox(height: 18),
             _RecentEntriesSection(asyncLast: lastAsync),
           ],
@@ -388,19 +366,28 @@ class _TopAppBarState extends ConsumerState<_TopAppBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       child: Row(
         children: [
-          const BloomLogo(size: 32),
+          const BloomLogo(size: 36),
           const SizedBox(width: 10),
-          Text(
-            'Hook Finance',
-            style: BloomTypography.display(
-              fontSize: 16,
-              letterSpacing: -0.3,
+          // Expanded sem Spacer depois: os dois têm flex 1 e dividiriam a
+          // sobra, truncando o título ("Hook Fina...") com a pílula de mês já
+          // no seu tamanho final. O título fica com tudo que sobrar.
+          Expanded(
+            child: Text(
+              'Hook Finance',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: BloomTypography.display(
+                fontSize: 17,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
+          const MonthSelector(abbrev: true),
+          const SizedBox(width: 8),
           KeyedSubtree(
             key: _menuKey,
             child: _IconBtn(
@@ -488,57 +475,14 @@ class _IconBtn extends StatelessWidget {
     );
   }
 }
-
-class _Greeting extends StatelessWidget {
-  final Person person;
-  const _Greeting({required this.person});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Olá, ',
-                  style: BloomTypography.display(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: -0.4,
-                    color: BloomColors.muted,
-                    height: 1,
-                  ),
-                ),
-                Text(
-                  person.displayName,
-                  style: BloomTypography.display(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const MonthSelector(),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroCard extends StatelessWidget {
+/// Card principal: seletor de pessoa, total do mês com donut e o atalho para
+/// as despesas pessoais. Spec: docs/specs/pages/inicio.md
+class _HeroCard extends ConsumerWidget {
   final Person person;
   final PersonBuckets buckets;
   final int? selectedIdx;
   final ValueChanged<int?> onSelect;
+  final ValueChanged<Person> onSelectPerson;
   final bool loading;
 
   const _HeroCard({
@@ -546,44 +490,17 @@ class _HeroCard extends StatelessWidget {
     required this.buckets,
     required this.selectedIdx,
     required this.onSelect,
+    required this.onSelectPerson,
     required this.loading,
   });
 
   // Duas fatias desde 2026-10-01: Compartilhado (crédito + débito divididos) e
-  // Pessoal. Donut, legenda e o card Comparação seguem a mesma ordem. Crédito e
-  // Débito separados vivem nos tiles abaixo do Comparação.
-  static const _summaryColors = [
-    BloomColors.violet, // compartilhado
-    BloomColors.mint,   // pessoal
-  ];
-
-  // Sem o bloco "TOTAL PESSOAL + valor" desde 2026-10-01: o hero virou visão de
-  // proporção. Os valores absolutos estão logo abaixo, nos tiles e no
-  // Comparativo. O tap numa fatia segue destacando o arco e apagando as outras.
-  Widget _buildSummary({
-    required List<DonutBucket> donutBuckets,
-    required List<Color> colors,
-  }) {
-    final sel = selectedIdx;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < donutBuckets.length; i++)
-          _BucketLine(
-            color: colors[i],
-            label: donutBuckets[i].label,
-            pct: donutBuckets[i].pct,
-            dim: sel != null && sel != i,
-            onTap: () => onSelect(sel == i ? null : i),
-          ),
-      ],
-    );
-  }
+  // Pessoal. Donut e legenda leem desta lista — quando o donut tinha a sua por
+  // dentro, reordenar as fatias pintou cada uma de uma cor errada.
+  static const _cores = [BloomColors.violet, BloomColors.mint];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final donutBuckets = [
       DonutBucket(
         label: 'Compartilhado',
@@ -597,64 +514,223 @@ class _HeroCard extends StatelessWidget {
         pct: buckets.total == 0 ? 0 : buckets.pessoal / buckets.total * 100,
       ),
     ];
-    const colors = _summaryColors;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: BloomCard(
-        soft: true,
-        padding: const EdgeInsets.all(18),
-        borderRadius: BorderRadius.circular(26),
-        child: loading
-            ? const SizedBox(
-                height: 170,
+        padding: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _PersonSwitch(selected: person, onSelect: onSelectPerson),
+            const SizedBox(height: 16),
+            if (loading)
+              const SizedBox(
+                height: 120,
                 child: Center(
-                    child: CircularProgressIndicator(
-                        color: BloomColors.violet)),
+                  child: CircularProgressIndicator(color: BloomColors.violet),
+                ),
               )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  BloomDonut(
-                    buckets: donutBuckets,
-                    total: buckets.total,
-                    person: person.displayName,
-                    colors: colors,
-                    selectedIdx: selectedIdx,
-                    onSelect: onSelect,
-                    size: 140,
-                    stroke: 15,
-                  ),
-                  const SizedBox(width: 16),
-                  // IntrinsicWidth deixa a legenda com a largura do seu item
-                  // mais largo, em vez de esticar até a borda do card: antes o
-                  // rótulo ficava na esquerda e o percentual na direita, com um
-                  // vão enorme no meio. Centrada no espaço que sobra do donut.
-                  Expanded(
-                    child: Center(
-                      child: IntrinsicWidth(
-                        child: _buildSummary(
-                          donutBuckets: donutBuckets,
-                          colors: colors,
-                        ),
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Gastos de ${person.displayName} no mês',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: BloomTypography.geist(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                              color: BloomColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  'R\$ ',
+                                  style: BloomTypography.display(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: BloomColors.muted,
+                                  ),
+                                ),
+                                Text(
+                                  formatMoney(buckets.total),
+                                  maxLines: 1,
+                                  style: BloomTypography.display(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.8,
+                                    height: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          for (var i = 0; i < donutBuckets.length; i++)
+                            _LegendLine(
+                              color: _cores[i],
+                              label: donutBuckets[i].label,
+                              pct: donutBuckets[i].pct,
+                              dim: selectedIdx != null && selectedIdx != i,
+                              onTap: () =>
+                                  onSelect(selectedIdx == i ? null : i),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    BloomDonut(
+                      buckets: donutBuckets,
+                      total: buckets.total,
+                      person: '',
+                      colors: _cores,
+                      selectedIdx: selectedIdx,
+                      onSelect: onSelect,
+                      size: 92,
+                      stroke: 13,
+                    ),
+                  ],
+                ),
               ),
+            const SizedBox(height: 14),
+            _AtalhoPessoal(
+              valor: buckets.pessoalCredito,
+              onTap: () => context.push(
+                  '/detalhe?person=${person.name.toLowerCase()}'),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _BucketLine extends StatelessWidget {
+/// Seletor de pessoa em trilho único (segmented control). Substituiu dois tiles
+/// soltos que repetiam o total — o total agora é um só, logo abaixo, e é da
+/// pessoa marcada aqui.
+class _PersonSwitch extends StatelessWidget {
+  final Person selected;
+  final ValueChanged<Person> onSelect;
+
+  const _PersonSwitch({required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: BloomColors.track,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        children: [
+          for (final p in Person.values) ...[
+            if (p != Person.values.first) const SizedBox(width: 4),
+            Expanded(
+              child: _PersonSwitchItem(
+                person: p,
+                active: selected == p,
+                onTap: () => onSelect(p),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonSwitchItem extends StatelessWidget {
+  final Person person;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _PersonSwitchItem({
+    required this.person,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: active ? BloomColors.card : Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      elevation: active ? 1.5 : 0,
+      shadowColor: BloomColors.ink.withValues(alpha: 0.18),
+      // Sem isto o Material 3 mistura `surfaceTint` na cor quando há elevação:
+      // a aba marcada saía cinza-lilás, mais escura que a não-marcada.
+      surfaceTintColor: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: SizedBox(
+          height: 44,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: BloomColors.forPerson(person),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  person == Person.julio ? 'J' : 'D',
+                  style: BloomTypography.display(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  person.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: BloomTypography.geist(
+                    fontSize: 14.5,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                    color: active ? BloomColors.ink : BloomColors.muted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegendLine extends StatelessWidget {
   final Color color;
   final String label;
   final double pct;
   final bool dim;
   final VoidCallback onTap;
 
-  const _BucketLine({
+  const _LegendLine({
     required this.color,
     required this.label,
     required this.pct,
@@ -669,7 +745,7 @@ class _BucketLine extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 3),
           child: Row(
             children: [
               Container(
@@ -678,28 +754,25 @@ class _BucketLine extends StatelessWidget {
                 decoration:
                     BoxDecoration(color: color, shape: BoxShape.circle),
               ),
-              const SizedBox(width: 9),
-              Expanded(
+              const SizedBox(width: 7),
+              Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: BloomTypography.geist(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w500,
-                    color: BloomColors.ink,
+                    fontSize: 12.5,
+                    color: BloomColors.muted,
                   ),
                 ),
               ),
-              // Respiro mínimo: com IntrinsicWidth o Expanded acima encosta o
-              // percentual no rótulo mais longo.
-              const SizedBox(width: 22),
+              const SizedBox(width: 6),
               Text(
                 '${pct.toStringAsFixed(0)}%',
-                style: BloomTypography.mono(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                  color: BloomColors.inkSoft,
+                style: BloomTypography.geist(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: BloomColors.ink,
                 ),
               ),
             ],
@@ -710,80 +783,202 @@ class _BucketLine extends StatelessWidget {
   }
 }
 
-class _PersonSelector extends StatelessWidget {
-  final Person selectedPerson;
-  final double julioTotal;
-  final double daniTotal;
-  final ValueChanged<Person> onSelectPerson;
+/// Atalho para as despesas pessoais da pessoa, dentro do card.
+class _AtalhoPessoal extends StatelessWidget {
+  final double valor;
+  final VoidCallback onTap;
 
-  const _PersonSelector({
-    required this.selectedPerson,
-    required this.julioTotal,
-    required this.daniTotal,
-    required this.onSelectPerson,
+  const _AtalhoPessoal({required this.valor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: BloomColors.soft,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              const _IconChip(
+                icon: Icons.credit_card,
+                bg: BloomColors.violetTint,
+                fg: BloomColors.violetDeep,
+                size: 40,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Crédito (pessoal)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: BloomTypography.geist(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'R\$ ${formatMoney(valor)}',
+                style: BloomTypography.mono(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: BloomColors.inkSoft,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.chevron_right,
+                  size: 18, color: BloomColors.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconChip extends StatelessWidget {
+  final IconData icon;
+  final Color bg;
+  final Color fg;
+  final double size;
+
+  const _IconChip({
+    required this.icon,
+    required this.bg,
+    required this.fg,
+    required this.size,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Row(
-        children: [
-          Expanded(
-            child: _PersonTile(
-              person: Person.julio,
-              total: julioTotal,
-              selected: selectedPerson == Person.julio,
-              onTap: () => onSelectPerson(Person.julio),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _PersonTile(
-              person: Person.dani,
-              total: daniTotal,
-              selected: selectedPerson == Person.dani,
-              onTap: () => onSelectPerson(Person.dani),
-            ),
-          ),
-        ],
-      ),
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      child: Icon(icon, size: size * 0.5, color: fg),
     );
   }
 }
 
-/// Os dois totais por origem, logo abaixo do Comparação. Mesma casca dos tiles
-/// de pessoa — e, de propósito, a mesma largura: os dois somados são o total do
-/// Júlio mais o da Dani, que estão nos tiles de cima.
-class _OrigemTotalsRow extends StatelessWidget {
-  final OrigemTotals totals;
+/// Total de crédito do casal + os quatro quadrantes da pessoa selecionada.
+///
+/// Os quatro somam o total do card acima: `(Crédito | Débito) ×
+/// (compartilhado | pessoal)` particiona tudo que toca a pessoa.
+class _TotaisSection extends ConsumerWidget {
+  final PersonBuckets buckets;
+  final double totalCredito;
 
-  const _OrigemTotalsRow({required this.totals});
+  const _TotaisSection({required this.buckets, required this.totalCredito});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    void irParaCategoria(String origem) {
+      ref.read(compartOrigemFilterProvider.notifier).state = origem;
+      ref.read(activeTabProvider.notifier).state = BloomTab.compart;
+    }
+
+    void irParaPessoal() => context.push(
+        '/detalhe?person=${ref.read(selectedPersonProvider).name.toLowerCase()}');
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: _SummaryTile(
-              avatarColor: BloomColors.violet,
-              avatar: const Icon(Icons.credit_card,
-                  size: 16, color: Colors.white),
-              label: 'Total Crédito',
-              total: totals.credito,
+          BloomCard(
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+            borderRadius: BorderRadius.circular(20),
+            child: Row(
+              children: [
+                const _IconChip(
+                  icon: Icons.credit_card,
+                  bg: BloomColors.track,
+                  fg: BloomColors.ink,
+                  size: 40,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Total cartão de crédito',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: BloomTypography.geist(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'R\$ ${formatMoney(totalCredito)}',
+                  style: BloomTypography.mono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _SummaryTile(
-              avatarColor: BloomColors.sky,
-              avatar: const Icon(Icons.account_balance_outlined,
-                  size: 16, color: Colors.white),
-              label: 'Total Débito',
-              total: totals.debito,
-            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _QuadranteTile(
+                  origem: 'Crédito',
+                  escopo: 'compartilhado',
+                  valor: buckets.credito,
+                  icon: Icons.credit_card,
+                  bg: BloomColors.violetTint,
+                  fg: BloomColors.violetDeep,
+                  onTap: () => irParaCategoria(kOrigemCredito),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuadranteTile(
+                  origem: 'Débito',
+                  escopo: 'compartilhado',
+                  valor: buckets.debito,
+                  icon: Icons.account_balance_outlined,
+                  bg: BloomColors.violetTint,
+                  fg: BloomColors.violetDeep,
+                  onTap: () => irParaCategoria(kOrigemDebito),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _QuadranteTile(
+                  origem: 'Crédito',
+                  escopo: 'pessoal',
+                  valor: buckets.pessoalCredito,
+                  icon: Icons.credit_card,
+                  bg: BloomColors.mintTint,
+                  fg: BloomColors.mintDeep,
+                  onTap: irParaPessoal,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuadranteTile(
+                  origem: 'Débito',
+                  escopo: 'pessoal',
+                  valor: buckets.pessoalDebito,
+                  icon: Icons.account_balance_outlined,
+                  bg: BloomColors.mintTint,
+                  fg: BloomColors.mintDeep,
+                  onTap: irParaPessoal,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -791,363 +986,89 @@ class _OrigemTotalsRow extends StatelessWidget {
   }
 }
 
-class _PersonTile extends StatelessWidget {
-  final Person person;
-  final double total;
-  final bool selected;
+class _QuadranteTile extends StatelessWidget {
+  final String origem;
+  final String escopo;
+  final double valor;
+  final IconData icon;
+  final Color bg;
+  final Color fg;
   final VoidCallback onTap;
 
-  const _PersonTile({
-    required this.person,
-    required this.total,
-    required this.selected,
+  const _QuadranteTile({
+    required this.origem,
+    required this.escopo,
+    required this.valor,
+    required this.icon,
+    required this.bg,
+    required this.fg,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return _SummaryTile(
-      avatarColor: BloomColors.forPerson(person),
-      avatar: Text(
-        person == Person.julio ? 'J' : 'D',
-        style: BloomTypography.display(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          height: 1,
-        ),
-      ),
-      label: person.displayName,
-      total: total,
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-}
-
-/// Casca comum dos tiles do topo da Início: o seletor de pessoa e os totais por
-/// origem. Existe para que os quatro tenham o mesmo tamanho sem copiar paddings
-/// — foi o pedido explícito do usuário em 2026-10-01.
-class _SummaryTile extends StatelessWidget {
-  final Color avatarColor;
-  final Widget avatar;
-  final String label;
-  final double total;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  const _SummaryTile({
-    required this.avatarColor,
-    required this.avatar,
-    required this.label,
-    required this.total,
-    this.selected = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? Colors.white : BloomColors.ink;
-    final fgMuted =
-        selected ? Colors.white.withValues(alpha: 0.65) : BloomColors.muted;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected ? BloomColors.ink : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: selected
-                ? null
-                : Border.all(color: BloomColors.border, width: 1),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: BloomColors.ink.withValues(alpha: 0.18),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: avatarColor,
-                  shape: BoxShape.circle,
-                ),
-                child: avatar,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: BloomTypography.geist(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: fg,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'R\$ ${formatMoney(total)}',
+    return BloomCard(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(20),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                _IconChip(icon: icon, bg: bg, fg: fg, size: 36),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        origem,
                         maxLines: 1,
-                        style: BloomTypography.mono(
-                          fontSize: 11,
-                          color: fgMuted,
+                        overflow: TextOverflow.ellipsis,
+                        style: BloomTypography.geist(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ComparativeCard extends ConsumerWidget {
-  final PersonBuckets cur;
-  final PersonBuckets prev;
-  final BucketDeltas deltas;
-  final bool hasPrev;
-  final String currentLabel;
-  final String previousLabel;
-
-  const _ComparativeCard({
-    required this.cur,
-    required this.prev,
-    required this.deltas,
-    required this.hasPrev,
-    required this.currentLabel,
-    required this.previousLabel,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cols = [
-      _Col(
-        label: 'Compartilhado',
-        color: BloomColors.violet,
-        value: cur.compartilhado,
-        delta: deltas.compartilhado,
-        // Aba Categoria **sem** tile de origem marcado: como o agrupamento
-        // cobre as duas origens, o COMPARTILHADO / 2 de lá é Σ valor/2 de todas
-        // as linhas Compartilhado — a mesma conta desta coluna. Marcar uma
-        // origem mostraria só um pedaço do número clicado.
-        onTap: () {
-          ref.read(compartOrigemFilterProvider.notifier).state = null;
-          ref.read(activeTabProvider.notifier).state = BloomTab.compart;
-        },
-      ),
-      _Col(
-        label: 'Pessoal',
-        color: BloomColors.mint,
-        value: cur.pessoal,
-        delta: deltas.pessoal,
-        onTap: () => context.push(
-            '/detalhe?person=${ref.read(selectedPersonProvider).name.toLowerCase()}'),
-      ),
-    ];
-
-    final curLabelLong = monthYearLong(currentLabel);
-    final prevLabelLong = monthYearLong(previousLabel);
-    final subtitle = hasPrev
-        ? '$curLabelLong vs $prevLabelLong'
-        : curLabelLong;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(
-                child: Text(
-                  'Comparação',
-                  style: BloomTypography.display(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          BloomCard(
-            padding: const EdgeInsets.all(14),
-            borderRadius: BorderRadius.circular(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subtitle,
-                  style: BloomTypography.kicker(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            const SizedBox(height: 10),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < cols.length; i++) ...[
-                    if (i > 0)
-                      const VerticalDivider(
-                        width: 1,
-                        color: BloomColors.divider,
+                      Text(
+                        escopo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: BloomTypography.geist(
+                          fontSize: 11.5,
+                          color: BloomColors.muted,
+                        ),
                       ),
-                    Expanded(child: cols[i]),
-                  ],
-                ],
-              ),
-            ),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'R\$ ${formatMoney(valor)}',
+                          maxLines: 1,
+                          style: BloomTypography.mono(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: BloomColors.inkSoft,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Col extends StatelessWidget {
-  final String label;
-  final Color color;
-  final double value;
-  final double? delta;
-  final VoidCallback? onTap;
-
-  const _Col({
-    required this.label,
-    required this.color,
-    required this.value,
-    required this.delta,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        label.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: BloomTypography.kicker(),
-                      ),
-                    ),
-                    if (onTap != null) ...[
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 13,
-                        color: BloomColors.violet,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'R\$ ${formatMoney(value)}',
-              maxLines: 1,
-              style: BloomTypography.display(
-                  fontSize: 15, letterSpacing: -0.3),
-            ),
-          ),
-          const SizedBox(height: 5),
-          if (delta != null)
-            _DeltaBadge(value: delta!)
-          else
-            Text(
-              '—',
-              style: BloomTypography.mono(
-                  fontSize: 9.5, color: BloomColors.muted),
-            ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: content,
-      ),
-    );
-  }
-}
-
-class _DeltaBadge extends StatelessWidget {
-  final double value;
-  const _DeltaBadge({required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final up = value > 0;
-    final tone = up ? BloomColors.bad : BloomColors.good;
-    final symbol = up ? '↗' : '↘';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.094),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$symbol ${value.abs().toStringAsFixed(1).replaceAll('.', ',')}%',
-        style: BloomTypography.mono(
-          fontSize: 9.5,
-          fontWeight: FontWeight.w600,
-          color: tone,
         ),
       ),
     );
   }
 }
-
 
 class _RecentEntriesSection extends ConsumerWidget {
   final AsyncValue<LastEntriesResponse> asyncLast;
@@ -1181,45 +1102,53 @@ class _RecentEntriesSection extends ConsumerWidget {
     final shown = entries.take(3).toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
                 child: Text(
                   'Últimos lançamentos',
-                  style: BloomTypography.display(fontSize: 14),
+                  style: BloomTypography.display(
+                    fontSize: 17,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
               InkWell(
                 onTap: () => ref
                     .read(activeTabProvider.notifier)
                     .state = BloomTab.lancamento,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Text(
-                    'Ver mais →',
-                    style: BloomTypography.geist(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: BloomColors.violet,
-                    ),
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Ver todos',
+                        style: BloomTypography.geist(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: BloomColors.violetDeep,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Icon(Icons.arrow_forward,
+                          size: 14, color: BloomColors.violetDeep),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           BloomCard(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            borderRadius: BorderRadius.circular(18),
+            padding: const EdgeInsets.all(6),
+            borderRadius: BorderRadius.circular(24),
             child: shown.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1238,6 +1167,7 @@ class _RecentEntriesSection extends ConsumerWidget {
                       for (var i = 0; i < shown.length; i++)
                         RecentEntryRow(
                           entry: shown[i],
+                          spacious: true,
                           showDivider: i > 0,
                           // Sem row válido (backend antigo) o save falharia com
                           // invalid_row — mesma guarda das outras listas.

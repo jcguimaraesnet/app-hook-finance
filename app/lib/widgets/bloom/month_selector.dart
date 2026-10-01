@@ -8,7 +8,11 @@ import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
 
 class MonthSelector extends ConsumerWidget {
-  const MonthSelector({super.key});
+  /// Rótulo abreviado ("Nov 2026"). A Início usa a pílula na barra de topo,
+  /// ao lado do título e do menu, onde "Novembro, 2026" não cabe.
+  final bool abbrev;
+
+  const MonthSelector({super.key, this.abbrev = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,7 +20,7 @@ class MonthSelector extends ConsumerWidget {
     final current = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(current));
     final raw = current ?? monthAsync.value?.month;
-    final display = monthYearLong(raw);
+    final display = abbrev ? monthYearAbbrev(raw) : monthYearLong(raw);
 
     final disabled = months.isEmpty;
 

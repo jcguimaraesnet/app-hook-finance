@@ -94,6 +94,25 @@ String monthYearShort(String? raw) {
   return '${_monthNamesPt[m - 1]} de $y';
 }
 
+/// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "Mmm YYYY" (3 letras).
+/// Ex: "06/11/2026" -> "Nov 2026". Para a pílula de mês no topo da Início, onde
+/// "Novembro, 2026" não cabe ao lado do título e do menu.
+String monthYearAbbrev(String? raw) {
+  if (raw == null || raw.isEmpty) return '—';
+  final parts = raw.split('/');
+  int? m;
+  String? y;
+  if (parts.length == 3) {
+    m = int.tryParse(parts[1]);
+    y = parts[2];
+  } else if (parts.length == 2) {
+    m = int.tryParse(parts[0]);
+    y = parts[1];
+  }
+  if (m == null || y == null || m < 1 || m > 12) return raw;
+  return '${_monthsCapitalizedPt[m - 1].substring(0, 3)} $y';
+}
+
 /// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "MM/YYYY".
 String mmYYYY(String? raw) {
   if (raw == null || raw.isEmpty) return '';
