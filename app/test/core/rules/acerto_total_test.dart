@@ -106,6 +106,34 @@ void main() {
       }
     });
 
+    test('categorias do crédito dividido somam o subtotal da linha', () {
+      final comCategoria = [
+        _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 200, categoria: 'Casa'),
+        _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 60, categoria: 'Casa'),
+        _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 400, categoria: 'Mercado'),
+        _r(origem: kOrigemCredito, rateio: 'Julio', valor: 90, categoria: 'Curso'),
+        _r(origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 800, categoria: 'Casa'),
+      ];
+      for (final p in Person.values) {
+        final cats = acertoCreditoCategorias(comCategoria, p);
+        // Maior primeiro, uma entrada por categoria.
+        expect(cats.map((c) => c.categoria), ['Mercado', 'Casa']);
+        expect(cats.first.valor, 200); // 400/2
+        expect(cats.last.valor, 130); // (200 + 60)/2
+        expect(cats.fold<double>(0, (s, c) => s + c.valor),
+            acertoBreakdown(comCategoria, p).creditoCompart,
+            reason: 'categorias de ${p.name}');
+      }
+    });
+
+    test('categoria vazia vira "—" e não some da lista', () {
+      final cats = acertoCreditoCategorias([
+        _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 50, categoria: ''),
+      ], Person.julio);
+      expect(cats.single.categoria, '—');
+      expect(cats.single.valor, 25);
+    });
+
     test('mês vazio zera tudo', () {
       final b = acertoBreakdown(const [], Person.julio);
       expect(b.total, 0);

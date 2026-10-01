@@ -37,9 +37,20 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 - `useMonthData(currentMonth)` — mesma query de Consulta. Sem chamadas extras.
 
-### Linhas de débito
+### Linhas agrupadas
 
-**Três linhas** (pós-2026-10-01), todas expansíveis, nos dois cards, nesta ordem:
+**Quatro linhas expansíveis** (pós-2026-10-01), nos dois cards. Expandir só mostra ou esconde; os filhos **sempre somam o subtotal** que abre o grupo.
+
+| Linha | Filhos |
+|---|---|
+| `Crédito (compartilhado)` | **categorias**, maior primeiro |
+| `Débito (compartilhado)` | lançamentos, pela metade |
+| `Débito (outros)` | lançamentos, valor cheio |
+| `Débito (pessoal)` | lançamentos, valor cheio |
+
+No crédito dividido os filhos são categorias, não lançamentos: ali está a fatura dividida inteira, e abrir dezenas de linhas não responde o que se pergunta olhando o acerto — em que foi o dinheiro. Regra: `acertoCreditoCategorias` em [app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart); categoria vazia vira `—` (mesma label da tabela de [Categoria](compart.md)). Conferido em 06/11/2026: Casa 644,07 + Viagem 375,00 + Transporte 82,41 + Mercado 43,95 = 1.145,41, o subtotal da linha.
+
+#### Os três grupos de débito
 
 | Linha | Filtro | Valor somado |
 |---|---|---|
@@ -49,6 +60,7 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 - A comparação de categoria é normalizada (`trim().toLowerCase()`): a col F é texto livre.
 - Na linha compartilhada os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho; nas outras duas, o valor cheio.
+- Nas linhas de débito dividido os filhos mostram a parte da pessoa — senão não somariam o subtotal do cabeçalho.
 - `outros` + `pessoal` é exatamente o conjunto da antiga linha única `Débito (pessoal)`. A divisão é **de apresentação**: o total transferido não muda (teste em `acerto_total_test.dart`). Motivo: contas de casa que a pessoa paga sozinha (Condomínio, Gás, Diarista) não são gasto pessoal dela e misturavam-se com Dízimo/Previdência.
 - A coluna `Acerto` (col J) **não filtra nada** aqui desde 2026-10-01. Antes só `"Sim"` entrava, e o card mostrava uma despesa onde havia cinco.
 - Expandir **só mostra ou esconde** os lançamentos. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía linhas fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.

@@ -4,6 +4,7 @@
 import '../rateio.dart';
 import '../origem.dart';
 import '../types.dart';
+import 'categoria_rows.dart';
 import 'split_for_person.dart';
 
 /// As cinco linhas do card de Acerto e o total da pessoa.
@@ -72,6 +73,40 @@ AcertoDebito acertoDebitoRows(List<ExpenseRow> rows, Person person) {
     outros: daPessoa.where((r) => !_isPessoal(r)).toList(),
     pessoal: daPessoa.where(_isPessoal).toList(),
   );
+}
+
+/// Uma categoria dentro do crédito compartilhado, já na parte da pessoa.
+class AcertoCategoria {
+  final String categoria;
+  final double valor;
+
+  const AcertoCategoria({required this.categoria, required this.valor});
+}
+
+/// Quebra do crédito compartilhado **por categoria**, maior primeiro.
+///
+/// A linha `Crédito (compartilhado)` é a fatura dividida inteira: abrir uma
+/// lista de lançamentos ali daria dezenas de linhas. Por categoria responde o
+/// que se pergunta olhando o acerto — em que foi o dinheiro dividido.
+///
+/// Soma exatamente `AcertoBreakdown.creditoCompart`: mesma origem, mesmo
+/// rateio e mesmo `splitForPerson` do subtotal que abre o grupo.
+List<AcertoCategoria> acertoCreditoCategorias(
+  List<ExpenseRow> rows,
+  Person person,
+) {
+  final porCategoria = <String, double>{};
+  for (final r in rows) {
+    if (r.origem != kOrigemCredito) continue;
+    if (r.rateio != kRateioCompartilhado) continue;
+    final key = categoriaLabel(r);
+    porCategoria[key] = (porCategoria[key] ?? 0) + splitForPerson(r, person);
+  }
+  final out = porCategoria.entries
+      .map((e) => AcertoCategoria(categoria: e.key, valor: e.value))
+      .toList()
+    ..sort((a, b) => b.valor.compareTo(a.valor));
+  return out;
 }
 
 AcertoBreakdown acertoBreakdown(List<ExpenseRow> rows, Person person) {

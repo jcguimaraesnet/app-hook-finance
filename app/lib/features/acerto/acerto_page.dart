@@ -166,8 +166,9 @@ class _PersonAcertoCard extends ConsumerStatefulWidget {
 }
 
 class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
-  // Uma expansão por linha de débito, para as duas pessoas. Abertas por padrão,
+  // Uma expansão por linha agrupada, para as duas pessoas. Abertas por padrão,
   // que é como a tela sempre mostrou os filhos.
+  bool _creditoCompartAberto = true;
   bool _compartAberto = true;
   bool _outrosAberto = true;
   bool _pessoalAberto = true;
@@ -187,10 +188,27 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
     final debitoCompart = b.debitoCompart;
     final debitoOutros = b.debitoOutros;
     final debitoPessoal = b.debitoPessoal;
-    final debitoCompartRows = linhas.compart;
-    final debitoOutrosRows = linhas.outros;
-    final debitoPessoalRows = linhas.pessoal;
     final total = b.total;
+
+    // Filhos de cada grupo já como (rótulo, valor): no débito cada filho é um
+    // lançamento; no crédito compartilhado é uma categoria, porque a fatura
+    // dividida inteira daria dezenas de linhas.
+    List<_Filho> deLancamentos(
+      List<ExpenseRow> rows, {
+      required bool metade,
+    }) =>
+        [
+          for (final r in rows)
+            _Filho(
+              label: r.descricao.isEmpty ? '—' : r.descricao,
+              valor: metade ? splitForPerson(r, person) : r.valor,
+            ),
+        ];
+
+    final creditoCompartFilhos = [
+      for (final c in acertoCreditoCategorias(rows, person))
+        _Filho(label: c.categoria, valor: c.valor),
+    ];
 
     final diff = diffCalculation(rows, person).abs();
 
@@ -339,45 +357,44 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             ),
           ),
           // Cartão rows
-          _DataRow(
+          _Grupo(
             label: 'Crédito (compartilhado)',
-            value: cartaoCompart,
+            subtotal: cartaoCompart,
             total: total,
+            filhos: creditoCompartFilhos,
+            aberto: _creditoCompartAberto,
+            onToggle: () => setState(
+                () => _creditoCompartAberto = !_creditoCompartAberto),
+            vazio: 'Sem crédito dividido neste mês.',
           ),
           _DataRow(
             label: 'Crédito (pessoal)',
             value: cartaoPessoal,
             total: total,
           ),
-          _DebitoGrupo(
+          _Grupo(
             label: 'Débito (compartilhado)',
             subtotal: debitoCompart,
             total: total,
-            rows: debitoCompartRows,
-            person: person,
-            dividirPelaMetade: true,
+            filhos: deLancamentos(linhas.compart, metade: true),
             aberto: _compartAberto,
             onToggle: () => setState(() => _compartAberto = !_compartAberto),
             vazio: 'Sem débito dividido neste mês.',
           ),
-          _DebitoGrupo(
+          _Grupo(
             label: 'Débito (outros)',
             subtotal: debitoOutros,
             total: total,
-            rows: debitoOutrosRows,
-            person: person,
-            dividirPelaMetade: false,
+            filhos: deLancamentos(linhas.outros, metade: false),
             aberto: _outrosAberto,
             onToggle: () => setState(() => _outrosAberto = !_outrosAberto),
             vazio: 'Sem débito de outras categorias neste mês.',
           ),
-          _DebitoGrupo(
+          _Grupo(
             label: 'Débito (pessoal)',
             subtotal: debitoPessoal,
             total: total,
-            rows: debitoPessoalRows,
-            person: person,
-            dividirPelaMetade: false,
+            filhos: deLancamentos(linhas.pessoal, metade: false),
             aberto: _pessoalAberto,
             onToggle: () => setState(() => _pessoalAberto = !_pessoalAberto),
             vazio: 'Sem débito na categoria Pessoal neste mês.',
@@ -439,36 +456,36 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
   }
 }
 
-/// Linha de débito do acerto, com expandir/recolher e os lançamentos que a
-/// compõem. Três por card: a dividida, a da pessoa fora da categoria Pessoal e
-/// a da categoria Pessoal.
+/// Um filho de uma linha agrupada: um lançamento ou uma categoria.
+class _Filho {
+  final String label;
+  final double valor;
+
+  const _Filho({required this.label, required this.valor});
+}
+
+/// Linha agrupada do acerto, com expandir/recolher e o que a compõe. Quatro por
+/// card: o crédito dividido (filhos = categorias), o débito dividido e os dois
+/// débitos da pessoa (filhos = lançamentos).
 ///
-/// Até 2026-10-01 havia uma linha só, e o toggle (exclusivo do Júlio) mudava a
-/// COMPOSIÇÃO — incluía lançamentos fora do acerto e o subtotal mudava junto.
-/// Agora expandir só mostra ou esconde; o subtotal é sempre o que entra no
-/// acerto. Spec: docs/specs/pages/acerto.md
-class _DebitoGrupo extends StatelessWidget {
+/// Até 2026-10-01 havia uma linha de débito só, e o toggle (exclusivo do Júlio)
+/// mudava a COMPOSIÇÃO — incluía lançamentos fora do acerto e o subtotal mudava
+/// junto. Agora expandir só mostra ou esconde; o subtotal é sempre o que entra
+/// no acerto, e os filhos sempre o somam. Spec: docs/specs/pages/acerto.md
+class _Grupo extends StatelessWidget {
   final String label;
   final double subtotal;
   final double total;
-  final List<ExpenseRow> rows;
-  final Person person;
-
-  /// Na linha dividida, cada filho mostra a parte da pessoa — senão os filhos
-  /// não somariam o subtotal exibido no cabeçalho.
-  final bool dividirPelaMetade;
-
+  final List<_Filho> filhos;
   final bool aberto;
   final VoidCallback onToggle;
   final String vazio;
 
-  const _DebitoGrupo({
+  const _Grupo({
     required this.label,
     required this.subtotal,
     required this.total,
-    required this.rows,
-    required this.person,
-    required this.dividirPelaMetade,
+    required this.filhos,
     required this.aberto,
     required this.onToggle,
     required this.vazio,
@@ -541,7 +558,7 @@ class _DebitoGrupo extends StatelessWidget {
           ),
         ),
         if (aberto)
-          if (rows.isEmpty)
+          if (filhos.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(38, 0, 18, 10),
               child: Text(
@@ -553,10 +570,10 @@ class _DebitoGrupo extends StatelessWidget {
               ),
             )
           else
-            for (final r in rows)
+            for (final f in filhos)
               _DataRow(
-                label: r.descricao.isEmpty ? '—' : r.descricao,
-                value: dividirPelaMetade ? splitForPerson(r, person) : r.valor,
+                label: f.label,
+                value: f.valor,
                 total: subtotal,
                 small: true,
                 indent: 20,
