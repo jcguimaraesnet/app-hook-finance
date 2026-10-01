@@ -42,7 +42,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
     final prevAsync = ref.watch(previousMonthDataProvider);
-    final lastAsync = ref.watch(lastEntriesProvider(2));
+    final lastAsync = ref.watch(lastEntriesProvider(3));
 
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final prevRows =
@@ -68,7 +68,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       try {
         await Future.wait<void>([
           ref.read(monthDataProvider(currentMonth).future),
-          ref.read(lastEntriesProvider(2).future),
+          ref.read(lastEntriesProvider(3).future),
         ]);
       } catch (e) {
         error = '$e';
@@ -282,8 +282,6 @@ class _InicioPageState extends ConsumerState<InicioPage> {
               loading: loading && rows.isEmpty,
             ),
             const SizedBox(height: 14),
-            _SmallTiles(rows: rows),
-            const SizedBox(height: 12),
             _QuickLinks(
               onPersonalTap: () => context
                   .push('/detalhe?person=${person.name.toLowerCase()}'),
@@ -750,53 +748,6 @@ class _PersonSelector extends StatelessWidget {
   }
 }
 
-class _SmallTiles extends StatelessWidget {
-  final List<ExpenseRow> rows;
-
-  const _SmallTiles({required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
-    final totalCartao = rows
-        .where((r) => r.origem == kOrigemCredito)
-        .fold<double>(0, (s, r) => s + r.valor);
-    final totalParcelado = rows.where((r) {
-      final p = r.parcela;
-      if (p.isEmpty) return false;
-      final parts = p.split('/');
-      if (parts.length != 2) return false;
-      final t = int.tryParse(parts[1]) ?? 1;
-      return t > 1;
-    }).fold<double>(0, (s, r) => s + r.valor);
-
-    final parceladoPct =
-        totalCartao == 0 ? null : totalParcelado / totalCartao * 100;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _Tile(label: 'Total crédito', value: totalCartao),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _Tile(
-                  label: 'Parcelado',
-                  value: totalParcelado,
-                  pct: parceladoPct,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _QuickLinks extends StatelessWidget {
   final VoidCallback onPersonalTap;
   final VoidCallback onCompartTap;
@@ -881,75 +832,6 @@ class _LinkPill extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Tile extends StatelessWidget {
-  final String label;
-  final double value;
-  final double? pct;
-  const _Tile({required this.label, required this.value, this.pct});
-
-  @override
-  Widget build(BuildContext context) {
-    return BloomCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      borderRadius: BorderRadius.circular(18),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label.toUpperCase(),
-                style: BloomTypography.kicker(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 24,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'R\$ ${formatMoney(value)}',
-                    maxLines: 1,
-                    style: BloomTypography.display(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (pct != null)
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: BloomColors.violet.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '${pct!.toStringAsFixed(1).replaceAll('.', ',')}%',
-                  style: BloomTypography.mono(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: BloomColors.violet,
-                  ),
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -1343,7 +1225,7 @@ class _RecentEntriesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = asyncLast.value?.entries ?? const <Entry>[];
-    final shown = entries.take(2).toList();
+    final shown = entries.take(3).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
