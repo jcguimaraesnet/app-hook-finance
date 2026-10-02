@@ -26,7 +26,7 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 | 7 | G | Rateio | string | `Julio` \| `Dani` \| `Compartilhado` \| `Alzira` \| `""`. Vazio = não rateado. **Pré-2026-10-01** o valor compartilhado chamava-se `Metade`; 3.384 linhas foram migradas por `migrateRateio()`. Backend e app aceitam o termo antigo na leitura/escrita durante a transição. |
 | 8 | H | Banco | string enum | `Santander` \| `Revolut` \| `""`. Banco emissor do cartão. Webhook preenche pelo padrão da notificação; `addEntry`/`updateEntry` recebem `banco`. Só faz sentido com Origem `Cartão`; demais origens ficam `""`. **Pré-2026-09-12** guardava os 4 dígitos finais do cartão (`1018`, `2236`, `784`…). Só a fatura 06/10/2026 foi convertida; faturas fechadas mantêm os dígitos por decisão do usuário. |
 | 9 | I | Parcela | string | `"X/Y"` (ex.: `"1/3"` = 1ª de 3). Vazio = à vista. Editável só via modal de Lançamento. Ver [parcela-format.md](../rules/parcela-format.md). |
-| 10 | J | Acerto | string | `"Sim"` se a linha conta para o "Acerto Final". Vazio caso contrário. |
+| 10 | J | Acerto | string | **Quem deve reembolsar** a despesa: `"Julio"` \| `"Dani"` \| `""`. Pós-2026-10-02. Antes era `"Sim"` = "a linha conta para o Acerto Final"; esse valor segue aceito na escrita enquanto houver linha não convertida, e nenhuma regra de cálculo lê a coluna desde 2026-10-01 — ver "Mudança de semântica da col J" abaixo. |
 
 ### Migração de Origem (2026-09-20)
 
@@ -47,6 +47,21 @@ Migrada também a col D da aba `despesas-fixas` ([despesas-fixas-sheet.md](despe
 Rotina: `migrateOrigemToCreditoDebito()` em `apps-script/shared/Maintenance.gs`, idempotente, rodada manualmente pelo editor.
 
 **Compatibilidade:** `addEntry`/`updateEntry` normalizam valores legados no write (APK antigo manda `Cartão` e o backend grava `Crédito`), e o app normaliza na leitura. As duas pontes são temporárias — ver [../api/endpoints.md](../api/endpoints.md).
+
+### Mudança de semântica da col J (2026-10-02)
+
+A coluna nasceu como um sim/não: `"Sim"` marcava a linha que entrava no Acerto Final. Em 2026-10-01 a tela de Acerto **parou de filtrar por ela** (passou a mostrar todo o débito que toca a pessoa), e a coluna ficou sem consumer. Em 2026-10-02 ela foi redefinida para responder outra pergunta: **quem deve reembolsar** aquela despesa.
+
+| Valor | Significado |
+|---|---|
+| `""` | ninguém reembolsa |
+| `"Julio"` / `"Dani"` | quem deve reembolsar |
+| `"Sim"` | **legado**, da semântica antiga |
+
+- Quem escreve: só o modal de **despesa fixa** (campo "Para reembolsar") e, por tabela, a Nova fatura, que copia o valor da aba `despesas-fixas` para a col J da linha inserida. O modal de lançamento não tem o campo, e `updateEntry` **não grava a col J** — editar um lançamento nunca apaga o valor.
+- `"Sim"` continua aceito na escrita (`isReembolsoValido_` em `apps-script/shared/Helpers.gs`): salvar outro campo de uma linha ainda não convertida não pode falhar por causa dele. O modal mostra o valor cru como `(?) Sim`, e escolher uma das três opções converte a linha — mesmo tratamento do `Banco` legado.
+- **Não houve migração em massa**: em 2026-10-02 havia 8 das 14 despesas fixas com `"Sim"`. "Quem reembolsa" não é dedutível de "entrava no acerto", então converter automaticamente seria inventar dado. As linhas antigas ficam como estão até alguém editá-las.
+- Nenhuma regra de cálculo lê a coluna. Mudar o valor não altera nenhum número de nenhuma tela.
 
 ### Leitura
 

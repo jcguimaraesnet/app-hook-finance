@@ -42,9 +42,12 @@ function validateFixedExpense_(f) {
     return { ok: false, error: `rateio inválido (${f.rateio})` };
   }
 
+  // Col G. Quem deve reembolsar a despesa (ou vazio). "Sim" é o valor legado
+  // da semântica antiga ("entra no acerto") e segue aceito: salvar outro campo
+  // de uma linha ainda não convertida não pode falhar por causa dele.
   const acerto = String(f.acerto === undefined || f.acerto === null ? "" : f.acerto).trim();
-  if (acerto !== "" && acerto !== "Sim") {
-    return { ok: false, error: `acerto inválido (${acerto})` };
+  if (!isReembolsoValido_(acerto)) {
+    return { ok: false, error: `reembolso inválido (${acerto})` };
   }
 
   // Col H, opcional. Vazio = recorrente sem fim (o caso de quase toda despesa

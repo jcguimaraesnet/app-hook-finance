@@ -63,7 +63,7 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - `rateio` (string ∈ `""` \| `Julio` \| `Dani` \| `Compartilhado` \| `Alzira`)
 - `banco` (string ∈ `""` \| `Santander` \| `Revolut`) — banco emissor do cartão; só faz sentido com `origem = Cartão`. **Pré-2026-09-12** o campo era `cardLast4` (4 dígitos); `cardLast4` no body agora é ignorado.
 - `parcela` (string vazia OU `"X/Y"` onde X,Y são dígitos)
-- `acerto` (string vazia OU `"Sim"`)
+- `acerto` (string vazia, `"Julio"`, `"Dani"` OU o legado `"Sim"` — col J passou a significar **quem reembolsa** em 2026-10-02; ver [../data/despesas-sheet.md](../data/despesas-sheet.md))
 
 **Erros**:
 - `unauthorized` — token inválido.

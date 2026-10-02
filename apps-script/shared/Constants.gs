@@ -18,3 +18,9 @@ const ORIGEM = ORIGEM_CREDITO;
 const BANCO_SANTANDER = "Santander";
 const BANCO_REVOLUT = "Revolut";
 const BANCOS = [BANCO_SANTANDER, BANCO_REVOLUT];
+
+// Col J. Era "Sim" = "entra no acerto" até 2026-10-02; passou a dizer QUEM deve
+// reembolsar a despesa. "Sim" segue aceito na escrita enquanto houver linha
+// antiga na planilha — ver docs/specs/data/despesas-sheet.md.
+const REEMBOLSO_LEGADO = "Sim";
+const REEMBOLSOS = ["Julio", "Dani"];

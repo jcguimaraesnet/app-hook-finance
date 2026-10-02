@@ -401,7 +401,7 @@ function addEntry(token, fields) {
   }
 
   const acerto = String(fields.acerto || "").trim();
-  if (acerto && acerto !== "Sim") return { ok: false, error: "invalid_acerto" };
+  if (!isReembolsoValido_(acerto)) return { ok: false, error: "invalid_acerto" };
 
   const tz = Session.getScriptTimeZone();
   const now = new Date();

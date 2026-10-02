@@ -17,6 +17,19 @@ const List<String> _rateioOptions = [
   'Alzira',
 ];
 
+/// Col J. Até 2026-10-02 era um sim/não ("entra no acerto"); agora diz **quem**
+/// deve reembolsar a despesa. Vazio = ninguém.
+const List<String> _reembolsoOptions = ['', 'Julio', 'Dani'];
+
+String _reembolsoLabel(String v) {
+  if (v.isEmpty) return '—';
+  // Valor da semântica antiga ("Sim"), ou qualquer coisa digitada direto na
+  // planilha: aparece cru para não sumir sem o usuário ver. Mesmo tratamento
+  // que o banco legado recebe no modal de lançamento.
+  if (_reembolsoOptions.contains(v)) return v;
+  return '(?) $v';
+}
+
 /// Descrição que ainda carrega a parcela escrita à mão ("Retiro 5x",
 /// "Festa 3/6x"). Com o contador ativo esse texto não é atualizado por ninguém
 /// e vai parar na planilha igual todo mês — foi o que aconteceu com a fatura
@@ -58,7 +71,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
   late final TextEditingController _categoriaCtrl;
   late String _origem;
   late String _rateio;
-  late bool _acerto;
+  late String _reembolso;
   late final TextEditingController _parcelasCtrl;
 
   /// Valor exato como veio da planilha, e o texto inicial do campo. A aba tem
@@ -89,7 +102,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
     );
     _origem = kOrigens.contains(e?.origem) ? e!.origem : kOrigemDebito;
     _rateio = _rateioOptions.contains(e?.rateio) ? e!.rateio : kRateioCompartilhado;
-    _acerto = e?.acerto == 'Sim';
+    _reembolso = (e?.acerto ?? '').trim();
   }
 
   @override
@@ -147,7 +160,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
       'origem': _origem,
       'categoria': categoria,
       'rateio': _rateio,
-      'acerto': _acerto ? 'Sim' : '',
+      'acerto': _reembolso,
       'parcelasRestantes': parcelas,
     };
   }
@@ -352,14 +365,25 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 4),
-                    SwitchListTile(
-                      value: _acerto,
-                      onChanged:
-                          _busy ? null : (v) => setState(() => _acerto = v),
-                      title: const Text('Entra no acerto'),
-                      subtitle: const Text('Grava "Sim" na coluna Acerto'),
-                      contentPadding: EdgeInsets.zero,
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      initialValue: _reembolso,
+                      decoration: const InputDecoration(
+                        labelText: 'Para reembolsar',
+                        helperText: 'Quem deve reembolsar esta despesa. '
+                            'Vazio = ninguém.',
+                        helperMaxLines: 2,
+                      ),
+                      items: [
+                        for (final v in {..._reembolsoOptions, _reembolso})
+                          DropdownMenuItem(
+                            value: v,
+                            child: Text(_reembolsoLabel(v)),
+                          ),
+                      ],
+                      onChanged: _busy
+                          ? null
+                          : (v) => setState(() => _reembolso = v ?? ''),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 8),

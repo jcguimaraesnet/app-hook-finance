@@ -193,4 +193,33 @@ void main() {
       }
     });
   });
+
+  // 2026-10-02: a col J deixou de ser um sim/não ("entra no acerto") e passou a
+  // dizer quem reembolsa.
+  testWidgets('a linha mostra quem reembolsa', (tester) async {
+    await _pump(tester, [
+      _json(row: 2, descricao: 'DIARISTA', acerto: 'Dani'),
+      _json(row: 3, descricao: 'DIZIMO', acerto: ''),
+    ]);
+    expect(find.textContaining('reembolsa Dani'), findsOneWidget);
+    expect(find.textContaining('reembolsa'), findsOneWidget);
+  });
+
+  testWidgets('o combo oferece as três opções e preserva o valor legado',
+      (tester) async {
+    await _pump(tester, [_json(row: 2, descricao: 'GAS', acerto: 'Sim')]);
+    await tester.tap(find.text('GAS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Para reembolsar'), findsOneWidget);
+    // "Sim" é da semântica antiga: aparece cru no campo para não sumir sem o
+    // usuário ver, como o banco legado no modal de lançamento.
+    expect(find.text('(?) Sim'), findsOneWidget);
+
+    await tester.tap(find.text('(?) Sim'));
+    await tester.pumpAndSettle();
+    expect(find.text('Julio'), findsWidgets);
+    expect(find.text('Dani'), findsWidgets);
+    expect(find.text('—'), findsWidgets);
+  });
 }

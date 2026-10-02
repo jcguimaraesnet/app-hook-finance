@@ -236,7 +236,8 @@ class _LinhaFixa extends StatelessWidget {
                             ? [
                                 entry.rateio,
                                 entry.origem,
-                                if (entry.acerto == 'Sim') 'acerto',
+                                if (entry.acerto.trim().isNotEmpty)
+                                  'reembolsa ${entry.acerto.trim()}',
                                 if (entry.isParcelada)
                                   'faltam ${entry.parcelasRestantes}',
                               ].join(' · ')

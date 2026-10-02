@@ -175,3 +175,9 @@ function rolloverParcelaRow_(rowValues, newClosing) {
     rowValues[9],              // J — acerto
   ];
 }
+
+// Col J aceita vazio, uma das pessoas, ou o legado "Sim".
+function isReembolsoValido_(raw) {
+  const v = String(raw === undefined || raw === null ? "" : raw).trim();
+  return v === "" || v === REEMBOLSO_LEGADO || REEMBOLSOS.indexOf(v) >= 0;
+}
