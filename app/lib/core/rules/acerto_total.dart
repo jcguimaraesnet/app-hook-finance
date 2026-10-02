@@ -29,12 +29,11 @@ class AcertoBreakdown {
     required this.debitoPessoal,
   });
 
+  /// Subtotal das duas linhas de crédito, exibido logo abaixo delas no card.
+  double get credito => creditoCompart + creditoPessoal;
+
   double get total =>
-      creditoCompart +
-      creditoPessoal +
-      debitoCompart +
-      debitoOutros +
-      debitoPessoal;
+      credito + debitoCompart + debitoOutros + debitoPessoal;
 }
 
 /// Categoria que separa o débito da pessoa em "pessoal" e "outros". Comparação

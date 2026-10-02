@@ -30,7 +30,7 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
    - Botões circulares `D ↔ J` à direita; o ativo tem borda branca/violeta.
 3. **Tabela única detalhada** (`PersonAcertoCard`) da pessoa selecionada (Dani por default):
    - Header com avatar inicial + nome + pílula "Diferença R$ X".
-   - Linhas: `Cartão (compartilhado) | Cartão (pessoal) | Pix · Contas (cada item discriminado) | Subtotal Pix | Total Pessoal`.
+   - Linhas: `Crédito (compartilhado) | Crédito (pessoal) | Subtotal crédito | Débito (compartilhado) | Débito (outros) | Débito (pessoal) | Total Pessoal`.
    - Cada linha com `valor + %`. Última linha destacada com border-top forte.
 
 ### Source
@@ -48,6 +48,8 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 | `Débito (compartilhado)` | lançamentos, pela metade |
 | `Débito (outros)` | lançamentos, valor cheio |
 | `Débito (pessoal)` | lançamentos, valor cheio |
+
+Logo abaixo das duas de crédito vem a linha **`Subtotal crédito`** = `creditoCompart + creditoPessoal` (getter `AcertoBreakdown.credito`). Não é expansível: fecha o bloco de crédito. Peso visual entre o de uma linha agrupadora e o do `Total Pessoal` do rodapé, com filete acima — é o que a distingue dos filhos indentados logo acima dela. O débito não tem subtotal equivalente (não foi pedido).
 
 **As duas de crédito agrupam por categoria**, as três de débito listam lançamento. O corte é o que cada origem é: crédito é fatura de cartão, compras miúdas onde a lista não responde o que se pergunta olhando o acerto — em que foi o dinheiro; débito são contas com nome próprio (Condomínio, Diarista, Dízimo), que se identificam uma a uma.
 

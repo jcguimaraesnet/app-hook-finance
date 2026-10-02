@@ -379,6 +379,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
                 () => _creditoPessoalAberto = !_creditoPessoalAberto),
             vazio: 'Sem crédito pessoal neste mês.',
           ),
+          _SubtotalRow(label: 'Subtotal crédito', value: b.credito, total: total),
           _Grupo(
             label: 'Débito (compartilhado)',
             subtotal: debitoCompart,
@@ -586,6 +587,73 @@ class _Grupo extends StatelessWidget {
                 indent: 20,
               ),
       ],
+    );
+  }
+}
+
+/// Fecha as duas linhas de crédito com a soma delas. Mais pesada que uma linha
+/// agrupadora e mais leve que o "Total Pessoal" do rodapé — fica entre as duas
+/// coisas na hierarquia, e é o que a separa dos filhos indentados logo acima.
+class _SubtotalRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final double total;
+
+  const _SubtotalRow({
+    required this.label,
+    required this.value,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = total == 0 ? 0.0 : value / total * 100;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 4, 18, 2),
+      padding: const EdgeInsets.only(top: 8, bottom: 2),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: BloomColors.divider, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: BloomTypography.geist(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 80,
+            child: Text(
+              formatMoney(value),
+              textAlign: TextAlign.right,
+              style: BloomTypography.mono(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 50,
+            child: Text(
+              '${pct.toStringAsFixed(1).replaceAll('.', ',')}%',
+              textAlign: TextAlign.right,
+              style: BloomTypography.mono(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: BloomColors.muted,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

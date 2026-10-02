@@ -156,6 +156,15 @@ void main() {
       expect(cats.fold<double>(0, (s, c) => s + c.valor), 320);
     });
 
+    // A linha de subtotal que fecha as duas de crédito no card.
+    test('subtotal de crédito é a soma das duas linhas', () {
+      final b = acertoBreakdown(rows, Person.julio);
+      expect(b.credito, b.creditoCompart + b.creditoPessoal);
+      expect(b.credito, 180); // 100 + 80
+      expect(b.credito + b.debitoCompart + b.debitoOutros + b.debitoPessoal,
+          b.total);
+    });
+
     test('mês vazio zera tudo', () {
       final b = acertoBreakdown(const [], Person.julio);
       expect(b.total, 0);
