@@ -49,6 +49,8 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 `Total Pessoal` no rodapé = os três subtotais. Expandir só mostra ou esconde; os filhos **sempre somam** o subtotal que abre o grupo.
 
+**Todas as linhas abrem contraídas** (pós-2026-10-02). Com tudo aberto a tabela passava de uma tela e os sete números que importam — quatro linhas, dois subtotais e o total — não cabiam juntos. A expansão é estado da sessão: reabrir a aba preserva o que o usuário abriu.
+
 A faixa de subtotal é uma barra de fundo `track` de ponta a ponta, mais alta que uma linha comum, com filete em cima e embaixo: é o que divide a tabela em blocos à primeira vista. Um filete fino sozinho se perdia entre os filhos indentados logo acima dela.
 
 #### Reembolsos (primeiro bloco)

@@ -119,14 +119,23 @@ void main() {
     expect(find.text('Subtotal crédito'), findsOneWidget);
     expect(find.text('Subtotal débito'), findsOneWidget);
 
+    // Contraídas por padrão (2026-10-02): os filhos não estão na tela.
+    expect(find.text('DIZIMO'), findsNothing);
+    expect(find.text('70,00'), findsNothing);
+
     // Todo o débito da Dani num grupo só: 70 + 30 + 40 = 140.
-    expect(find.text('70,00'), findsOneWidget);
-    expect(find.text('30,00'), findsOneWidget);
-    expect(find.text('DIZIMO'), findsOneWidget);
     expect(find.text('140,00'), findsOneWidget);
     // Subtotais: crédito 160, débito 340, e os dois somam o total.
     expect(find.text('160,00'), findsOneWidget);
     expect(find.text('340,00'), findsOneWidget);
+
+    // Abrir o grupo revela os lançamentos, que somam o subtotal.
+    await tester.tap(find.text('Débito (pessoal)'));
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
+    expect(find.text('70,00'), findsOneWidget);
+    expect(find.text('30,00'), findsOneWidget);
+    expect(find.text('DIZIMO'), findsOneWidget);
   });
 
   testWidgets('débito sem acerto=Sim aparece na lista', (tester) async {
@@ -146,6 +155,10 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
+
+    await tester.tap(find.text('Débito (pessoal)'));
     await tester.pumpAndSettle();
     _semErroReal(tester);
 
@@ -216,8 +229,14 @@ void main() {
     expect(b.debitoPessoal, 140);
     // E o total cresce com a linha nova: a regrouping não perde dinheiro.
     expect(b.total, 750);
+    // Contraído: só o cabeçalho do grupo e a faixa de subtotal mostram o valor.
+    expect(find.text('CONDOMINIO DEV'), findsNothing);
+    expect(find.text('250,00'), findsNWidgets(2));
+
+    await tester.tap(find.text('Reembolsos'));
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
     expect(find.text('CONDOMINIO DEV'), findsOneWidget);
-    // Cabeçalho do grupo, o único filho e a faixa de subtotal.
     expect(find.text('250,00'), findsNWidgets(3));
   });
 }

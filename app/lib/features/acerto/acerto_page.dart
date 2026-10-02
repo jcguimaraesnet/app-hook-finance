@@ -166,13 +166,15 @@ class _PersonAcertoCard extends ConsumerStatefulWidget {
 }
 
 class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
-  // Uma expansão por linha agrupada, para as duas pessoas. Abertas por padrão,
-  // que é como a tela sempre mostrou os filhos.
-  bool _reembolsosAberto = true;
-  bool _creditoCompartAberto = true;
-  bool _creditoPessoalAberto = true;
-  bool _compartAberto = true;
-  bool _pessoalAberto = true;
+  // Uma expansão por linha agrupada, para as duas pessoas. **Contraídas** por
+  // padrão desde 2026-10-02: com tudo aberto a tabela passava de uma tela e os
+  // sete números que importam (quatro linhas, dois subtotais e o total) não
+  // cabiam juntos. Abrir é por conta de quem quer conferir a composição.
+  bool _reembolsosAberto = false;
+  bool _creditoCompartAberto = false;
+  bool _creditoPessoalAberto = false;
+  bool _compartAberto = false;
+  bool _pessoalAberto = false;
 
   @override
   Widget build(BuildContext context) {
