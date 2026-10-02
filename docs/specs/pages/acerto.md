@@ -39,16 +39,21 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 ### Linhas agrupadas
 
-**Quatro linhas expansíveis** (pós-2026-10-01), nos dois cards. Expandir só mostra ou esconde; os filhos **sempre somam o subtotal** que abre o grupo.
+**Todas as cinco linhas são expansíveis** (pós-2026-10-02), nos dois cards. Expandir só mostra ou esconde; os filhos **sempre somam o subtotal** que abre o grupo.
 
 | Linha | Filhos |
 |---|---|
 | `Crédito (compartilhado)` | **categorias**, maior primeiro |
+| `Crédito (pessoal)` | **categorias**, maior primeiro |
 | `Débito (compartilhado)` | lançamentos, pela metade |
 | `Débito (outros)` | lançamentos, valor cheio |
 | `Débito (pessoal)` | lançamentos, valor cheio |
 
-No crédito dividido os filhos são categorias, não lançamentos: ali está a fatura dividida inteira, e abrir dezenas de linhas não responde o que se pergunta olhando o acerto — em que foi o dinheiro. Regra: `acertoCreditoCategorias` em [app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart); categoria vazia vira `—` (mesma label da tabela de [Categoria](compart.md)). Conferido em 06/11/2026: Casa 644,07 + Viagem 375,00 + Transporte 82,41 + Mercado 43,95 = 1.145,41, o subtotal da linha.
+**As duas de crédito agrupam por categoria**, as três de débito listam lançamento. O corte é o que cada origem é: crédito é fatura de cartão, compras miúdas onde a lista não responde o que se pergunta olhando o acerto — em que foi o dinheiro; débito são contas com nome próprio (Condomínio, Diarista, Dízimo), que se identificam uma a uma.
+
+Regra: `acertoCreditoCategorias(rows, person, {required compartilhado})` em [app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart). `compartilhado: true` filtra rateio `Compartilhado` (metade da pessoa); `false`, o rateio da própria pessoa (valor cheio) — `splitForPerson` já faz a distinção, então as duas fecham com o subtotal. Categoria vazia vira `—` (mesma label da tabela de [Categoria](compart.md)).
+
+Conferido em 06/11/2026 (card da Dani): compartilhado Casa 725,71 + Mercado 570,68 + Viagem 375,00 + Transporte 82,41 + Fernanda 12,91 = 1.766,70; pessoal Pessoal 1.765,89 + Farmacia 159,29 = 1.925,18.
 
 #### Os três grupos de débito
 

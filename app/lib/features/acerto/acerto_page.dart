@@ -169,6 +169,7 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
   // Uma expansão por linha agrupada, para as duas pessoas. Abertas por padrão,
   // que é como a tela sempre mostrou os filhos.
   bool _creditoCompartAberto = true;
+  bool _creditoPessoalAberto = true;
   bool _compartAberto = true;
   bool _outrosAberto = true;
   bool _pessoalAberto = true;
@@ -205,10 +206,11 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             ),
         ];
 
-    final creditoCompartFilhos = [
-      for (final c in acertoCreditoCategorias(rows, person))
-        _Filho(label: c.categoria, valor: c.valor),
-    ];
+    List<_Filho> porCategoria({required bool compartilhado}) => [
+          for (final c in acertoCreditoCategorias(rows, person,
+              compartilhado: compartilhado))
+            _Filho(label: c.categoria, valor: c.valor),
+        ];
 
     final diff = diffCalculation(rows, person).abs();
 
@@ -361,16 +363,21 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             label: 'Crédito (compartilhado)',
             subtotal: cartaoCompart,
             total: total,
-            filhos: creditoCompartFilhos,
+            filhos: porCategoria(compartilhado: true),
             aberto: _creditoCompartAberto,
             onToggle: () => setState(
                 () => _creditoCompartAberto = !_creditoCompartAberto),
             vazio: 'Sem crédito dividido neste mês.',
           ),
-          _DataRow(
+          _Grupo(
             label: 'Crédito (pessoal)',
-            value: cartaoPessoal,
+            subtotal: cartaoPessoal,
             total: total,
+            filhos: porCategoria(compartilhado: false),
+            aberto: _creditoPessoalAberto,
+            onToggle: () => setState(
+                () => _creditoPessoalAberto = !_creditoPessoalAberto),
+            vazio: 'Sem crédito pessoal neste mês.',
           ),
           _Grupo(
             label: 'Débito (compartilhado)',

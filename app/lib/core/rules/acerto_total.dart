@@ -83,22 +83,26 @@ class AcertoCategoria {
   const AcertoCategoria({required this.categoria, required this.valor});
 }
 
-/// Quebra do crédito compartilhado **por categoria**, maior primeiro.
+/// Quebra de uma das duas linhas de crédito **por categoria**, maior primeiro.
 ///
-/// A linha `Crédito (compartilhado)` é a fatura dividida inteira: abrir uma
-/// lista de lançamentos ali daria dezenas de linhas. Por categoria responde o
-/// que se pergunta olhando o acerto — em que foi o dinheiro dividido.
+/// As duas são fatura de cartão: compras miúdas, onde a lista de lançamentos
+/// não responde o que se pergunta olhando o acerto — em que foi o dinheiro. As
+/// de débito, que são contas com nome próprio, seguem listando lançamento.
 ///
-/// Soma exatamente `AcertoBreakdown.creditoCompart`: mesma origem, mesmo
-/// rateio e mesmo `splitForPerson` do subtotal que abre o grupo.
+/// `compartilhado: true` pega o rateio `Compartilhado` (metade da pessoa);
+/// `false`, o rateio da própria pessoa (valor cheio). `splitForPerson` já faz
+/// essa distinção, então a soma bate exatamente com `creditoCompart` ou
+/// `creditoPessoal` do subtotal que abre o grupo.
 List<AcertoCategoria> acertoCreditoCategorias(
   List<ExpenseRow> rows,
-  Person person,
-) {
+  Person person, {
+  required bool compartilhado,
+}) {
+  final rateioAlvo = compartilhado ? kRateioCompartilhado : person.name;
   final porCategoria = <String, double>{};
   for (final r in rows) {
     if (r.origem != kOrigemCredito) continue;
-    if (r.rateio != kRateioCompartilhado) continue;
+    if (r.rateio != rateioAlvo) continue;
     final key = categoriaLabel(r);
     porCategoria[key] = (porCategoria[key] ?? 0) + splitForPerson(r, person);
   }

@@ -115,7 +115,7 @@ void main() {
         _r(origem: kOrigemDebito, rateio: kRateioCompartilhado, valor: 800, categoria: 'Casa'),
       ];
       for (final p in Person.values) {
-        final cats = acertoCreditoCategorias(comCategoria, p);
+        final cats = acertoCreditoCategorias(comCategoria, p, compartilhado: true);
         // Maior primeiro, uma entrada por categoria.
         expect(cats.map((c) => c.categoria), ['Mercado', 'Casa']);
         expect(cats.first.valor, 200); // 400/2
@@ -129,9 +129,31 @@ void main() {
     test('categoria vazia vira "—" e não some da lista', () {
       final cats = acertoCreditoCategorias([
         _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 50, categoria: ''),
-      ], Person.julio);
+      ], Person.julio, compartilhado: true);
       expect(cats.single.categoria, '—');
       expect(cats.single.valor, 25);
+    });
+
+    // A linha "Crédito (pessoal)" abre pelo mesmo caminho, trocando o rateio.
+    test('categorias do crédito pessoal somam o subtotal e usam valor cheio',
+        () {
+      final rows2 = [
+        _r(origem: kOrigemCredito, rateio: 'Julio', valor: 90, categoria: 'Curso'),
+        _r(origem: kOrigemCredito, rateio: 'Julio', valor: 30, categoria: 'Curso'),
+        _r(origem: kOrigemCredito, rateio: 'Julio', valor: 200, categoria: 'Pessoal'),
+        _r(origem: kOrigemCredito, rateio: 'Dani', valor: 500, categoria: 'Farmacia'),
+        _r(origem: kOrigemCredito, rateio: kRateioCompartilhado, valor: 400, categoria: 'Curso'),
+      ];
+      final cats = acertoCreditoCategorias(rows2, Person.julio,
+          compartilhado: false);
+      expect(cats.map((c) => c.categoria), ['Pessoal', 'Curso']);
+      expect(cats.first.valor, 200); // cheio, não metade
+      expect(cats.last.valor, 120); // 90 + 30
+      expect(cats.fold<double>(0, (s, c) => s + c.valor),
+          acertoBreakdown(rows2, Person.julio).creditoPessoal);
+      // Nada da outra pessoa nem do que é dividido.
+      expect(cats.any((c) => c.categoria == 'Farmacia'), isFalse);
+      expect(cats.fold<double>(0, (s, c) => s + c.valor), 320);
     });
 
     test('mês vazio zera tudo', () {
