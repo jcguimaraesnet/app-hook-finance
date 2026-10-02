@@ -43,6 +43,8 @@ function doPost(e) {
       return jsonResponse_(ensureHeader(body.token));
     case "migrateOrigem":
       return jsonResponse_(migrateOrigem(body.token));
+    case "renameAcertoHeader":
+      return jsonResponse_(renameAcertoHeader(body.token));
     case "migrateRateio":
       return jsonResponse_(migrateRateio(body.token));
     case "addFixedExpense":
@@ -360,7 +362,10 @@ const SHEET_HEADERS = [
   "Rateio",
   "Banco",
   "Parcela",
-  "Acerto",
+  // Renomeada em 2026-10-02 junto com a mudança de semântica: a coluna diz quem
+  // reembolsa, não mais se a linha "entra no acerto". O campo JSON segue
+  // `acerto` — ver docs/specs/data/despesas-sheet.md.
+  "Reembolso",
 ];
 
 // Função, não const global: o Apps Script avalia dashboard/Dashboard.gs antes

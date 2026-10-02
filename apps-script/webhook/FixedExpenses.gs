@@ -308,7 +308,7 @@ function seedFixedExpenses() {
   if (sheet.getLastRow() > 1)
     throw new Error("aba já tem dados — abortando para não duplicar");
 
-  const headers = ["Dia", "Descrição", "Valor", "Origem", "Categoria", "Rateio", "Acerto", "Parcelas restantes"];
+  const headers = ["Dia", "Descrição", "Valor", "Origem", "Categoria", "Rateio", "Reembolso", "Parcelas restantes"];
   const data = [
     [6,  "Diarista",                                                       1500,    ORIGEM_DEBITO, "Contas", "Dani",  ""   ],
     [6,  "Plano de Saúde (Dani)",                                          761.81,  ORIGEM_DEBITO, "Contas", "Dani",  ""   ],

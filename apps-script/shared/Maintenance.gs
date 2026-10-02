@@ -136,3 +136,36 @@ function migrateRateioColumn_(sheet, col, label) {
   if (out.changed > 0) range.setValues(novos);
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// 2026-10-02: a coluna "Acerto" passou a dizer QUEM reembolsa a despesa, então
+// o cabeçalho virou "Reembolso" nas duas abas. Só o texto da linha 1 muda —
+// nenhum valor é tocado. Idempotente: rodar de novo não faz nada.
+// Spec: docs/specs/data/despesas-sheet.md
+// ---------------------------------------------------------------------------
+function renameAcertoHeader(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const alvos = [
+    { nome: SHEET_NAME, col: 10 },
+    { nome: FIXED_SHEET_NAME, col: 7 },
+  ];
+  const out = [];
+  for (const alvo of alvos) {
+    const sheet = ss.getSheetByName(alvo.nome);
+    if (!sheet) {
+      out.push({ sheet: alvo.nome, skipped: "sheet_not_found" });
+      continue;
+    }
+    const cell = sheet.getRange(1, alvo.col);
+    const antes = String(cell.getValue() || "").trim();
+    if (antes === "Reembolso") {
+      out.push({ sheet: alvo.nome, antes: antes, changed: false });
+      continue;
+    }
+    cell.setValue("Reembolso");
+    out.push({ sheet: alvo.nome, antes: antes, changed: true });
+  }
+  return { ok: true, sheets: out };
+}

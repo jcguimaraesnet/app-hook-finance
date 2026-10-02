@@ -45,6 +45,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `updateFixedExpense` | `row`, `fields` (mesmos de add) | `{ ok, row }` | Sobrescreve A..G da linha. |
 | `deleteFixedExpense` | `row` | `{ ok }` | Remove a linha da aba. |
 | `migrateOrigem` | — | `{ ok, despesas, fixas }` | **One-off de manutenção** (2026-09-20). Converte a col E da aba Despesas e a col D de `despesas-fixas` para `Crédito`/`Débito`. Idempotente; valor desconhecido é reportado e não é tocado. Cada resultado traz `{ changed, kept, blank, unknown[] }`. Remover junto com a ponte de normalização. Ver [../data/despesas-sheet.md](../data/despesas-sheet.md). |
+| `renameAcertoHeader` | — | `{ ok, sheets: [{ sheet, antes, changed }] }` | **One-off de manutenção** (2026-10-02). Renomeia o cabeçalho da col J (`Despesas`) e da col G (`despesas-fixas`) de `Acerto` para `Reembolso`. Só o texto da linha 1; nenhum valor é tocado. Idempotente. Ver [../data/despesas-sheet.md](../data/despesas-sheet.md). |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
 #### `addEntry` — detalhes
