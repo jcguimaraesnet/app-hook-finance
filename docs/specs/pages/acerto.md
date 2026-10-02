@@ -26,7 +26,7 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 1. `ScreenHeader` com kicker "Acerto" + título "Saldo de <mês>" + `MonthSelector`.
 2. **Hero card** gradient `violet→sky`:
    - Texto fixo "Dani transfere para Júlio" (kicker).
-   - Valor display da diferença (`Σ buckets` da Dani — o lado que paga).
+   - Valor display = `AcertoBreakdown.transferencia` da Dani: **`Subtotal reembolsos + Subtotal crédito`**, pós-2026-10-02.
    - Botões circulares `D ↔ J` à direita; o ativo tem borda branca/violeta.
 3. **Tabela única detalhada** (`PersonAcertoCard`) da pessoa selecionada (Dani por default):
    - Header com avatar inicial + nome + pílula "Diferença R$ X".
@@ -70,7 +70,9 @@ Regra das categorias: `acertoCreditoCategorias(rows, person, {required compartil
 - Na linha de débito dividido os filhos mostram a parte da pessoa — senão não somariam o subtotal do cabeçalho.
 - A coluna `Acerto` (col J) **não filtra** o que entra no acerto desde 2026-10-01; desde 2026-10-02 ela decide só o bloco Reembolsos.
 - Expandir só mostra ou esconde. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía lançamentos fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
-- O número grande do topo e o `Total Pessoal` do card são o **mesmo valor** e vêm os dois de `acertoBreakdown`. Já divergiram por estarem calculados em dois lugares.
+- **O topo e o `Total Pessoal` do rodapé são números diferentes, de propósito** (pós-2026-10-02): o topo é o que a pessoa **transfere** (reembolsos + crédito) e o rodapé o que ela **gastou** (mais o bloco de débito). O débito fica fora da transferência porque a conta de casa que a pessoa paga já saiu do bolso dela no mês — o que se acerta é o reembolso mais a fatura do cartão.
+- Os dois saem do **mesmo** `acertoBreakdown`: já divergiram por acidente (R$ 4.566,65 em cima, R$ 7.883,06 embaixo) quando estavam calculados em dois lugares, e um teste de widget prende os dois valores.
+- Conferido em 06/11/2026 — Dani: 2.013,90 + 3.691,88 = **5.705,78** no topo, 9.608,30 no rodapé. Júlio: 1.302,52 + 1.893,46 = 3.195,98 e 8.004,30.
 
 #### Histórico dos agrupamentos de débito
 

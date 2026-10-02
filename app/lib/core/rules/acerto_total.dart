@@ -41,6 +41,16 @@ class AcertoBreakdown {
   double get debito => debitoCompart + debitoPessoal;
 
   double get total => reembolso + credito + debito;
+
+  /// O que a pessoa transfere — o número grande do topo da tela.
+  ///
+  /// **Não é o `total`**: desde 2026-10-02 o débito fica de fora, por pedido do
+  /// usuário. O que ele paga em conta de casa já saiu da conta dele no mês; o
+  /// que se transfere é o reembolso mais a fatura do cartão. O card continua
+  /// mostrando o `total` no rodapé, que é outra pergunta — quanto a pessoa
+  /// gastou. Os dois números divergem de propósito: já divergiram por acidente
+  /// (4.566,65 em cima, 7.883,06 embaixo) e por isso saem os dois daqui.
+  double get transferencia => reembolso + credito;
 }
 
 /// Categoria que o cálculo da Diferença ignora. Comparação normalizada porque a

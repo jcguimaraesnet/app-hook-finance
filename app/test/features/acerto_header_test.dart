@@ -56,10 +56,11 @@ void _semErroReal(WidgetTester tester) {
 }
 
 void main() {
-  // O número grande do topo e o "Total Pessoal" do card são o mesmo valor. Já
-  // divergiram (4.566,65 em cima, 7.883,06 embaixo) por estarem calculados em
-  // dois lugares; agora os dois vêm de acertoBreakdown.
-  testWidgets('topo e Total Pessoal mostram o mesmo número', (tester) async {
+  // O topo mostra o que a pessoa TRANSFERE (reembolsos + crédito) e o rodapé o
+  // que ela GASTOU (mais o débito). Divergem de propósito desde 2026-10-02 —
+  // antes eram o mesmo valor e divergiram por acidente (4.566,65 em cima,
+  // 7.883,06 embaixo), por isso os dois saem de acertoBreakdown.
+  testWidgets('topo é reembolsos + crédito; rodapé é o total', (tester) async {
     tester.view.physicalSize = const Size(412, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -79,11 +80,13 @@ void main() {
     await tester.pumpAndSettle();
     _semErroReal(tester);
 
-    // Dani: créd.compart 100 + créd.pess 60 + déb.compart 200 + déb.outros 100
-    // + déb.pessoal 40.
-    final esperado = acertoBreakdown(_rows, Person.dani).total;
-    expect(esperado, 500);
-    expect(find.text('R\$ 500,00'), findsOneWidget); // topo
+    // Dani: créd.compart 100 + créd.pess 60 = 160 no topo; mais déb.compart 200
+    // e déb.pessoal 140 = 500 no rodapé. Sem reembolso nestas linhas.
+    final b = acertoBreakdown(_rows, Person.dani);
+    expect(b.reembolso, 0);
+    expect(b.transferencia, 160);
+    expect(b.total, 500);
+    expect(find.text('R\$ 160,00'), findsOneWidget); // topo
     expect(find.text('500,00'), findsOneWidget); // Total Pessoal do card
   });
 
@@ -225,6 +228,8 @@ void main() {
 
     final b = acertoBreakdown(comReembolso, Person.dani);
     expect(b.reembolso, 250);
+    // O topo soma o reembolso ao crédito; o débito segue fora dele.
+    expect(b.transferencia, 410); // 250 + 160
     // Saiu do débito pessoal, que continua 140.
     expect(b.debitoPessoal, 140);
     // E o total cresce com a linha nova: a regrouping não perde dinheiro.

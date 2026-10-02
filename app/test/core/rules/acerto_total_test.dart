@@ -92,6 +92,16 @@ void main() {
       }
     });
 
+    // O número do topo da tela: reembolsos + crédito, sem o débito.
+    test('transferencia deixa o débito de fora', () {
+      for (final p in Person.values) {
+        final b = acertoBreakdown(rows, p);
+        expect(b.transferencia, b.reembolso + b.credito, reason: p.name);
+        expect(b.transferencia, b.total - b.debito, reason: p.name);
+      }
+      expect(acertoBreakdown(rows, Person.julio).transferencia, 180);
+    });
+
     // Os dois subtotais e o total: a tabela é simétrica, cada metade fecha na
     // sua faixa e as duas fecham no rodapé.
     test('subtotais de crédito e débito somam o total', () {

@@ -32,9 +32,11 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    // Mesma função que o card usa no "Total Pessoal" — este número e aquele são
-    // o mesmo valor, e já divergiram por estarem calculados em dois lugares.
-    final daniTotalPessoal = acertoBreakdown(rows, Person.dani).total;
+    // Mesma função que alimenta o card. O número do topo é só reembolsos +
+    // crédito (ver AcertoBreakdown.transferencia): é menor que o "Total
+    // Pessoal" do rodapé, que soma também o débito. Os dois saem daqui porque
+    // já divergiram por estarem calculados em dois lugares.
+    final daniTransfere = acertoBreakdown(rows, Person.dani).transferencia;
 
     Future<void> onRefresh() async {
       ref.invalidate(monthDataProvider);
@@ -60,7 +62,7 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
               trailing: MonthSelector(),
             ),
             const SizedBox(height: 12),
-            _Hero(total: daniTotalPessoal),
+            _Hero(total: daniTransfere),
             const SizedBox(height: 14),
             if (loading)
               const Padding(
