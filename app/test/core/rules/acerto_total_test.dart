@@ -39,13 +39,12 @@ void main() {
   ];
 
   group('acertoBreakdown', () {
-    test('as cinco linhas, pela regra de cada uma', () {
+    test('as quatro linhas agrupadoras, pela regra de cada uma', () {
       final b = acertoBreakdown(rows, Person.julio);
       expect(b.creditoCompart, 100); // 200/2
       expect(b.creditoPessoal, 80);
       expect(b.debitoCompart, 200); // 400/2
-      expect(b.debitoOutros, 130); // 100 + 30, valor cheio
-      expect(b.debitoPessoal, 25); // só a categoria Pessoal
+      expect(b.debitoPessoal, 155); // 100 + 30 + 25, valor cheio
       expect(b.total, 535);
     });
 
@@ -53,56 +52,54 @@ void main() {
     // cinco débitos da Dani, porque a coluna Acerto filtrava.
     test('débito sem acerto=Sim também entra', () {
       final b = acertoBreakdown(rows, Person.dani);
-      expect(b.debitoOutros, 70);
+      expect(b.debitoPessoal, 70);
       final linhas = acertoDebitoRows(rows, Person.dani);
-      expect(linhas.outros.map((r) => r.descricao), ['deb dani sem marca']);
+      expect(linhas.pessoal.map((r) => r.descricao), ['deb dani sem marca']);
     });
 
-    test('débito de terceiro não entra em nenhum dos três grupos', () {
+    test('débito de terceiro não entra em nenhum dos dois grupos', () {
       final l = acertoDebitoRows(rows, Person.julio);
       expect(l.compart.map((r) => r.descricao), ['deb compart']);
-      expect(l.outros.map((r) => r.descricao),
+      expect(l.pessoal.map((r) => r.descricao),
+          ['deb julio marcado', 'deb julio sem marca', 'deb julio pessoal']);
+    });
+
+    // 2026-10-02: a tabela ficou simétrica (compartilhado + pessoal dos dois
+    // lados) e o grupo "Débito (outros)" sumiu. O corte por categoria sobrou só
+    // onde muda número — na pílula Diferença.
+    test('debitoParaDiferenca tira a categoria Pessoal do débito da pessoa', () {
+      final d = debitoParaDiferenca(rows, Person.julio);
+      expect(d.map((r) => r.descricao),
           ['deb julio marcado', 'deb julio sem marca']);
-      expect(l.pessoal.map((r) => r.descricao), ['deb julio pessoal']);
+      expect(d.fold<double>(0, (s, r) => s + r.valor), 130);
     });
 
-    test('a categoria separa outros de pessoal, sem perder linha', () {
-      final l = acertoDebitoRows(rows, Person.julio);
-      expect(l.outros.any((r) => r.categoria == 'Pessoal'), isFalse);
-      expect(l.pessoal.every((r) => r.categoria == 'Pessoal'), isTrue);
-      expect(l.outros.length + l.pessoal.length,
-          rows.where((r) => r.origem == kOrigemDebito && r.rateio == 'Julio').length);
-    });
-
-    test('categoria com caixa/espaço diferentes ainda é pessoal', () {
-      final l = acertoDebitoRows([
+    test('categoria com caixa/espaço diferentes ainda é Pessoal', () {
+      final linhas = [
         _r(origem: kOrigemDebito, rateio: 'Julio', valor: 10, categoria: ' pessoal '),
-      ], Person.julio);
-      expect(l.pessoal, hasLength(1));
-      expect(l.outros, isEmpty);
+      ];
+      expect(debitoParaDiferenca(linhas, Person.julio), isEmpty);
+      // Mas segue dentro da linha agrupadora da tela.
+      expect(acertoDebitoRows(linhas, Person.julio).pessoal, hasLength(1));
     });
 
     test('as listas somam exatamente os subtotais do card', () {
       for (final p in Person.values) {
         final b = acertoBreakdown(rows, p);
         final l = acertoDebitoRows(rows, p);
-        expect(l.outros.fold<double>(0, (s, r) => s + r.valor), b.debitoOutros,
-            reason: 'outros de ${p.name}');
         expect(l.pessoal.fold<double>(0, (s, r) => s + r.valor), b.debitoPessoal,
             reason: 'pessoal de ${p.name}');
       }
     });
 
-    // A divisão em dois grupos é só de apresentação: o que a pessoa transfere
-    // não pode mudar por causa dela.
-    test('separar outros de pessoal não muda o total', () {
+    // Os dois subtotais e o total: a tabela é simétrica, cada metade fecha na
+    // sua faixa e as duas fecham no rodapé.
+    test('subtotais de crédito e débito somam o total', () {
       for (final p in Person.values) {
         final b = acertoBreakdown(rows, p);
-        final debitoDaPessoa = rows
-            .where((r) => r.origem == kOrigemDebito && r.rateio == p.name)
-            .fold<double>(0, (s, r) => s + r.valor);
-        expect(b.debitoOutros + b.debitoPessoal, debitoDaPessoa,
-            reason: 'débito da ${p.name}');
+        expect(b.credito, b.creditoCompart + b.creditoPessoal);
+        expect(b.debito, b.debitoCompart + b.debitoPessoal);
+        expect(b.credito + b.debito, b.total, reason: 'total de ${p.name}');
       }
     });
 
@@ -154,15 +151,6 @@ void main() {
       // Nada da outra pessoa nem do que é dividido.
       expect(cats.any((c) => c.categoria == 'Farmacia'), isFalse);
       expect(cats.fold<double>(0, (s, c) => s + c.valor), 320);
-    });
-
-    // A linha de subtotal que fecha as duas de crédito no card.
-    test('subtotal de crédito é a soma das duas linhas', () {
-      final b = acertoBreakdown(rows, Person.julio);
-      expect(b.credito, b.creditoCompart + b.creditoPessoal);
-      expect(b.credito, 180); // 100 + 80
-      expect(b.credito + b.debitoCompart + b.debitoOutros + b.debitoPessoal,
-          b.total);
     });
 
     test('mês vazio zera tudo', () {

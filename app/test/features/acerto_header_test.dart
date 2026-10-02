@@ -87,8 +87,9 @@ void main() {
     expect(find.text('500,00'), findsOneWidget); // Total Pessoal do card
   });
 
-  // A categoria parte o débito da pessoa em duas linhas; o total não muda.
-  testWidgets('as três linhas de débito, cada uma com seus filhos',
+  // Tabela simétrica desde 2026-10-02: Reembolsos, Crédito ×2 e Débito ×2,
+  // cada bloco fechado pela sua faixa de subtotal.
+  testWidgets('as linhas agrupadoras, os subtotais e os filhos',
       (tester) async {
     tester.view.physicalSize = const Size(412, 1400);
     tester.view.devicePixelRatio = 1.0;
@@ -109,16 +110,23 @@ void main() {
     await tester.pumpAndSettle();
     _semErroReal(tester);
 
+    expect(find.text('Reembolsos'), findsOneWidget);
+    expect(find.text('Crédito (compartilhado)'), findsOneWidget);
+    expect(find.text('Crédito (pessoal)'), findsOneWidget);
     expect(find.text('Débito (compartilhado)'), findsOneWidget);
-    expect(find.text('Débito (outros)'), findsOneWidget);
     expect(find.text('Débito (pessoal)'), findsOneWidget);
+    expect(find.text('Subtotal reembolsos'), findsOneWidget);
+    expect(find.text('Subtotal crédito'), findsOneWidget);
+    expect(find.text('Subtotal débito'), findsOneWidget);
 
-    // Outros = 70 + 30 (categoria Casa); pessoal = 40 (Dízimo). Cada subtotal
-    // aparece junto dos seus filhos: 40,00 é o subtotal e a única linha dele.
+    // Todo o débito da Dani num grupo só: 70 + 30 + 40 = 140.
     expect(find.text('70,00'), findsOneWidget);
     expect(find.text('30,00'), findsOneWidget);
     expect(find.text('DIZIMO'), findsOneWidget);
-    expect(find.text('40,00'), findsNWidgets(2));
+    expect(find.text('140,00'), findsOneWidget);
+    // Subtotais: crédito 160, débito 340, e os dois somam o total.
+    expect(find.text('160,00'), findsOneWidget);
+    expect(find.text('340,00'), findsOneWidget);
   });
 
   testWidgets('débito sem acerto=Sim aparece na lista', (tester) async {
@@ -145,10 +153,10 @@ void main() {
     expect(find.text('COM MARCA'), findsOneWidget);
   });
 
-  // Pedido de 2026-10-01: o pill passou a ser a subtração de dois números que
-  // estão na própria tela, para dar para conferir de onde vem.
-  testWidgets('a Diferença é o Débito (outros) de um menos o do outro',
-      (tester) async {
+  // O pill ignora a categoria Pessoal. De 2026-10-01 a 2026-10-02 havia uma
+  // linha "Débito (outros)" com exatamente esse recorte; ela saiu na
+  // simetrização, mas a regra do dinheiro ficou.
+  testWidgets('a Diferença ignora a categoria Pessoal', (tester) async {
     tester.view.physicalSize = const Size(412, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -172,5 +180,44 @@ void main() {
     // As de categoria Pessoal (40 e 500) ficam fora.
     expect(diffCalculation(_rows, Person.dani), 40);
     expect(find.text('R\$ 40,00'), findsOneWidget); // pill do header
+  });
+
+  // 2026-10-02: col J passou a dizer quem reembolsa. No card da Dani, as linhas
+  // marcadas "Julio" saem dos grupos normais e formam o primeiro bloco.
+  testWidgets('reembolso sai do grupo de débito e vai para Reembolsos',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final comReembolso = [
+      ..._rows,
+      _e(row: 10, origem: kOrigemDebito, rateio: 'Dani', valor: 250, acerto: 'Julio', descricao: 'CONDOMINIO DEV'),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          monthDataProvider.overrideWith((ref, month) async => MonthDataResponse(
+              ok: true, month: '06/11/2026', rows: comReembolso)),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: AcertoPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    _semErroReal(tester);
+
+    final b = acertoBreakdown(comReembolso, Person.dani);
+    expect(b.reembolso, 250);
+    // Saiu do débito pessoal, que continua 140.
+    expect(b.debitoPessoal, 140);
+    // E o total cresce com a linha nova: a regrouping não perde dinheiro.
+    expect(b.total, 750);
+    expect(find.text('CONDOMINIO DEV'), findsOneWidget);
+    // Cabeçalho do grupo, o único filho e a faixa de subtotal.
+    expect(find.text('250,00'), findsNWidgets(3));
   });
 }

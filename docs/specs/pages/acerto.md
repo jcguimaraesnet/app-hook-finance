@@ -39,39 +39,40 @@ No fim do mês, o casal "fecha" as contas: quem deve a quem, quanto. Esta págin
 
 ### Linhas agrupadas
 
-**Todas as cinco linhas são expansíveis** (pós-2026-10-02), nos dois cards. Expandir só mostra ou esconde; os filhos **sempre somam o subtotal** que abre o grupo.
+**Três blocos simétricos** (pós-2026-10-02), cada um com suas linhas agrupadoras expansíveis e fechado por uma **faixa de subtotal**:
 
-| Linha | Filhos |
-|---|---|
-| `Crédito (compartilhado)` | **categorias**, maior primeiro |
-| `Crédito (pessoal)` | **categorias**, maior primeiro |
-| `Débito (compartilhado)` | lançamentos, pela metade |
-| `Débito (outros)` | lançamentos, valor cheio |
-| `Débito (pessoal)` | lançamentos, valor cheio |
+| Bloco | Linhas | Filhos | Subtotal |
+|---|---|---|---|
+| Reembolsos | `Reembolsos` | lançamentos | `Subtotal reembolsos` |
+| Crédito | `Crédito (compartilhado)` · `Crédito (pessoal)` | **categorias**, maior primeiro | `Subtotal crédito` |
+| Débito | `Débito (compartilhado)` · `Débito (pessoal)` | lançamentos | `Subtotal débito` |
 
-Logo abaixo das duas de crédito vem a linha **`Subtotal crédito`** = `creditoCompart + creditoPessoal` (getter `AcertoBreakdown.credito`). Não é expansível: fecha o bloco de crédito. Peso visual entre o de uma linha agrupadora e o do `Total Pessoal` do rodapé, com filete acima — é o que a distingue dos filhos indentados logo acima dela. O débito não tem subtotal equivalente (não foi pedido).
+`Total Pessoal` no rodapé = os três subtotais. Expandir só mostra ou esconde; os filhos **sempre somam** o subtotal que abre o grupo.
 
-**As duas de crédito agrupam por categoria**, as três de débito listam lançamento. O corte é o que cada origem é: crédito é fatura de cartão, compras miúdas onde a lista não responde o que se pergunta olhando o acerto — em que foi o dinheiro; débito são contas com nome próprio (Condomínio, Diarista, Dízimo), que se identificam uma a uma.
+A faixa de subtotal é uma barra de fundo `track` de ponta a ponta, mais alta que uma linha comum, com filete em cima e embaixo: é o que divide a tabela em blocos à primeira vista. Um filete fino sozinho se perdia entre os filhos indentados logo acima dela.
 
-Regra: `acertoCreditoCategorias(rows, person, {required compartilhado})` em [app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart). `compartilhado: true` filtra rateio `Compartilhado` (metade da pessoa); `false`, o rateio da própria pessoa (valor cheio) — `splitForPerson` já faz a distinção, então as duas fecham com o subtotal. Categoria vazia vira `—` (mesma label da tabela de [Categoria](compart.md)).
+#### Reembolsos (primeiro bloco)
 
-Conferido em 06/11/2026 (card da Dani): compartilhado Casa 725,71 + Mercado 570,68 + Viagem 375,00 + Transporte 82,41 + Fernanda 12,91 = 1.766,70; pessoal Pessoal 1.765,89 + Farmacia 159,29 = 1.925,18.
+- Lançamentos do acerto da pessoa cuja col J (`Para reembolsar`) traz o nome da **outra** pessoa — o que ela deve devolver. No card do Júlio são as linhas marcadas `Dani`, e vice-versa.
+- **Saem dos outros quatro grupos**: a mesma despesa não pode ser contada em dois lugares. O total da pessoa não muda — é uma regrouping.
+- Valor por `splitForPerson`, como no resto do card: linha `Compartilhado` entra pela metade.
+- Linha marcada com o nome da **própria** pessoa não é reembolso dela: fica onde estava.
+- Enquanto a planilha tiver o valor legado `"Sim"` na col J, nenhuma linha casa com o filtro e o bloco aparece zerado — ver [../data/despesas-sheet.md](../data/despesas-sheet.md#mudança-de-semântica-da-col-j-2026-10-02). Quem marca é o modal de [despesa fixa](despesas-fixas.md).
 
-#### Os três grupos de débito
+#### Crédito e débito
 
-| Linha | Filtro | Valor somado |
-|---|---|---|
-| `Débito (compartilhado)` | `origem === "Débito"` E `rateio === "Compartilhado"` | `splitForPerson` (metade) |
-| `Débito (outros)` | `origem === "Débito"` E `rateio === <pessoa>` E `categoria !== "Pessoal"` | valor cheio |
-| `Débito (pessoal)` | `origem === "Débito"` E `rateio === <pessoa>` E `categoria === "Pessoal"` | valor cheio |
+**As duas de crédito agrupam por categoria**, as duas de débito listam lançamento. O corte é o que cada origem é: crédito é fatura de cartão, compras miúdas onde a lista não responde o que se pergunta olhando o acerto — em que foi o dinheiro; débito são contas com nome próprio (Condomínio, Diarista, Dízimo), que se identificam uma a uma.
 
-- A comparação de categoria é normalizada (`trim().toLowerCase()`): a col F é texto livre.
-- Na linha compartilhada os filhos mostram a parte da pessoa, para somarem o subtotal do cabeçalho; nas outras duas, o valor cheio.
-- Nas linhas de débito dividido os filhos mostram a parte da pessoa — senão não somariam o subtotal do cabeçalho.
-- `outros` + `pessoal` é exatamente o conjunto da antiga linha única `Débito (pessoal)`. A divisão é **de apresentação**: o total transferido não muda (teste em `acerto_total_test.dart`). Motivo: contas de casa que a pessoa paga sozinha (Condomínio, Gás, Diarista) não são gasto pessoal dela e misturavam-se com Dízimo/Previdência.
-- A coluna `Acerto` (col J) **não filtra nada** aqui desde 2026-10-01. Antes só `"Sim"` entrava, e o card mostrava uma despesa onde havia cinco.
-- Expandir **só mostra ou esconde** os lançamentos. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía linhas fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
-- O número grande do topo e o `Total Pessoal` do card são o **mesmo valor** e vêm os dois de `acertoBreakdown` ([app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart)). Já divergiram por estarem calculados em dois lugares.
+Regra das categorias: `acertoCreditoCategorias(rows, person, {required compartilhado})` em [app/lib/core/rules/acerto_total.dart](../../../app/lib/core/rules/acerto_total.dart). `compartilhado: true` filtra rateio `Compartilhado` (metade da pessoa); `false`, o rateio da própria pessoa (valor cheio) — `splitForPerson` já faz a distinção, então as duas fecham com o subtotal. Categoria vazia vira `—` (mesma label da tabela de [Categoria](compart.md)).
+
+- Na linha de débito dividido os filhos mostram a parte da pessoa — senão não somariam o subtotal do cabeçalho.
+- A coluna `Acerto` (col J) **não filtra** o que entra no acerto desde 2026-10-01; desde 2026-10-02 ela decide só o bloco Reembolsos.
+- Expandir só mostra ou esconde. Até 2026-10-01 o toggle era exclusivo do Júlio e mudava a **composição** — incluía lançamentos fora do acerto e o subtotal mudava junto, o que tornava o número da tela ambíguo. `acertoPixJulioProvider` foi removido.
+- O número grande do topo e o `Total Pessoal` do card são o **mesmo valor** e vêm os dois de `acertoBreakdown`. Já divergiram por estarem calculados em dois lugares.
+
+#### Histórico dos agrupamentos de débito
+
+De 2026-10-01 a 2026-10-02 o débito da pessoa foi exibido em **dois** grupos, partidos pela categoria: `Débito (outros)` (categoria ≠ `Pessoal`) e `Débito (pessoal)`. Voltaram a ser um só para a tabela ficar simétrica com as duas linhas de crédito. O corte por categoria sobreviveu onde muda número — na pílula Diferença, via `debitoParaDiferenca`.
 
 ### Δ (diff)
 

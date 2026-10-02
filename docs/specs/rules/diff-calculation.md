@@ -20,9 +20,11 @@ Aparece como o "Δ" colorido nos cards de pessoa em **Consulta/Pessoal** ([Perso
 3. `outro = Σ valor` de `acertoDebitoRows(rows, other).outros`.
 4. Retorna `meu - outro` (pode ser negativo).
 
-Ou seja: a diferença entre as duas linhas **`Débito (outros)`** que a tela de Acerto mostra, uma de cada pessoa — `origem === "Débito"` E `rateio === <pessoa>` E `categoria !== "Pessoal"`. Ver [../pages/acerto.md](../pages/acerto.md).
+Ou seja: `origem === "Débito"` E `rateio === <pessoa>` E `categoria !== "Pessoal"` E a linha **não** está marcada para a outra pessoa reembolsar. Ver [../pages/acerto.md](../pages/acerto.md).
 
-A regra **não filtra** por `acerto = "Sim"` (col J), coerente com o resto da tela.
+⚠️ **O número não corresponde mais a nenhuma linha da tela.** De 2026-10-01 a 2026-10-02 ele era exatamente a diferença entre as duas linhas `Débito (outros)`; essa linha sumiu quando a tabela foi simetrizada. A regra do dinheiro ficou como estava **de propósito**: tirar a categoria `Pessoal` foi uma decisão explícita do usuário, e desfazê-la junto com um ajuste de layout mudaria dinheiro sem ninguém ter pedido. Hoje o pill é **menor** que a diferença entre os dois `Débito (pessoal)` exibidos.
+
+A col J não filtra o que entra no acerto; desde 2026-10-02 ela só move a linha para o bloco Reembolsos — e o que foi para lá sai desta conta por tabela, já que `acertoDebitoRows` o removeu. Coerente: o que vai ser devolvido é acertado naquele bloco, não na pílula. Em 2026-10-02 isso não mudou nenhum número, porque nenhuma linha da planilha tinha ainda um nome na col J.
 
 ### O que mudou em 2026-10-01
 

@@ -168,10 +168,10 @@ class _PersonAcertoCard extends ConsumerStatefulWidget {
 class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
   // Uma expansão por linha agrupada, para as duas pessoas. Abertas por padrão,
   // que é como a tela sempre mostrou os filhos.
+  bool _reembolsosAberto = true;
   bool _creditoCompartAberto = true;
   bool _creditoPessoalAberto = true;
   bool _compartAberto = true;
-  bool _outrosAberto = true;
   bool _pessoalAberto = true;
 
   @override
@@ -187,7 +187,6 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
     final cartaoCompart = b.creditoCompart;
     final cartaoPessoal = b.creditoPessoal;
     final debitoCompart = b.debitoCompart;
-    final debitoOutros = b.debitoOutros;
     final debitoPessoal = b.debitoPessoal;
     final total = b.total;
 
@@ -358,6 +357,19 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
               ],
             ),
           ),
+          _Grupo(
+            label: 'Reembolsos',
+            subtotal: b.reembolso,
+            total: total,
+            filhos: deLancamentos(acertoReembolsos(rows, person), metade: true),
+            aberto: _reembolsosAberto,
+            onToggle: () =>
+                setState(() => _reembolsosAberto = !_reembolsosAberto),
+            vazio:
+                'Nada marcado para ${person.other.displayName} reembolsar.',
+          ),
+          _SubtotalRow(
+              label: 'Subtotal reembolsos', value: b.reembolso, total: total),
           // Cartão rows
           _Grupo(
             label: 'Crédito (compartilhado)',
@@ -390,23 +402,15 @@ class _PersonAcertoCardState extends ConsumerState<_PersonAcertoCard> {
             vazio: 'Sem débito dividido neste mês.',
           ),
           _Grupo(
-            label: 'Débito (outros)',
-            subtotal: debitoOutros,
-            total: total,
-            filhos: deLancamentos(linhas.outros, metade: false),
-            aberto: _outrosAberto,
-            onToggle: () => setState(() => _outrosAberto = !_outrosAberto),
-            vazio: 'Sem débito de outras categorias neste mês.',
-          ),
-          _Grupo(
             label: 'Débito (pessoal)',
             subtotal: debitoPessoal,
             total: total,
             filhos: deLancamentos(linhas.pessoal, metade: false),
             aberto: _pessoalAberto,
             onToggle: () => setState(() => _pessoalAberto = !_pessoalAberto),
-            vazio: 'Sem débito na categoria Pessoal neste mês.',
+            vazio: 'Sem débito pessoal neste mês.',
           ),
+          _SubtotalRow(label: 'Subtotal débito', value: b.debito, total: total),
           const SizedBox(height: 6),
           // Total Pessoal
           Container(
@@ -591,9 +595,11 @@ class _Grupo extends StatelessWidget {
   }
 }
 
-/// Fecha as duas linhas de crédito com a soma delas. Mais pesada que uma linha
-/// agrupadora e mais leve que o "Total Pessoal" do rodapé — fica entre as duas
-/// coisas na hierarquia, e é o que a separa dos filhos indentados logo acima.
+/// Fecha cada metade da tabela com a soma das suas duas linhas agrupadoras.
+///
+/// Faixa de fundo de ponta a ponta, mais alta que uma linha comum: é o que
+/// divide a tabela em blocos à primeira vista, sem depender de um filete fino
+/// que se perdia entre os filhos indentados logo acima dela.
 class _SubtotalRow extends StatelessWidget {
   final String label;
   final double value;
@@ -609,11 +615,13 @@ class _SubtotalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = total == 0 ? 0.0 : value / total * 100;
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 4, 18, 2),
-      padding: const EdgeInsets.only(top: 8, bottom: 2),
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: const BoxDecoration(
+        color: BloomColors.track,
         border: Border(
-          top: BorderSide(color: BloomColors.divider, width: 1),
+          top: BorderSide(color: BloomColors.border, width: 1),
+          bottom: BorderSide(color: BloomColors.border, width: 1),
         ),
       ),
       child: Row(
@@ -624,7 +632,7 @@ class _SubtotalRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: BloomTypography.geist(
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -635,7 +643,7 @@ class _SubtotalRow extends StatelessWidget {
               formatMoney(value),
               textAlign: TextAlign.right,
               style: BloomTypography.mono(
-                fontSize: 12,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),
             ),
